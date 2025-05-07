@@ -1,0 +1,172 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from './supabaseClient';
+import AdminEmbedsManager from './pages/AdminEmbedsManager';
+import RecruitProDashboard from './pages/RecruitProDashboard';
+import JobSeekerDashboard from './pages/JobSeekerDashboard';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import UsersList from './pages/UsersList';
+import FilesPage from './pages/FilesPage';
+import FormsList from './pages/FormsList';
+import FormBuilder from './pages/FormBuilder';
+import FormRenderer from './pages/FormRenderer';
+import FormResponses from './pages/FormResponses';
+import FormAssignRoles from './pages/FormAssignRoles';
+import UserFiles from './pages/UserFiles';
+import { getUserRole } from './utils/getUserRole';
+import EmbedPage from './pages/EmbedPage';
+import CompleteProfile from './pages/CompleteProfile';
+
+// Protected Route component that checks for both authentication and role
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSessionAndRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      setSession(session);
+      if (session?.user?.id) {
+        const role = await getUserRole(session.user.id);
+        if (isMounted) setUserRole(role);
+      } else {
+        setUserRole('guest');
+      }
+      setLoading(false);
+    };
+    fetchSessionAndRole();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      if (session?.user?.id) {
+        const role = await getUserRole(session.user.id);
+        setUserRole(role);
+      } else {
+        setUserRole('guest');
+      }
+    });
+
+    return () => { isMounted = false; listener.subscription.unsubscribe(); };
+  }, []);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen text-gray-600">Loading...</div>;
+  }
+
+  if (!session) {
+    return <Navigate to="/login" />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    // Redirect to appropriate dashboard based on role
+    switch (userRole) {
+      case 'admin':
+        return <Navigate to="/dashboard/admin" />;
+      case 'recruitpro':
+        return <Navigate to="/dashboard/recruitpro" />;
+      case 'jobseeker':
+        return <Navigate to="/dashboard/jobseeker" />;
+      case 'client':
+        return <Navigate to="/dashboard/client" />;
+      default:
+        return <Navigate to="/login" />;
+    }
+  }
+
+  // Pass userRole as prop to children if needed
+  return typeof children === 'function' ? children(userRole) : children;
+};
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        {/* Admin Routes */}
+        <Route path="/dashboard/admin" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin-embeds" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminEmbedsManager />
+          </ProtectedRoute>
+        } />
+        <Route path="/crm/users" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <UsersList />
+          </ProtectedRoute>
+        } />
+        <Route path="/assign-roles" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <FormAssignRoles />
+          </ProtectedRoute>
+        } />
+
+        {/* RecruitPro Routes */}
+        <Route path="/dashboard/recruitpro" element={
+          <ProtectedRoute allowedRoles={['recruitpro']}>
+            <RecruitProDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* Job Seeker Routes */}
+        <Route path="/dashboard/jobseeker" element={
+          <ProtectedRoute allowedRoles={['jobseeker']}>
+            <JobSeekerDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* Shared Routes */}
+        <Route path="/files" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <FilesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/forms" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <FormsList />
+          </ProtectedRoute>
+        } />
+        <Route path="/forms/new" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro']}>
+            <FormBuilder />
+          </ProtectedRoute>
+        } />
+        <Route path="/forms/:id" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <FormRenderer />
+          </ProtectedRoute>
+        } />
+        <Route path="/forms/:id/responses" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro']}>
+            <FormResponses />
+          </ProtectedRoute>
+        } />
+        <Route path="/my-files" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <UserFiles />
+          </ProtectedRoute>
+        } />
+        {/* Embed Route */}
+        <Route path="/embed/:id" element={
+          <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <EmbedPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
+
+        {/* Default redirect */}
+        <Route path="/" element={<Navigate to="/login" />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
