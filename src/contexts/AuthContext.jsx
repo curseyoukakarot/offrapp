@@ -12,38 +12,66 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    console.log('🔄 AuthProvider mounted');
+    
     // 1️⃣ one-shot fetch for the stored session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('Initial session:', initialSession);
+    console.log('📥 Fetching initial session...');
+    supabase.auth.getSession().then(({ data: { session: initialSession }, error: sessionError }) => {
+      if (sessionError) {
+        console.error('❌ Error fetching initial session:', sessionError);
+        setError(sessionError.message);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('✅ Initial session fetched:', initialSession);
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       
       if (initialSession?.user?.id) {
-        getUserRole(initialSession.user.id).then(role => {
-          console.log('Initial user role:', role);
-          setUserRole(role);
-        });
+        console.log('👤 Fetching initial user role for:', initialSession.user.id);
+        getUserRole(initialSession.user.id)
+          .then(role => {
+            console.log('✅ Initial user role fetched:', role);
+            setUserRole(role);
+            setLoading(false);
+          })
+          .catch(roleError => {
+            console.error('❌ Error fetching initial role:', roleError);
+            setError(roleError.message);
+            setLoading(false);
+          });
+      } else {
+        console.log('ℹ️ No user ID found in initial session');
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     // 2️⃣ live listener keeps state fresh
+    console.log('👂 Setting up auth state listener...');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      console.log('Auth state changed:', _event, currentSession);
+      console.log('🔄 Auth state changed:', _event, currentSession);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user?.id) {
-        const role = await getUserRole(currentSession.user.id);
-        console.log('Updated user role:', role);
-        setUserRole(role);
+        console.log('👤 Fetching updated user role for:', currentSession.user.id);
+        try {
+          const role = await getUserRole(currentSession.user.id);
+          console.log('✅ Updated user role fetched:', role);
+          setUserRole(role);
+        } catch (roleError) {
+          console.error('❌ Error fetching updated role:', roleError);
+          setError(roleError.message);
+        }
       } else {
+        console.log('ℹ️ No user ID in current session');
         setUserRole(null);
       }
     });
 
     return () => {
+      console.log('🧹 Cleaning up auth state listener');
       subscription.unsubscribe();
     };
   }, []);
@@ -56,11 +84,13 @@ export const AuthProvider = ({ children }) => {
     error,
     signOut: async () => {
       try {
+        console.log('🚪 Signing out...');
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         setUserRole(null);
+        console.log('✅ Signed out successfully');
       } catch (err) {
-        console.error('Error signing out:', err);
+        console.error('❌ Error signing out:', err);
         setError(err.message);
       }
     },
@@ -68,6 +98,7 @@ export const AuthProvider = ({ children }) => {
 
   // 3️⃣ gate the app until we know for sure
   if (loading) {
+    console.log('⏳ Still loading...', { session, user, userRole, error });
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-gray-600">Loading...</div>
@@ -75,6 +106,7 @@ export const AuthProvider = ({ children }) => {
     );
   }
 
+  console.log('🎉 AuthProvider ready:', { session, user, userRole, error });
   return (
     <AuthContext.Provider value={value}>
       {children}
