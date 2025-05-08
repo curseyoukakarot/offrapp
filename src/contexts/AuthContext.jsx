@@ -11,6 +11,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchUserRole = async (userId) => {
+    try {
+      console.log('Fetching user role for:', userId);
+      const role = await getUserRole(userId);
+      console.log('User role fetched:', role);
+      setUserRole(role);
+      return role;
+    } catch (err) {
+      console.error('Error fetching user role:', err);
+      setError(err.message);
+      // If we can't get the role, we should sign out the user
+      await supabase.auth.signOut();
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Initial session check
     const initializeAuth = async () => {
@@ -28,10 +44,7 @@ export const AuthProvider = ({ children }) => {
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user?.id) {
-          console.log('Fetching initial user role for:', initialSession.user.id);
-          const role = await getUserRole(initialSession.user.id);
-          console.log('Initial user role:', role);
-          setUserRole(role);
+          await fetchUserRole(initialSession.user.id);
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
@@ -52,10 +65,7 @@ export const AuthProvider = ({ children }) => {
         setUser(currentSession?.user ?? null);
 
         if (currentSession?.user?.id) {
-          console.log('Fetching user role for:', currentSession.user.id);
-          const role = await getUserRole(currentSession.user.id);
-          console.log('User role fetched:', role);
-          setUserRole(role);
+          await fetchUserRole(currentSession.user.id);
         } else {
           console.log('No user ID in session, setting role to null');
           setUserRole(null);
@@ -88,6 +98,11 @@ export const AuthProvider = ({ children }) => {
           
           console.log('Session refreshed successfully');
           setSession(refreshedSession);
+          
+          // Refresh the user role as well
+          if (refreshedSession?.user?.id) {
+            await fetchUserRole(refreshedSession.user.id);
+          }
         } else {
           console.log('No session to refresh');
         }
@@ -116,6 +131,7 @@ export const AuthProvider = ({ children }) => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         console.log('Sign out successful');
+        setUserRole(null);
       } catch (err) {
         console.error('Error signing out:', err);
         setError(err.message);

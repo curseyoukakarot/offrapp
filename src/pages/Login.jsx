@@ -48,30 +48,37 @@ const Login = () => {
 
       // Step 2: Get user role
       console.log('Fetching user role...');
-      const role = await getUserRole(signInData.user.id);
-      console.log('User role fetched:', role);
+      try {
+        const role = await getUserRole(signInData.user.id);
+        console.log('User role fetched:', role);
 
-      // Step 3: Redirect based on role
-      let redirectPath;
-      switch (role) {
-        case 'admin':
-          redirectPath = '/dashboard/admin';
-          break;
-        case 'recruitpro':
-          redirectPath = '/dashboard/recruitpro';
-          break;
-        case 'jobseeker':
-          redirectPath = '/dashboard/jobseeker';
-          break;
-        case 'client':
-          redirectPath = '/dashboard/client';
-          break;
-        default:
-          redirectPath = '/complete-profile';
+        // Step 3: Redirect based on role
+        let redirectPath;
+        switch (role) {
+          case 'admin':
+            redirectPath = '/dashboard/admin';
+            break;
+          case 'recruitpro':
+            redirectPath = '/dashboard/recruitpro';
+            break;
+          case 'jobseeker':
+            redirectPath = '/dashboard/jobseeker';
+            break;
+          case 'client':
+            redirectPath = '/dashboard/client';
+            break;
+          default:
+            redirectPath = '/complete-profile';
+        }
+
+        console.log('Redirecting to:', redirectPath);
+        navigate(redirectPath);
+      } catch (roleError) {
+        console.error('Error fetching user role:', roleError);
+        // Sign out the user since we can't determine their role
+        await supabase.auth.signOut();
+        setErrorMsg('Unable to determine user role. Please contact support.');
       }
-
-      console.log('Redirecting to:', redirectPath);
-      navigate(redirectPath);
     } catch (error) {
       console.error('Unexpected error during login:', error);
       setErrorMsg(error.message || 'An unexpected error occurred during login');
