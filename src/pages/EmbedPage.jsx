@@ -12,11 +12,26 @@ const EmbedPage = () => {
   const [role, setRole] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
 
+  // Add session listener
   useEffect(() => {
-    const fetchRole = async () => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session);
+      if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const initializePage = async () => {
       try {
+        setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('EmbedPage - Session:', session);
+        console.log('EmbedPage - Initial Session:', session);
         
         if (!session) {
           console.log('No session found, redirecting to login');
@@ -24,59 +39,38 @@ const EmbedPage = () => {
           return;
         }
 
-        if (session?.user?.id) {
-          const userRole = await getUserRole(session.user.id);
-          console.log('EmbedPage - User role:', userRole);
-          setRole(userRole);
-        } else {
-          setRole('guest');
-        }
-      } catch (error) {
-        console.error('Error fetching role:', error);
-        navigate('/login');
-      }
-    };
-    fetchRole();
-  }, [navigate]);
+        // Get user role
+        const userRole = await getUserRole(session.user.id);
+        console.log('EmbedPage - User role:', userRole);
+        setRole(userRole);
 
-  useEffect(() => {
-    const fetchEmbed = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('EmbedPage - Fetching embed with session:', session);
-        
-        if (!session) {
-          console.log('No session during embed fetch, redirecting to login');
-          navigate('/login');
-          return;
-        }
+        // Fetch embed data
+        const { data: embedData, error: embedError } = await supabase
+          .from('embeds')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-        const userId = session?.user?.id;
+        console.log('EmbedPage - Embed fetch result:', { data: embedData, error: embedError });
 
-        const { data, error } = await supabase.from('embeds').select('*').eq('id', id).single();
-        console.log('EmbedPage - Embed fetch result:', { data, error });
-        
-        if (error) {
-          console.error('Error fetching embed:', error);
+        if (embedError) {
+          console.error('Error fetching embed:', embedError);
           navigate('/');
           return;
         }
 
-        if (data) {
+        if (embedData) {
           let accessGranted = false;
-          // Check if user has access to this embed
-          if (data.embed_type === 'role') {
-            // For role-based embeds, check if user's role matches
-            accessGranted = data.role === role;
-            console.log('Role-based access check:', { userRole: role, embedRole: data.role, hasAccess: accessGranted });
-          } else if (data.embed_type === 'user') {
-            // For user-specific embeds, check if user ID matches
-            accessGranted = data.user_id === userId;
-            console.log('User-based access check:', { userId, embedUserId: data.user_id, hasAccess: accessGranted });
+          if (embedData.embed_type === 'role') {
+            accessGranted = embedData.role === userRole;
+            console.log('Role-based access check:', { userRole, embedRole: embedData.role, hasAccess: accessGranted });
+          } else if (embedData.embed_type === 'user') {
+            accessGranted = embedData.user_id === session.user.id;
+            console.log('User-based access check:', { userId: session.user.id, embedUserId: embedData.user_id, hasAccess: accessGranted });
           }
 
           if (accessGranted) {
-            setEmbed(data);
+            setEmbed(embedData);
             setHasAccess(true);
           } else {
             console.log('No access to embed, redirecting to home');
@@ -84,17 +78,15 @@ const EmbedPage = () => {
           }
         }
       } catch (error) {
-        console.error('Error in fetchEmbed:', error);
+        console.error('Error in initializePage:', error);
         navigate('/');
       } finally {
         setLoading(false);
       }
     };
 
-    if (role) {
-      fetchEmbed();
-    }
-  }, [id, role, navigate]);
+    initializePage();
+  }, [id, navigate]);
 
   if (loading) {
     return (
