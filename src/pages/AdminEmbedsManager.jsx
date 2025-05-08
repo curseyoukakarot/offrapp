@@ -27,6 +27,11 @@ export default function AdminEmbedsManager() {
     let isMounted = true;
     const fetchRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session:', session);
+      if (session?.access_token) {
+        console.log('JWT:', session.access_token);
+      }
+      
       if (!session) {
         navigate('/login');
         return;
@@ -34,6 +39,7 @@ export default function AdminEmbedsManager() {
       
       if (session?.user?.id) {
         const userRole = await getUserRole(session.user.id);
+        console.log('User role from database:', userRole);
         if (isMounted) {
           setRole(userRole);
           if (userRole !== 'admin') {
