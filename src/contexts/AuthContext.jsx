@@ -60,13 +60,16 @@ export const AuthProvider = ({ children }) => {
           const role = await getUserRole(currentSession.user.id);
           console.log('✅ Updated user role fetched:', role);
           setUserRole(role);
+          setLoading(false);
         } catch (roleError) {
           console.error('❌ Error fetching updated role:', roleError);
           setError(roleError.message);
+          setLoading(false);
         }
       } else {
         console.log('ℹ️ No user ID in current session');
         setUserRole(null);
+        setLoading(false);
       }
     });
 
