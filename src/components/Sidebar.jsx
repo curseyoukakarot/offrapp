@@ -1,30 +1,33 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
-const Sidebar = ({ role }) => {
-  const isAdmin = role === 'admin';
-  const isRecruitPro = role === 'recruitpro';
-  const isJobSeeker = role === 'jobseeker';
-  const isClient = role === 'client';
+const Sidebar = () => {
+  const { userRole, signOut } = useAuth();
   const navigate = useNavigate();
   const [embeds, setEmbeds] = useState([]);
 
+  const isAdmin = userRole === 'admin';
+  const isRecruitPro = userRole === 'recruitpro';
+  const isJobSeeker = userRole === 'jobseeker';
+  const isClient = userRole === 'client';
+
   const handleSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/login');
-  }, [navigate]);
+  }, [signOut, navigate]);
 
   useEffect(() => {
     const fetchEmbeds = async () => {
-      if (!role) return;
+      if (!userRole) return;
       
       // Fetch role-based embeds
       const { data: roleEmbeds, error: roleError } = await supabase
         .from('embeds')
         .select('*')
         .eq('embed_type', 'role')
-        .eq('role', role)
+        .eq('role', userRole)
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
@@ -46,10 +49,10 @@ const Sidebar = ({ role }) => {
       }
     };
     fetchEmbeds();
-  }, [role]);
+  }, [userRole]);
 
   const getRoleTitle = () => {
-    switch (role) {
+    switch (userRole) {
       case 'admin':
         return 'Admin Dashboard';
       case 'recruitpro':
@@ -65,7 +68,7 @@ const Sidebar = ({ role }) => {
 
   // Hardcoded dashboard route for each role
   const getDashboardRoute = () => {
-    switch (role) {
+    switch (userRole) {
       case 'admin':
         return '/dashboard/admin';
       case 'recruitpro':

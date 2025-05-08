@@ -49,39 +49,9 @@ const Login = () => {
         return;
       }
 
-      console.log('About to check database for user:', signInData.user.id);
-
-      // Direct database check for user and role
-      const { data: userData, error: dbError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', signInData.user.id)
-        .single();
-
-      console.log('Database check result:', { userData, dbError });
-
-      if (dbError) {
-        console.error('Database error:', dbError);
-        setErrorMsg('Error accessing user data. Please contact support.');
-        return;
-      }
-
-      if (!userData) {
-        console.error('No user found in database');
-        setErrorMsg('User account not found. Please contact support.');
-        return;
-      }
-
-      if (!userData.role) {
-        console.error('No role found for user');
-        setErrorMsg('User role not set. Please contact support.');
-        return;
-      }
-
-      console.log('Found user with role:', userData.role);
-
-      // Redirect based on role
-      switch (userData.role) {
+      // Get user role and redirect to appropriate dashboard
+      const role = await getUserRole(signInData.user.id);
+      switch (role) {
         case 'admin':
           navigate('/dashboard/admin');
           break;
@@ -95,79 +65,85 @@ const Login = () => {
           navigate('/dashboard/client');
           break;
         default:
-          setErrorMsg('Invalid user role. Please contact support.');
-          console.error('Invalid role:', userData.role);
-          await supabase.auth.signOut();
+          navigate('/complete-profile');
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
-      setErrorMsg('An unexpected error occurred. Please try again.');
+      console.error('Login error:', error);
+      setErrorMsg(error.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="mb-8">
-        <img 
-          src={offrAppLogo} 
-          alt="OffrApp Logo" 
-          className="h-16 w-auto"
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <img
+          className="mx-auto h-12 w-auto"
+          src={offrAppLogo}
+          alt="Career Kitchen"
         />
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h2>
       </div>
 
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome to Offr App
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
-          </p>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleLogin}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="text-red-600 text-sm">{errorMsg}</div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+            </div>
+          </form>
         </div>
-        {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{errorMsg}</span>
-          </div>
-        )}
-        <form onSubmit={handleLogin}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full border border-gray-300 p-3 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full border border-gray-300 p-3 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              loading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
       </div>
     </div>
   );
