@@ -57,20 +57,21 @@ const EmbedPage = () => {
       }
 
       if (data) {
+        let accessGranted = false;
         // Check if user has access to this embed
         if (data.embed_type === 'role') {
           // For role-based embeds, check if user's role matches
-          const hasRoleAccess = data.role === role;
-          console.log('Role-based access check:', { userRole: role, embedRole: data.role, hasAccess: hasRoleAccess });
-          setHasAccess(hasRoleAccess);
+          accessGranted = data.role === role;
+          console.log('Role-based access check:', { userRole: role, embedRole: data.role, hasAccess: accessGranted });
         } else if (data.embed_type === 'user') {
           // For user-specific embeds, check if user ID matches
-          const hasUserAccess = data.user_id === userId;
-          console.log('User-based access check:', { userId, embedUserId: data.user_id, hasAccess: hasUserAccess });
-          setHasAccess(hasUserAccess);
+          accessGranted = data.user_id === userId;
+          console.log('User-based access check:', { userId, embedUserId: data.user_id, hasAccess: accessGranted });
         }
 
-        if (hasAccess) {
+        setHasAccess(accessGranted);
+
+        if (accessGranted) {
           setEmbed(data);
         } else {
           console.log('No access to embed, redirecting to home');
