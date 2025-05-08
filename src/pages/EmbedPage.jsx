@@ -15,22 +15,40 @@ const EmbedPage = () => {
   useEffect(() => {
     const fetchRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('EmbedPage - Session:', session);
+      
+      if (!session) {
+        console.log('No session found, redirecting to login');
+        navigate('/login');
+        return;
+      }
+
       if (session?.user?.id) {
         const userRole = await getUserRole(session.user.id);
+        console.log('EmbedPage - User role:', userRole);
         setRole(userRole);
       } else {
         setRole('guest');
       }
     };
     fetchRole();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const fetchEmbed = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('EmbedPage - Fetching embed with session:', session);
+      
+      if (!session) {
+        console.log('No session during embed fetch, redirecting to login');
+        navigate('/login');
+        return;
+      }
+
       const userId = session?.user?.id;
 
       const { data, error } = await supabase.from('embeds').select('*').eq('id', id).single();
+      console.log('EmbedPage - Embed fetch result:', { data, error });
       
       if (error) {
         console.error('Error fetching embed:', error);
@@ -42,15 +60,20 @@ const EmbedPage = () => {
         // Check if user has access to this embed
         if (data.embed_type === 'role') {
           // For role-based embeds, check if user's role matches
-          setHasAccess(data.role === role);
+          const hasRoleAccess = data.role === role;
+          console.log('Role-based access check:', { userRole: role, embedRole: data.role, hasAccess: hasRoleAccess });
+          setHasAccess(hasRoleAccess);
         } else if (data.embed_type === 'user') {
           // For user-specific embeds, check if user ID matches
-          setHasAccess(data.user_id === userId);
+          const hasUserAccess = data.user_id === userId;
+          console.log('User-based access check:', { userId, embedUserId: data.user_id, hasAccess: hasUserAccess });
+          setHasAccess(hasUserAccess);
         }
 
         if (hasAccess) {
           setEmbed(data);
         } else {
+          console.log('No access to embed, redirecting to home');
           navigate('/');
         }
       }

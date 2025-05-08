@@ -79,11 +79,20 @@ export default function AdminEmbedsManager() {
   }
 
   async function fetchEmbeds() {
+    console.log('Fetching embeds...');
     const { data, error } = await supabase
       .from('embeds')
       .select('id, title, role, provider, url, sort_order, is_active, user_id, embed_type')
       .order('sort_order');
-    if (!error) setEmbeds(data);
+    
+    console.log('Embeds response:', { data, error });
+    
+    if (error) {
+      console.error('Error fetching embeds:', error);
+      setNotification({ type: 'error', message: 'Failed to fetch embeds. Please try again.' });
+    } else {
+      setEmbeds(data);
+    }
   }
 
   async function addEmbed() {
