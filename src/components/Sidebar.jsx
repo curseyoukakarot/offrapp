@@ -18,13 +18,32 @@ const Sidebar = ({ role }) => {
   useEffect(() => {
     const fetchEmbeds = async () => {
       if (!role) return;
-      const { data, error } = await supabase
+      
+      // Fetch role-based embeds
+      const { data: roleEmbeds, error: roleError } = await supabase
         .from('embeds')
         .select('*')
+        .eq('embed_type', 'role')
         .eq('role', role)
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
-      if (!error && Array.isArray(data)) setEmbeds(data);
+
+      // Fetch user-specific embeds
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      const { data: userEmbeds, error: userError } = await supabase
+        .from('embeds')
+        .select('*')
+        .eq('embed_type', 'user')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (!roleError && !userError) {
+        const allEmbeds = [...(roleEmbeds || []), ...(userEmbeds || [])];
+        setEmbeds(allEmbeds);
+      }
     };
     fetchEmbeds();
   }, [role]);

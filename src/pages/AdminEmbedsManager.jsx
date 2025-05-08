@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { getUserRole } from '../utils/getUserRole';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminEmbedsManager() {
   const [embeds, setEmbeds] = useState([]);
@@ -15,32 +16,43 @@ export default function AdminEmbedsManager() {
     sort_order: 0,
     is_active: true,
     user_id: null,
-    embed_type: 'role' // 'role' or 'user'
+    embed_type: 'role'
   });
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
     const fetchRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+      
       if (session?.user?.id) {
         const userRole = await getUserRole(session.user.id);
-        if (isMounted) setRole(userRole);
-      } else {
-        if (isMounted) setRole('guest');
+        if (isMounted) {
+          setRole(userRole);
+          if (userRole !== 'admin') {
+            navigate('/');
+          }
+        }
       }
       if (isMounted) setLoading(false);
     };
     fetchRole();
     return () => { isMounted = false; };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
-    fetchEmbeds();
-    fetchUsers();
-  }, []);
+    if (role === 'admin') {
+      fetchEmbeds();
+      fetchUsers();
+    }
+  }, [role]);
 
   async function fetchUsers() {
     const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
@@ -61,7 +73,10 @@ export default function AdminEmbedsManager() {
   }
 
   async function fetchEmbeds() {
-    const { data, error } = await supabase.from('embeds').select('*').order('sort_order');
+    const { data, error } = await supabase
+      .from('embeds')
+      .select('id, title, role, provider, url, sort_order, is_active, user_id, embed_type')
+      .order('sort_order');
     if (!error) setEmbeds(data);
   }
 
@@ -98,6 +113,10 @@ export default function AdminEmbedsManager() {
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen text-gray-600">Loading...</div>;
+  }
+
+  if (role !== 'admin') {
+    return null;
   }
 
   return (

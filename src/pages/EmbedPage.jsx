@@ -1,23 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { getUserRole } from '../utils/getUserRole';
 
 const EmbedPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [embed, setEmbed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    const fetchEmbed = async () => {
-      const { data, error } = await supabase.from('embeds').select('*').eq('id', id).single();
-      if (!error) setEmbed(data);
-      setLoading(false);
-    };
-    fetchEmbed();
-  }, [id]);
+  const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
     const fetchRole = async () => {
@@ -32,8 +25,50 @@ const EmbedPage = () => {
     fetchRole();
   }, []);
 
+  useEffect(() => {
+    const fetchEmbed = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      const { data, error } = await supabase.from('embeds').select('*').eq('id', id).single();
+      
+      if (error) {
+        console.error('Error fetching embed:', error);
+        navigate('/');
+        return;
+      }
+
+      if (data) {
+        // Check if user has access to this embed
+        if (data.embed_type === 'role') {
+          // For role-based embeds, check if user's role matches
+          setHasAccess(data.role === role);
+        } else if (data.embed_type === 'user') {
+          // For user-specific embeds, check if user ID matches
+          setHasAccess(data.user_id === userId);
+        }
+
+        if (hasAccess) {
+          setEmbed(data);
+        } else {
+          navigate('/');
+        }
+      }
+      
+      setLoading(false);
+    };
+
+    if (role) {
+      fetchEmbed();
+    }
+  }, [id, role, navigate, hasAccess]);
+
   if (loading || !embed) {
     return <div className="flex justify-center items-center h-screen text-gray-600">Loading embed...</div>;
+  }
+
+  if (!hasAccess) {
+    return <div className="flex justify-center items-center h-screen text-gray-600">You don't have access to this embed.</div>;
   }
 
   return (
