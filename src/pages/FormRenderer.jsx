@@ -7,7 +7,7 @@ import { getUserRole } from '../utils/getUserRole';
 
 const notifyZapier = async (formTitle, answers) => {
   // POST to your backend endpoint instead of Zapier directly
-  const backendUrl = 'https://offrapp.vercel.app/api/notify-zapier';
+  const backendUrl = 'https://offr.app/api/notify-zapier';
 
   // Map your form fields to the payload Zapier expects
   const payload = {
@@ -39,7 +39,7 @@ const notifyZapier = async (formTitle, answers) => {
 
 const notifySlack = async (formTitle, answers) => {
   // POST to your backend endpoint for Slack notification
-  const backendUrl = 'https://offrapp.vercel.app/api/notify-slack';
+  const backendUrl = 'https://offr.app/api/notify-slack';
 
   const payload = {
     firstName: answers["What is your first name?"] || '',
