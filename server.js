@@ -175,6 +175,5 @@ app.post('/api/send-welcome-email', async (req, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log('✅ API server running at http://localhost:3001');
-});
+// For Vercel deployment
+export default app;

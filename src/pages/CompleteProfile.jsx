@@ -38,7 +38,7 @@ const CompleteProfile = () => {
       .eq('id', user.id)
       .single();
     // Send welcome email using the existing user variable
-    await fetch('http://localhost:3001/api/send-welcome-email', {
+    await fetch('https://offrapp.vercel.app/api/send-welcome-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
