@@ -3,12 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { getUserRole } from '../utils/getUserRole';
-import { useSession } from '../components/SessionProvider';
 
 const EmbedPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { session } = useSession();
   const [embed, setEmbed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
@@ -17,17 +15,26 @@ const EmbedPage = () => {
   useEffect(() => {
     const initializePage = async () => {
       try {
-        if (!session) {
-          console.log('No session available');
+        setLoading(true);
+        
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          navigate('/login');
           return;
         }
 
-        setLoading(true);
-        console.log('EmbedPage - Using session:', session);
+        if (!session) {
+          console.log('No session found');
+          navigate('/login');
+          return;
+        }
 
-        // Get user role
-        const userRole = await getUserRole(session.user.id);
-        console.log('EmbedPage - User role:', userRole);
+        // Get user role from JWT
+        const userRole = session.user.user_metadata.role || 'guest';
+        console.log('User role from JWT:', userRole);
         setRole(userRole);
 
         // Fetch embed data
@@ -37,7 +44,7 @@ const EmbedPage = () => {
           .eq('id', id)
           .single();
 
-        console.log('EmbedPage - Embed fetch result:', { data: embedData, error: embedError });
+        console.log('Embed fetch result:', { data: embedData, error: embedError });
 
         if (embedError) {
           console.error('Error fetching embed:', embedError);
@@ -72,7 +79,19 @@ const EmbedPage = () => {
     };
 
     initializePage();
-  }, [id, navigate, session]);
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [id, navigate]);
 
   if (loading) {
     return (
