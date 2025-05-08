@@ -104,24 +104,6 @@ app.post('/api/sendSlackNotification', async (req, res) => {
   }
 });
 
-// Zapier notification endpoint
-app.post('/api/notify-zapier', async (req, res) => {
-  const payload = req.body;
-  const webhookUrl = 'https://hooks.zapier.com/hooks/catch/18279230/2nifu2l/';
-
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error('Failed to send to Zapier');
-    res.status(200).json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Add this near your other environment variables
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
