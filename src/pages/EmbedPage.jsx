@@ -3,41 +3,27 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { getUserRole } from '../utils/getUserRole';
+import { useSession } from '../components/SessionProvider';
 
 const EmbedPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { session } = useSession();
   const [embed, setEmbed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
 
-  // Add session listener
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session);
-      if (event === 'SIGNED_OUT') {
-        navigate('/login');
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
   useEffect(() => {
     const initializePage = async () => {
       try {
-        setLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('EmbedPage - Initial Session:', session);
-        
         if (!session) {
-          console.log('No session found, redirecting to login');
-          navigate('/login');
+          console.log('No session available');
           return;
         }
+
+        setLoading(true);
+        console.log('EmbedPage - Using session:', session);
 
         // Get user role
         const userRole = await getUserRole(session.user.id);
@@ -86,7 +72,7 @@ const EmbedPage = () => {
     };
 
     initializePage();
-  }, [id, navigate]);
+  }, [id, navigate, session]);
 
   if (loading) {
     return (
