@@ -131,6 +131,8 @@ function App() {
 
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/login" />} />
+          {/* Catch-all route for unknown paths */}
+          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Router>
     </AuthProvider>
