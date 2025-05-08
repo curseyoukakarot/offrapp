@@ -45,7 +45,7 @@ app.post('/api/invite', async (req, res) => {
     const result = await inviteUser(email, role);
 
     // ✅ Send Slack notification
-    const webhookUrl = 'https://hooks.slack.com/services/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';
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
     const slackMessage = {
       text: `🎉 *New user invited!*\n\n*Email:* ${email}\n*Role:* ${role}`,
     };
@@ -66,7 +66,7 @@ app.post('/api/invite', async (req, res) => {
 app.post('/api/sendSlackNotification', async (req, res) => {
   const { fullName, formTitle, createdAt, fileUrl } = req.body;
 
-  const webhookUrl = 'https://hooks.slack.com/services/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';
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
   const messageBlocks = [
     {
@@ -107,7 +107,7 @@ app.post('/api/sendSlackNotification', async (req, res) => {
 // Zapier notification endpoint
 app.post('/api/notify-zapier', async (req, res) => {
   const payload = req.body;
-  const webhookUrl = 'https://hooks.zapier.com/hooks/catch/18279230/2nmupn1/';
+  const webhookUrl = 'https://hooks.zapier.com/hooks/catch/18279230/2nifu2l/';
 
   try {
     const response = await fetch(webhookUrl, {

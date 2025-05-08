@@ -7,7 +7,7 @@ export default async (req, res) => {
 
   const { fullName, formTitle, createdAt, fileUrl } = req.body;
 
-  const webhookUrl = 'https://hooks.slack.com/services/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'; // 👈 REPLACE ME
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
   const messageBlocks = [
     {
