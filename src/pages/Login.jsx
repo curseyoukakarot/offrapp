@@ -15,7 +15,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    console.log('Attempting login with:', email, password);
+    console.log('Starting login process...');
 
     try {
       // Check if Supabase client is properly initialized
@@ -26,50 +26,55 @@ const Login = () => {
       }
 
       // Step 1: Sign in with password
+      console.log('Attempting to sign in with email:', email);
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
       });
       
-      console.log('Step 1 - Sign in response:', { 
-        success: !!signInData?.user,
-        error: signInError?.message,
-        userId: signInData?.user?.id
-      });
-
       if (signInError) {
+        console.error('Sign in error:', signInError);
         setErrorMsg(signInError.message);
-        console.error('Login error:', signInError.message);
         return;
       }
 
       if (!signInData?.user) {
+        console.error('No user data in sign in response');
         setErrorMsg('No user data received. Please try again.');
-        console.error('No user data in response');
         return;
       }
 
-      // Get user role and redirect to appropriate dashboard
+      console.log('Sign in successful for user:', signInData.user.id);
+
+      // Step 2: Get user role
+      console.log('Fetching user role...');
       const role = await getUserRole(signInData.user.id);
+      console.log('User role fetched:', role);
+
+      // Step 3: Redirect based on role
+      let redirectPath;
       switch (role) {
         case 'admin':
-          navigate('/dashboard/admin');
+          redirectPath = '/dashboard/admin';
           break;
         case 'recruitpro':
-          navigate('/dashboard/recruitpro');
+          redirectPath = '/dashboard/recruitpro';
           break;
         case 'jobseeker':
-          navigate('/dashboard/jobseeker');
+          redirectPath = '/dashboard/jobseeker';
           break;
         case 'client':
-          navigate('/dashboard/client');
+          redirectPath = '/dashboard/client';
           break;
         default:
-          navigate('/complete-profile');
+          redirectPath = '/complete-profile';
       }
+
+      console.log('Redirecting to:', redirectPath);
+      navigate(redirectPath);
     } catch (error) {
-      console.error('Login error:', error);
-      setErrorMsg(error.message || 'An error occurred during login');
+      console.error('Unexpected error during login:', error);
+      setErrorMsg(error.message || 'An unexpected error occurred during login');
     } finally {
       setLoading(false);
     }

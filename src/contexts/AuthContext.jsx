@@ -15,12 +15,22 @@ export const AuthProvider = ({ children }) => {
     // Initial session check
     const initializeAuth = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('Initializing auth...');
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error getting initial session:', sessionError);
+          throw sessionError;
+        }
+
+        console.log('Initial session:', initialSession ? 'Found' : 'Not found');
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user?.id) {
+          console.log('Fetching initial user role for:', initialSession.user.id);
           const role = await getUserRole(initialSession.user.id);
+          console.log('Initial user role:', role);
           setUserRole(role);
         }
       } catch (err) {
@@ -35,42 +45,60 @@ export const AuthProvider = ({ children }) => {
 
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log('Auth state changed:', event);
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      console.log('Auth state changed:', event, currentSession ? 'Session exists' : 'No session');
+      
+      try {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
-      if (currentSession?.user?.id) {
-        try {
+        if (currentSession?.user?.id) {
+          console.log('Fetching user role for:', currentSession.user.id);
           const role = await getUserRole(currentSession.user.id);
+          console.log('User role fetched:', role);
           setUserRole(role);
-        } catch (err) {
-          console.error('Error fetching user role:', err);
-          setError(err.message);
+        } else {
+          console.log('No user ID in session, setting role to null');
+          setUserRole(null);
         }
-      } else {
-        setUserRole(null);
+      } catch (err) {
+        console.error('Error in auth state change handler:', err);
+        setError(err.message);
       }
     });
 
     // Set up session refresh listener
     const refreshInterval = setInterval(async () => {
       try {
+        console.log('Attempting to refresh session...');
         const { data: { session: currentSession }, error: refreshError } = await supabase.auth.getSession();
         
-        if (refreshError) throw refreshError;
+        if (refreshError) {
+          console.error('Error getting current session for refresh:', refreshError);
+          throw refreshError;
+        }
         
         if (currentSession) {
+          console.log('Refreshing session for user:', currentSession.user.id);
           const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError) throw refreshError;
+          
+          if (refreshError) {
+            console.error('Error refreshing session:', refreshError);
+            throw refreshError;
+          }
+          
+          console.log('Session refreshed successfully');
           setSession(refreshedSession);
+        } else {
+          console.log('No session to refresh');
         }
       } catch (err) {
-        console.error('Error refreshing session:', err);
+        console.error('Error in session refresh:', err);
         setError(err.message);
       }
     }, 1000 * 60 * 30); // Refresh every 30 minutes
 
     return () => {
+      console.log('Cleaning up auth listeners');
       subscription.unsubscribe();
       clearInterval(refreshInterval);
     };
@@ -82,7 +110,17 @@ export const AuthProvider = ({ children }) => {
     userRole,
     loading,
     error,
-    signOut: () => supabase.auth.signOut(),
+    signOut: async () => {
+      try {
+        console.log('Signing out...');
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        console.log('Sign out successful');
+      } catch (err) {
+        console.error('Error signing out:', err);
+        setError(err.message);
+      }
+    },
   };
 
   return (
