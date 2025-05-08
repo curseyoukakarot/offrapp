@@ -51,8 +51,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 function App() {
   return (
     <AuthProvider>
-      <SessionProvider>
-        <Router>
+      <Router>
+        <SessionProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             
@@ -136,8 +136,8 @@ function App() {
             {/* Catch-all route for unknown paths */}
             <Route path="*" element={<Navigate to="/login" />} />
           </Routes>
-        </Router>
-      </SessionProvider>
+        </SessionProvider>
+      </Router>
     </AuthProvider>
   );
 }

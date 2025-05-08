@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const SessionContext = createContext(null);
 
@@ -16,6 +16,7 @@ export const SessionProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Get initial session
@@ -23,13 +24,20 @@ export const SessionProvider = ({ children }) => {
       console.log('Initial session:', session);
       setSession(session);
       setLoading(false);
+
+      // Only redirect to login if we're not already on the login page
+      if (!session && location.pathname !== '/login') {
+        navigate('/login');
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state changed:', _event, session);
       setSession(session);
-      if (!session) {
+      
+      // Only redirect to login if we're not already on the login page
+      if (!session && location.pathname !== '/login') {
         navigate('/login');
       }
     });
@@ -37,14 +45,15 @@ export const SessionProvider = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
   const value = {
     session,
     loading,
   };
 
-  if (loading) {
+  // Don't show loading screen on login page
+  if (loading && location.pathname !== '/login') {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-gray-600">Loading...</div>
