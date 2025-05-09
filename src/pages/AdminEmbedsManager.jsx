@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
-import { getUserRole } from '../utils/getUserRole';
 import { useNavigate } from 'react-router-dom';
 
 const AdminEmbedsManager = () => {
@@ -36,37 +35,14 @@ const AdminEmbedsManager = () => {
     
     console.log('User role from JWT:', jwtRole);
     setRole(jwtRole);
-  }, [user]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session:', session);
-      if (session?.access_token) {
-        console.log('JWT:', session.access_token);
-      }
-      
-      if (!session) {
-        navigate('/login');
-        return;
-      }
-      
-      if (session?.user?.id) {
-        const userRole = await getUserRole(session.user.id);
-        console.log('User role from database:', userRole);
-        if (isMounted) {
-          setRole(userRole);
-          if (userRole !== 'admin') {
-            navigate('/');
-          }
-        }
-      }
-      if (isMounted) setLoading(false);
-    };
-    fetchRole();
-    return () => { isMounted = false; };
-  }, [navigate]);
+    
+    // Redirect if not admin
+    if (jwtRole !== 'admin') {
+      navigate('/');
+    }
+    
+    setLoading(false);
+  }, [user, navigate]);
 
   useEffect(() => {
     if (role === 'admin') {
