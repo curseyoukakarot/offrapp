@@ -1,14 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Methods': '*',
+  'Content-Type': 'application/json',
+};
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('OK', {
       status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': '*',
-      },
+      headers: corsHeaders,
     });
   }
   console.log('🔔 Function hit');
@@ -21,7 +24,10 @@ serve(async (req: Request) => {
     console.error('❌ Invalid JSON:', e);
     return new Response(
       JSON.stringify({ success: false, error: 'Invalid JSON input' }),
-      { status: 400 }
+      { 
+        status: 400,
+        headers: corsHeaders
+      }
     );
   }
 
@@ -52,7 +58,13 @@ serve(async (req: Request) => {
 
   if (!authRes.ok) {
     console.error('❌ Auth user error:', authData);
-    return new Response(JSON.stringify({ success: false, error: authData }), { status: 400 });
+    return new Response(
+      JSON.stringify({ success: false, error: authData }), 
+      { 
+        status: 400,
+        headers: corsHeaders
+      }
+    );
   }
 
   const userId = authData.id;
@@ -74,9 +86,13 @@ serve(async (req: Request) => {
   console.log('📥 Insert result:', insertText);
 
   if (!insertRes.ok) {
-    return new Response(JSON.stringify({ success: false, error: insertText }), {
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: insertText }), 
+      {
+        status: 400,
+        headers: corsHeaders
+      }
+    );
   }
 
   console.log('✅ Returning success for user:', userId);
@@ -88,10 +104,7 @@ serve(async (req: Request) => {
     }),
     {
       status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
+      headers: corsHeaders
     }
   );
 });

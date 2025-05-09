@@ -147,12 +147,26 @@ app.post('/api/send-welcome-email', async (req, res) => {
   };
 
   try {
+    // Send welcome email
     await sgMail.send(msg);
-    // Optionally update the profile to mark email as sent
-    await supabase.from('profiles').update({ welcome_email_sent: true }).eq('id', user_id);
+    console.log('✅ Welcome email sent successfully to:', email);
+
+    // Update profile to mark email as sent
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ welcome_email_sent: true })
+      .eq('id', user_id)
+      .select();
+
+    if (error) {
+      console.error('❌ Error updating welcome_email_sent flag:', error);
+      throw error;
+    }
+
+    console.log('✅ Profile updated successfully:', data);
     res.json({ success: true });
   } catch (error) {
-    console.error('SendGrid error:', error.response?.body || error.message);
+    console.error('❌ Error in send-welcome-email:', error.response?.body || error.message);
     res.status(500).json({ error: error.response?.body || error.message });
   }
 });
