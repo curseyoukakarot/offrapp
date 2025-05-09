@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
-import { getUserRole } from '../utils/getUserRole';
+import { useUser } from '../lib/useUser';
 
 const UsersList = () => {
+  const { user } = useUser();
   const [users, setUsers] = useState([]);
   const [profiles, setProfiles] = useState({});
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -17,20 +18,17 @@ const UsersList = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        const userRole = await getUserRole(session.user.id);
-        if (isMounted) setRole(userRole);
-      } else {
-        if (isMounted) setRole('guest');
-      }
-      if (isMounted) setLoading(false);
-    };
-    fetchRole();
-    return () => { isMounted = false; };
-  }, []);
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+  }, [user]);
 
   const fetchUsers = async () => {
     const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });

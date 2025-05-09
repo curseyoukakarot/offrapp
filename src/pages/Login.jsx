@@ -1,15 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { getUserRole } from '../utils/getUserRole';
+import { useUser } from '../lib/useUser';
 import offrAppLogo from '../assets/images/offrapp-logo.png';
 
 const Login = () => {
+  const { user } = useUser();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      // Get role from JWT
+      const jwtRole = 
+        user.app_metadata?.role ??
+        user.user_metadata?.role ??
+        'authenticated';
+      
+      console.log('User role from JWT:', jwtRole);
+      
+      // Redirect based on role
+      switch (jwtRole) {
+        case 'admin':
+          navigate('/dashboard/admin');
+          break;
+        case 'recruitpro':
+          navigate('/dashboard/recruitpro');
+          break;
+        case 'jobseeker':
+          navigate('/dashboard/jobseeker');
+          break;
+        case 'client':
+          navigate('/dashboard/client');
+          break;
+        default:
+          navigate('/dashboard');
+      }
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

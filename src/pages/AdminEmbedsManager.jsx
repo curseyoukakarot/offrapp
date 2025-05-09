@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
+import { useUser } from '../lib/useUser';
 import { getUserRole } from '../utils/getUserRole';
 import { useNavigate } from 'react-router-dom';
 
-export default function AdminEmbedsManager() {
+const AdminEmbedsManager = () => {
+  const { user } = useUser();
   const [embeds, setEmbeds] = useState([]);
   const [users, setUsers] = useState([]);
   const [profiles, setProfiles] = useState({});
@@ -22,6 +24,19 @@ export default function AdminEmbedsManager() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+  }, [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -245,3 +260,5 @@ export default function AdminEmbedsManager() {
     </div>
   );
 }
+
+export default AdminEmbedsManager;

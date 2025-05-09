@@ -1,29 +1,27 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
-import { getUserRole } from '../utils/getUserRole';
+import { useUser } from '../lib/useUser';
 
 const UserFiles = () => {
-  const [session, setSession] = useState(null);
-  const [role, setRole] = useState(null);
+  const { user } = useUser();
   const [files, setFiles] = useState([]);
-  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState(null);
+  const [file, setFile] = useState(null);
 
   useEffect(() => {
-    const loadSessionAndRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (session?.user?.id) {
-        const userRole = await getUserRole(session.user.id);
-        setRole(userRole);
-      } else {
-        setRole('guest');
-      }
-      setLoading(false);
-    };
-    loadSessionAndRole();
-  }, []);
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+  }, [user]);
 
   const fetchFiles = async () => {
     const { data: { session } } = await supabase.auth.getSession();

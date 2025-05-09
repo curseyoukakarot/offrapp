@@ -6,28 +6,27 @@ import { useNavigate } from 'react-router-dom';
 import FileUpload from '../components/FileUpload';
 import UserManager from '../components/UserManager';
 import { useEffect, useState } from 'react';
-import { getUserRole } from '../utils/getUserRole';
+import { useUser } from '../lib/useUser';
 
 const Dashboard = () => {
+  const { user } = useUser();
   const navigate = useNavigate();
-  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        const userRole = await getUserRole(session.user.id);
-        if (isMounted) setRole(userRole);
-      } else {
-        if (isMounted) setRole('guest');
-      }
-      if (isMounted) setLoading(false);
-    };
-    fetchRole();
-    return () => { isMounted = false; };
-  }, []);
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+    setLoading(false);
+  }, [user]);
 
   useEffect(() => {
     const checkProfile = async () => {

@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import FormAssignRoles from './FormAssignRoles'; // make sure this is imported!
 import { getUserRole } from '../utils/getUserRole';
+import { useUser } from '../lib/useUser';
 
 const FormsList = () => {
+  const { user } = useUser();
   const [forms, setForms] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredForms, setFilteredForms] = useState([]);
@@ -21,20 +23,17 @@ const FormsList = () => {
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        const userRole = await getUserRole(session.user.id);
-        if (isMounted) setRole(userRole);
-      } else {
-        if (isMounted) setRole('guest');
-      }
-      if (isMounted) setLoading(false);
-    };
-    fetchRole();
-    return () => { isMounted = false; };
-  }, []);
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+  }, [user]);
 
   const fetchForms = async () => {
     const { data, error } = await supabase.from('forms').select('*').order('created_at', { ascending: false });

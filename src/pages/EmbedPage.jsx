@@ -3,14 +3,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { getUserRole } from '../utils/getUserRole';
+import { useUser } from '../lib/useUser';
 
 const EmbedPage = () => {
+  const { user } = useUser();
   const { id } = useParams();
   const navigate = useNavigate();
   const [embed, setEmbed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+  }, [user]);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -32,11 +47,6 @@ const EmbedPage = () => {
           return;
         }
 
-        // Get user role from JWT
-        const userRole = session.user.user_metadata.role || 'guest';
-        console.log('User role from JWT:', userRole);
-        setRole(userRole);
-
         // Fetch embed data
         const { data: embedData, error: embedError } = await supabase
           .from('embeds')
@@ -55,8 +65,8 @@ const EmbedPage = () => {
         if (embedData) {
           let accessGranted = false;
           if (embedData.embed_type === 'role') {
-            accessGranted = embedData.role === userRole;
-            console.log('Role-based access check:', { userRole, embedRole: embedData.role, hasAccess: accessGranted });
+            accessGranted = embedData.role === role;
+            console.log('Role-based access check:', { userRole: role, embedRole: embedData.role, hasAccess: accessGranted });
           } else if (embedData.embed_type === 'user') {
             accessGranted = embedData.user_id === session.user.id;
             console.log('User-based access check:', { userId: session.user.id, embedUserId: embedData.user_id, hasAccess: accessGranted });
@@ -91,7 +101,7 @@ const EmbedPage = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [id, navigate]);
+  }, [id, navigate, role]);
 
   if (loading) {
     return (

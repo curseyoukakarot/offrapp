@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
-import { getUserRole } from '../utils/getUserRole';
 
 const notifyZapier = async (formTitle, answers) => {
   // POST to your backend endpoint instead of Zapier directly
@@ -77,18 +76,19 @@ const FormRenderer = () => {
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [role, setRole] = useState(null);
-  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRole = async () => {
-      if (user?.id) {
-        const userRole = await getUserRole(user.id);
-        setRole(userRole);
-      }
-      setRoleLoading(false);
-    };
-    fetchRole();
-  }, [user?.id]);
+    if (!user) return;
+    
+    // Get role from JWT
+    const jwtRole = 
+      user.app_metadata?.role ??
+      user.user_metadata?.role ??
+      'authenticated';
+    
+    console.log('User role from JWT:', jwtRole);
+    setRole(jwtRole);
+  }, [user]);
 
   useEffect(() => {
     if (!user?.id || !role) return;
@@ -171,7 +171,7 @@ const FormRenderer = () => {
     alert('Form submitted successfully!');
   };
 
-  if (loading || roleLoading) return <div className="p-6">Loading form...</div>;
+  if (loading) return <div className="p-6">Loading form...</div>;
   if (!hasAccess)
     return <div className="p-6 text-red-500">🚫 You do not have access to this form.</div>;
 
