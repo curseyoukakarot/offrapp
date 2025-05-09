@@ -28,31 +28,35 @@ const UsersList = () => {
     
     console.log('User role from JWT:', jwtRole);
     setRole(jwtRole);
+    fetchUsers(); // Move fetchUsers here so it runs after we have the role
   }, [user]);
 
   const fetchUsers = async () => {
-    const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-    if (error) console.error('Error fetching users:', error.message);
-    else {
-      setUsers(usersData);
-      setFilteredUsers(usersData);
-      // Fetch all profiles for these users
-      const userIds = usersData.map(u => u.id);
-      const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
-      // Map profiles by user id
-      const profilesMap = {};
-      if (profilesData) {
-        profilesData.forEach(profile => {
-          profilesMap[profile.id] = profile;
-        });
+    try {
+      const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching users:', error.message);
+      } else {
+        setUsers(usersData);
+        setFilteredUsers(usersData);
+        // Fetch all profiles for these users
+        const userIds = usersData.map(u => u.id);
+        const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
+        // Map profiles by user id
+        const profilesMap = {};
+        if (profilesData) {
+          profilesData.forEach(profile => {
+            profilesMap[profile.id] = profile;
+          });
+        }
+        setProfiles(profilesMap);
       }
-      setProfiles(profilesMap);
+    } catch (error) {
+      console.error('Error in fetchUsers:', error);
+    } finally {
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
 
   const handleDeleteUser = async (id) => {
     const confirmed = window.confirm('Are you sure you want to delete this user?');

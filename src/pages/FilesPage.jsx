@@ -23,31 +23,37 @@ const FilesPage = () => {
     
     console.log('User role from JWT:', jwtRole);
     setRole(jwtRole);
+    fetchFiles();
+    fetchUsers();
   }, [user]);
 
   const fetchFiles = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    const { data } = await supabase
-      .from('files')
-      .select('*')
-      .order('created_at', { ascending: false });
+      const { data } = await supabase
+        .from('files')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    setFiles(data || []);
+      setFiles(data || []);
+    } catch (error) {
+      console.error('Error in fetchFiles:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    fetchFiles();
-
-    const fetchUsers = async () => {
+  const fetchUsers = async () => {
+    try {
       const { data } = await supabase.from('users').select('id, email');
       setUsers(data || []);
-    };
-
-    fetchUsers();
-  }, []);
+    } catch (error) {
+      console.error('Error in fetchUsers:', error);
+    }
+  };
 
   const handleAdminUpload = async (e) => {
     e.preventDefault();
