@@ -3,7 +3,6 @@ import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import FormAssignRoles from './FormAssignRoles'; // make sure this is imported!
-import { getUserRole } from '../utils/getUserRole';
 import { useUser } from '../lib/useUser';
 
 const FormsList = () => {

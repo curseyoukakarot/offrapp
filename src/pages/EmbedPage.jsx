@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
-import { getUserRole } from '../utils/getUserRole';
 import { useUser } from '../lib/useUser';
 
 const EmbedPage = () => {

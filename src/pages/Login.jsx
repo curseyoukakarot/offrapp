@@ -77,39 +77,35 @@ const Login = () => {
 
       console.log('Sign in successful for user:', signInData.user.id);
 
-      // Step 2: Get user role
-      console.log('Fetching user role...');
-      try {
-        const role = await getUserRole(signInData.user.id);
-        console.log('User role fetched:', role);
+      // Get role from JWT
+      const jwtRole = 
+        signInData.user.app_metadata?.role ??
+        signInData.user.user_metadata?.role ??
+        'authenticated';
+      
+      console.log('User role from JWT:', jwtRole);
 
-        // Step 3: Redirect based on role
-        let redirectPath;
-        switch (role) {
-          case 'admin':
-            redirectPath = '/dashboard/admin';
-            break;
-          case 'recruitpro':
-            redirectPath = '/dashboard/recruitpro';
-            break;
-          case 'jobseeker':
-            redirectPath = '/dashboard/jobseeker';
-            break;
-          case 'client':
-            redirectPath = '/dashboard/client';
-            break;
-          default:
-            redirectPath = '/complete-profile';
-        }
-
-        console.log('Redirecting to:', redirectPath);
-        navigate(redirectPath);
-      } catch (roleError) {
-        console.error('Error fetching user role:', roleError);
-        // Sign out the user since we can't determine their role
-        await supabase.auth.signOut();
-        setErrorMsg('Unable to determine user role. Please contact support.');
+      // Redirect based on role
+      let redirectPath;
+      switch (jwtRole) {
+        case 'admin':
+          redirectPath = '/dashboard/admin';
+          break;
+        case 'recruitpro':
+          redirectPath = '/dashboard/recruitpro';
+          break;
+        case 'jobseeker':
+          redirectPath = '/dashboard/jobseeker';
+          break;
+        case 'client':
+          redirectPath = '/dashboard/client';
+          break;
+        default:
+          redirectPath = '/complete-profile';
       }
+
+      console.log('Redirecting to:', redirectPath);
+      navigate(redirectPath);
     } catch (error) {
       console.error('Unexpected error during login:', error);
       setErrorMsg(error.message || 'An unexpected error occurred during login');
