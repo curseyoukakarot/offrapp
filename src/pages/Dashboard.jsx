@@ -13,6 +13,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
+  const [showProfileBanner, setShowProfileBanner] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -26,7 +27,20 @@ const Dashboard = () => {
     console.log('User role from JWT:', jwtRole);
     setRole(jwtRole);
     setLoading(false);
+    // Check if profile is incomplete
+    checkProfileCompleteness(user.id);
   }, [user]);
+
+  const checkProfileCompleteness = async (userId) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!profile || !profile.first_name || !profile.last_name) {
+      setShowProfileBanner(true);
+    }
+  };
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -55,6 +69,14 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {showProfileBanner && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 flex items-center justify-between">
+          <span>
+            <strong>Complete your profile!</strong> For a better experience, please <button className="underline text-blue-700" onClick={() => navigate('/complete-profile')}>add your contact info</button>.
+          </span>
+          <button onClick={() => setShowProfileBanner(false)} className="ml-4 text-yellow-700 hover:text-yellow-900">Dismiss</button>
+        </div>
+      )}
       <Sidebar role={role} />
       <main className="flex-1 ml-64 relative">
         {/* 🔴 Logout Button */}

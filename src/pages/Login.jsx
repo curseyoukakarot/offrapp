@@ -27,14 +27,7 @@ const Login = () => {
         .eq('id', userId)
         .maybeSingle();
 
-      // 2. If no profile or missing required fields, redirect to complete-profile
-      if (!profile || !profile.first_name || !profile.last_name) {
-        console.log('Profile incomplete, redirecting to complete-profile');
-        navigate('/complete-profile');
-        return;
-      }
-
-      // 3. Get the user\'s role from the users table
+      // 2. Get the user's role from the users table
       const { data: userRow } = await supabase
         .from('users')
         .select('role')
@@ -43,7 +36,7 @@ const Login = () => {
 
       const role = userRow?.role || 'authenticated';
 
-      // 4. Redirect based on role
+      // 3. Redirect based on role (no forced profile completion)
       switch (role) {
         case 'admin':
           navigate('/dashboard/admin');
