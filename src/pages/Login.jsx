@@ -14,42 +14,36 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      // Get role from JWT
-      const jwtRole = 
-        user.app_metadata?.role ??
-        user.user_metadata?.role ??
-        'authenticated';
-      
-      console.log('User role from JWT:', jwtRole);
-      
-      // Check if user has a profile
-      checkProfileAndRedirect(user.id, jwtRole);
+      checkProfileAndRedirect(user.id);
     }
   }, [user, navigate]);
 
-  const checkProfileAndRedirect = async (userId, role) => {
+  const checkProfileAndRedirect = async (userId) => {
     try {
-      // Check if user has a profile
-      const { data: profile, error } = await supabase
+      // 1. Check if user has a profile
+      const { data: profile } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error checking profile:', error);
-        return;
-      }
-
-      // If no profile or missing required fields, redirect to complete-profile
+      // 2. If no profile or missing required fields, redirect to complete-profile
       if (!profile || !profile.first_name || !profile.last_name) {
         console.log('Profile incomplete, redirecting to complete-profile');
         navigate('/complete-profile');
         return;
       }
 
-      // Profile exists, redirect based on role
-      console.log('Profile complete, redirecting based on role:', role);
+      // 3. Get the user\'s role from the users table
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const role = userRow?.role || 'authenticated';
+
+      // 4. Redirect based on role
       switch (role) {
         case 'admin':
           navigate('/dashboard/admin');
@@ -67,8 +61,8 @@ const Login = () => {
           navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Error in profile check:', error);
-      setErrorMsg('Error checking profile status');
+      console.error('Error in profile or role check:', error);
+      setErrorMsg('Error checking profile or role status');
     }
   };
 
@@ -107,16 +101,8 @@ const Login = () => {
 
       console.log('Sign in successful for user:', signInData.user.id);
 
-      // Get role from JWT
-      const jwtRole = 
-        signInData.user.app_metadata?.role ??
-        signInData.user.user_metadata?.role ??
-        'authenticated';
-      
-      console.log('User role from JWT:', jwtRole);
-
       // Check profile and redirect accordingly
-      await checkProfileAndRedirect(signInData.user.id, jwtRole);
+      await checkProfileAndRedirect(signInData.user.id);
     } catch (error) {
       console.error('Unexpected error during login:', error);
       setErrorMsg(error.message || 'An unexpected error occurred during login');
