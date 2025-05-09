@@ -22,8 +22,35 @@ const Login = () => {
       
       console.log('User role from JWT:', jwtRole);
       
-      // Redirect based on role
-      switch (jwtRole) {
+      // Check if user has a profile
+      checkProfileAndRedirect(user.id, jwtRole);
+    }
+  }, [user, navigate]);
+
+  const checkProfileAndRedirect = async (userId, role) => {
+    try {
+      // Check if user has a profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking profile:', error);
+        return;
+      }
+
+      // If no profile or missing required fields, redirect to complete-profile
+      if (!profile || !profile.first_name || !profile.last_name) {
+        console.log('Profile incomplete, redirecting to complete-profile');
+        navigate('/complete-profile');
+        return;
+      }
+
+      // Profile exists, redirect based on role
+      console.log('Profile complete, redirecting based on role:', role);
+      switch (role) {
         case 'admin':
           navigate('/dashboard/admin');
           break;
@@ -39,8 +66,11 @@ const Login = () => {
         default:
           navigate('/dashboard');
       }
+    } catch (error) {
+      console.error('Error in profile check:', error);
+      setErrorMsg('Error checking profile status');
     }
-  }, [user, navigate]);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -85,27 +115,8 @@ const Login = () => {
       
       console.log('User role from JWT:', jwtRole);
 
-      // Redirect based on role
-      let redirectPath;
-      switch (jwtRole) {
-        case 'admin':
-          redirectPath = '/dashboard/admin';
-          break;
-        case 'recruitpro':
-          redirectPath = '/dashboard/recruitpro';
-          break;
-        case 'jobseeker':
-          redirectPath = '/dashboard/jobseeker';
-          break;
-        case 'client':
-          redirectPath = '/dashboard/client';
-          break;
-        default:
-          redirectPath = '/complete-profile';
-      }
-
-      console.log('Redirecting to:', redirectPath);
-      navigate(redirectPath);
+      // Check profile and redirect accordingly
+      await checkProfileAndRedirect(signInData.user.id, jwtRole);
     } catch (error) {
       console.error('Unexpected error during login:', error);
       setErrorMsg(error.message || 'An unexpected error occurred during login');
