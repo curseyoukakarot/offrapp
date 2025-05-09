@@ -17,18 +17,19 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    
-    // Get role from JWT
-    const jwtRole = 
-      user.app_metadata?.role ??
-      user.user_metadata?.role ??
-      'authenticated';
-    
-    console.log('User role from JWT:', jwtRole);
-    setRole(jwtRole);
-    setLoading(false);
-    // Check if profile is incomplete
-    checkProfileCompleteness(user.id);
+    // Fetch role from users table
+    const fetchRole = async () => {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      setRole(userRow?.role || 'authenticated');
+      setLoading(false);
+      // Check if profile is incomplete
+      checkProfileCompleteness(user.id);
+    };
+    fetchRole();
   }, [user]);
 
   const checkProfileCompleteness = async (userId) => {
@@ -41,22 +42,6 @@ const Dashboard = () => {
       setShowProfileBanner(true);
     }
   };
-
-  useEffect(() => {
-    const checkProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user.id)
-        .single();
-      if (!profile || !profile.first_name || !profile.last_name) {
-        navigate('/complete-profile');
-      }
-    };
-    checkProfile();
-  }, [navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
