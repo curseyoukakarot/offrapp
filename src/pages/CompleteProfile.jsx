@@ -20,6 +20,7 @@ const CompleteProfile = () => {
       setLoading(false);
       return;
     }
+    // Upsert profile
     const { error: upsertError } = await supabase.from('profiles').upsert({
       id: user.id,
       first_name: firstName,
@@ -31,12 +32,28 @@ const CompleteProfile = () => {
       setLoading(false);
       return;
     }
+    // Re-fetch the profile to ensure it's updated
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profileError || !profile || !profile.first_name || !profile.last_name) {
+      setError('Profile not saved correctly. Please try again.');
+      setLoading(false);
+      return;
+    }
     // Fetch user role from users table
-    const { data: userData } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+    if (userError || !userData?.role) {
+      setError('Could not determine user role. Please contact support.');
+      setLoading(false);
+      return;
+    }
     // Send welcome email using the existing user variable
     await fetch('https://offr.app/api/send-welcome-email', {
       method: 'POST',
@@ -47,7 +64,8 @@ const CompleteProfile = () => {
         user_id: user.id
       }),
     });
-    switch (userData?.role) {
+    // Redirect based on role
+    switch (userData.role) {
       case 'admin':
         navigate('/dashboard/admin');
         break;
@@ -63,6 +81,7 @@ const CompleteProfile = () => {
       default:
         navigate('/dashboard');
     }
+    setLoading(false);
   };
 
   return (
