@@ -32,17 +32,23 @@ const FormsList = () => {
     
     console.log('User role from JWT:', jwtRole);
     setRole(jwtRole);
+    fetchForms(); // Move fetchForms here so it runs after we have the role
   }, [user]);
 
   const fetchForms = async () => {
-    const { data, error } = await supabase.from('forms').select('*').order('created_at', { ascending: false });
-    if (error) console.error('Error fetching forms:', error.message);
-    else setForms(data || []);
+    try {
+      const { data, error } = await supabase.from('forms').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching forms:', error.message);
+      } else {
+        setForms(data || []);
+      }
+    } catch (error) {
+      console.error('Error in fetchForms:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  useEffect(() => {
-    fetchForms();
-  }, []);
 
   useEffect(() => {
     // Filter forms by search and assigned_roles

@@ -24,72 +24,71 @@ const EmbedPage = () => {
     
     console.log('User role from JWT:', jwtRole);
     setRole(jwtRole);
+    initializePage(jwtRole); // Pass the role directly to initializePage
   }, [user]);
 
-  useEffect(() => {
-    const initializePage = async () => {
-      try {
-        setLoading(true);
-        
-        // Get current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          navigate('/login');
-          return;
-        }
-
-        if (!session) {
-          console.log('No session found');
-          navigate('/login');
-          return;
-        }
-
-        // Fetch embed data
-        const { data: embedData, error: embedError } = await supabase
-          .from('embeds')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        console.log('Embed fetch result:', { data: embedData, error: embedError });
-
-        if (embedError) {
-          console.error('Error fetching embed:', embedError);
-          navigate('/');
-          return;
-        }
-
-        if (embedData) {
-          let accessGranted = false;
-          if (embedData.embed_type === 'role') {
-            accessGranted = embedData.role === role;
-            console.log('Role-based access check:', { userRole: role, embedRole: embedData.role, hasAccess: accessGranted });
-          } else if (embedData.embed_type === 'user') {
-            accessGranted = embedData.user_id === session.user.id;
-            console.log('User-based access check:', { userId: session.user.id, embedUserId: embedData.user_id, hasAccess: accessGranted });
-          }
-
-          if (accessGranted) {
-            setEmbed(embedData);
-            setHasAccess(true);
-          } else {
-            console.log('No access to embed, redirecting to home');
-            navigate('/');
-          }
-        }
-      } catch (error) {
-        console.error('Error in initializePage:', error);
-        navigate('/');
-      } finally {
-        setLoading(false);
+  const initializePage = async (currentRole) => {
+    try {
+      setLoading(true);
+      
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        navigate('/login');
+        return;
       }
-    };
 
-    initializePage();
+      if (!session) {
+        console.log('No session found');
+        navigate('/login');
+        return;
+      }
 
-    // Set up auth state change listener
+      // Fetch embed data
+      const { data: embedData, error: embedError } = await supabase
+        .from('embeds')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      console.log('Embed fetch result:', { data: embedData, error: embedError });
+
+      if (embedError) {
+        console.error('Error fetching embed:', embedError);
+        navigate('/');
+        return;
+      }
+
+      if (embedData) {
+        let accessGranted = false;
+        if (embedData.embed_type === 'role') {
+          accessGranted = embedData.role === currentRole;
+          console.log('Role-based access check:', { userRole: currentRole, embedRole: embedData.role, hasAccess: accessGranted });
+        } else if (embedData.embed_type === 'user') {
+          accessGranted = embedData.user_id === session.user.id;
+          console.log('User-based access check:', { userId: session.user.id, embedUserId: embedData.user_id, hasAccess: accessGranted });
+        }
+
+        if (accessGranted) {
+          setEmbed(embedData);
+          setHasAccess(true);
+        } else {
+          console.log('No access to embed, redirecting to home');
+          navigate('/');
+        }
+      }
+    } catch (error) {
+      console.error('Error in initializePage:', error);
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Set up auth state change listener
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event);
       if (event === 'SIGNED_OUT') {
@@ -100,7 +99,7 @@ const EmbedPage = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [id, navigate, role]);
+  }, [navigate]);
 
   if (loading) {
     return (

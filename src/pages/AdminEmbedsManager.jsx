@@ -39,50 +39,56 @@ const AdminEmbedsManager = () => {
     // Redirect if not admin
     if (jwtRole !== 'admin') {
       navigate('/');
+      return;
     }
     
-    setLoading(false);
+    // Only fetch data if user is admin
+    fetchEmbeds();
+    fetchUsers();
   }, [user, navigate]);
 
-  useEffect(() => {
-    if (role === 'admin') {
-      fetchEmbeds();
-      fetchUsers();
-    }
-  }, [role]);
-
   async function fetchUsers() {
-    const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-    if (!error) {
-      setUsers(usersData);
-      // Fetch all profiles for these users
-      const userIds = usersData.map(u => u.id);
-      const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
-      // Map profiles by user id
-      const profilesMap = {};
-      if (profilesData) {
-        profilesData.forEach(profile => {
-          profilesMap[profile.id] = profile;
-        });
+    try {
+      const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+      if (!error && usersData) {
+        setUsers(usersData);
+        // Fetch all profiles for these users
+        const userIds = usersData.map(u => u.id);
+        const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
+        // Map profiles by user id
+        const profilesMap = {};
+        if (profilesData) {
+          profilesData.forEach(profile => {
+            profilesMap[profile.id] = profile;
+          });
+        }
+        setProfiles(profilesMap);
       }
-      setProfiles(profilesMap);
+    } catch (error) {
+      console.error('Error fetching users:', error);
     }
   }
 
   async function fetchEmbeds() {
-    console.log('Fetching embeds...');
-    const { data, error } = await supabase
-      .from('embeds')
-      .select('id, title, role, provider, url, sort_order, is_active, user_id, embed_type')
-      .order('sort_order');
-    
-    console.log('Embeds response:', { data, error });
-    
-    if (error) {
-      console.error('Error fetching embeds:', error);
-      setNotification({ type: 'error', message: 'Failed to fetch embeds. Please try again.' });
-    } else {
-      setEmbeds(data);
+    try {
+      console.log('Fetching embeds...');
+      const { data, error } = await supabase
+        .from('embeds')
+        .select('id, title, role, provider, url, sort_order, is_active, user_id, embed_type')
+        .order('sort_order');
+      
+      console.log('Embeds response:', { data, error });
+      
+      if (error) {
+        console.error('Error fetching embeds:', error);
+        setNotification({ type: 'error', message: 'Failed to fetch embeds. Please try again.' });
+      } else {
+        setEmbeds(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchEmbeds:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
