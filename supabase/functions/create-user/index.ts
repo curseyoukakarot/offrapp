@@ -32,6 +32,7 @@ serve(async (req: Request) => {
   }
 
   const { email, password, role } = body;
+  console.log('📝 Creating user with role:', role);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -43,6 +44,7 @@ serve(async (req: Request) => {
   };
 
   // 1. Create the auth user
+  console.log('🔑 Creating auth user with metadata:', { app_metadata: { role } });
   const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
     method: 'POST',
     headers,
@@ -56,6 +58,7 @@ serve(async (req: Request) => {
 
   const authData = await authRes.json();
   console.log('👤 Auth user created:', authData);
+  console.log('🔍 Auth user metadata:', authData.user?.app_metadata);
 
   if (!authRes.ok) {
     console.error('❌ Auth user error:', authData);
@@ -71,6 +74,7 @@ serve(async (req: Request) => {
   const userId = authData.id;
 
   // 2. Insert into users table
+  console.log('📥 Inserting into users table with role:', role);
   const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
     method: 'POST',
     headers,
@@ -87,6 +91,7 @@ serve(async (req: Request) => {
   console.log('📥 Insert result:', insertText);
 
   if (!insertRes.ok) {
+    console.error('❌ Error inserting into users table:', insertText);
     return new Response(
       JSON.stringify({ success: false, error: insertText }), 
       {
@@ -96,12 +101,20 @@ serve(async (req: Request) => {
     );
   }
 
-  console.log('✅ Returning success for user:', userId);
+  // 3. Verify the role was set correctly
+  console.log('🔍 Verifying role assignment...');
+  const verifyRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    method: 'GET',
+    headers,
+  });
+  const verifyData = await verifyRes.json();
+  console.log('✅ Final user metadata:', verifyData.user?.app_metadata);
 
   return new Response(
     JSON.stringify({
       success: true,
       userId: userId ?? 'unknown',
+      metadata: verifyData.user?.app_metadata,
     }),
     {
       status: 200,
