@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { getUserRole } from '../utils/getUserRole';
 
 const AuthContext = createContext({});
 
@@ -11,30 +10,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchUserRole = async (userId) => {
-    try {
-      console.log('👤 Fetching user role for:', userId);
-      const role = await getUserRole(userId);
-      console.log('✅ User role fetched:', role);
-      setUserRole(role);
-      return role;
-    } catch (error) {
-      console.error('❌ Error fetching user role:', error);
-      setError(error.message);
-      return null;
-    }
-  };
-
-  const handleSession = async (currentSession) => {
+  const handleSession = (currentSession) => {
     console.log('🔄 Handling session:', currentSession);
     setSession(currentSession);
     setUser(currentSession?.user ?? null);
 
-    if (currentSession?.user?.id) {
-      await fetchUserRole(currentSession.user.id);
-    } else {
+    if (!currentSession) {
       setUserRole(null);
+      setLoading(false);
+      return;
     }
+
+    // ✅ Primary source of truth from JWT
+    const jwtRole = 
+      currentSession.user?.app_metadata?.role ??
+      currentSession.user?.user_metadata?.role ??
+      'authenticated';  // fallback
+
+    console.log('✅ User role from JWT:', jwtRole);
+    setUserRole(jwtRole);
     setLoading(false);
   };
 
@@ -56,14 +50,21 @@ export const AuthProvider = ({ children }) => {
 
     // 2️⃣ live listener keeps state fresh
     console.log('👂 Setting up auth state listener...');
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       console.log('🔄 Auth state changed:', _event, currentSession);
-      await handleSession(currentSession);
+      handleSession(currentSession);
     });
+
+    // 3️⃣ Safety timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('⚠️ Loading timeout reached, forcing UI to render');
+      setLoading(false);
+    }, 5000);
 
     return () => {
       console.log('🧹 Cleaning up auth state listener');
       subscription.unsubscribe();
+      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -87,7 +88,7 @@ export const AuthProvider = ({ children }) => {
     },
   };
 
-  // 3️⃣ gate the app until we know for sure
+  // 4️⃣ gate the app until we know for sure
   if (loading) {
     console.log('⏳ Still loading...', { session, user, userRole, error });
     return (
