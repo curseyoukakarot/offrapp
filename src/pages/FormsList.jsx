@@ -23,16 +23,17 @@ const FormsList = () => {
 
   useEffect(() => {
     if (!user) return;
-    
-    // Get role from JWT
-    const jwtRole = 
-      user.app_metadata?.role ??
-      user.user_metadata?.role ??
-      'authenticated';
-    
-    console.log('User role from JWT:', jwtRole);
-    setRole(jwtRole);
-    fetchForms(); // Move fetchForms here so it runs after we have the role
+    // Fetch role from users table
+    const fetchRole = async () => {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      setRole(userRow?.role || 'authenticated');
+      fetchForms();
+    };
+    fetchRole();
   }, [user]);
 
   const fetchForms = async () => {

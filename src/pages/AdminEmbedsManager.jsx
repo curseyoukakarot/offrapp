@@ -26,25 +26,24 @@ const AdminEmbedsManager = () => {
 
   useEffect(() => {
     if (!user) return;
-    
-    // Get role from JWT
-    const jwtRole = 
-      user.app_metadata?.role ??
-      user.user_metadata?.role ??
-      'authenticated';
-    
-    console.log('User role from JWT:', jwtRole);
-    setRole(jwtRole);
-    
-    // Redirect if not admin
-    if (jwtRole !== 'admin') {
-      navigate('/');
-      return;
-    }
-    
-    // Only fetch data if user is admin
-    fetchEmbeds();
-    fetchUsers();
+    // Fetch role from users table
+    const fetchRole = async () => {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      setRole(userRow?.role || 'authenticated');
+      // Redirect if not admin
+      if ((userRow?.role || 'authenticated') !== 'admin') {
+        navigate('/');
+        return;
+      }
+      // Only fetch data if user is admin
+      fetchEmbeds();
+      fetchUsers();
+    };
+    fetchRole();
   }, [user, navigate]);
 
   async function fetchUsers() {

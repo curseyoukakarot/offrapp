@@ -10,33 +10,32 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const handleSession = (currentSession) => {
+  const handleSession = async (currentSession) => {
     console.log('🔄 Handling session:', currentSession);
     setSession(currentSession);
     setUser(currentSession?.user ?? null);
 
-    if (!currentSession) {
+    if (!currentSession || !currentSession.user) {
       setUserRole(null);
       setLoading(false);
       return;
     }
 
-    // ✅ Primary source of truth from JWT
-    const jwtRole = 
-      currentSession.user?.app_metadata?.role ??
-      currentSession.user?.user_metadata?.role ??
-      'authenticated';  // fallback
-
-    console.log('✅ User role from JWT:', jwtRole);
-    setUserRole(jwtRole);
+    // Fetch role from users table
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', currentSession.user.id)
+      .maybeSingle();
+    const dbRole = userRow?.role || 'authenticated';
+    console.log('✅ User role from users table:', dbRole);
+    setUserRole(dbRole);
     setLoading(false);
   };
 
   useEffect(() => {
     console.log('🔄 AuthProvider mounted');
-    
     // 1️⃣ one-shot fetch for the stored session
-    console.log('📥 Fetching initial session...');
     supabase.auth.getSession().then(({ data: { session: initialSession }, error: sessionError }) => {
       if (sessionError) {
         console.error('❌ Error fetching initial session:', sessionError);
@@ -44,23 +43,19 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      
       handleSession(initialSession);
     });
-
     // 2️⃣ live listener keeps state fresh
     console.log('👂 Setting up auth state listener...');
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       console.log('🔄 Auth state changed:', _event, currentSession);
       handleSession(currentSession);
     });
-
     // 3️⃣ Safety timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       console.log('⚠️ Loading timeout reached, forcing UI to render');
       setLoading(false);
     }, 5000);
-
     return () => {
       console.log('🧹 Cleaning up auth state listener');
       subscription.unsubscribe();
@@ -88,7 +83,6 @@ export const AuthProvider = ({ children }) => {
     },
   };
 
-  // 4️⃣ gate the app until we know for sure
   if (loading) {
     console.log('⏳ Still loading...', { session, user, userRole, error });
     return (
