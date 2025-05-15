@@ -14,6 +14,8 @@ const UsersList = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editFeedback, setEditFeedback] = useState('');
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -80,18 +82,44 @@ const UsersList = () => {
 
   const handleUpdateUser = async (e) => {
     e.preventDefault();
+    setEditFeedback('');
+    // Update email/role as before
     const { error } = await supabase
       .from('users')
       .update({ email: editEmail, role: editRole })
       .eq('id', editingUser.id);
 
     if (error) {
-      alert('Update failed: ' + error.message);
-    } else {
-      alert('User updated!');
-      setEditingUser(null);
-      fetchUsers();
+      setEditFeedback('Update failed: ' + error.message);
+      return;
     }
+
+    // If password is set, call the serverless function
+    if (editPassword) {
+      try {
+        const res = await fetch('/api/admin-reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: editingUser.id, new_password: editPassword }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          setEditFeedback('Password update failed: ' + (result.error || 'Unknown error'));
+          return;
+        }
+      } catch (err) {
+        setEditFeedback('Password update failed: ' + err.message);
+        return;
+      }
+    }
+
+    setEditFeedback('User updated!');
+    setTimeout(() => {
+      setEditingUser(null);
+      setEditPassword('');
+      setEditFeedback('');
+    }, 1200);
+    fetchUsers();
   };
 
   const handleRoleFilter = (role) => {
@@ -207,6 +235,7 @@ const UsersList = () => {
           <div className="fixed top-0 right-0 w-96 h-full bg-white shadow-lg z-50 border-l">
             <div className="p-6 space-y-4">
               <h3 className="text-xl font-semibold text-gray-800">Edit User</h3>
+              {editFeedback && <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded mb-2">{editFeedback}</div>}
               <form onSubmit={handleUpdateUser} className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium">Email</label>
@@ -217,7 +246,6 @@ const UsersList = () => {
                     onChange={(e) => setEditEmail(e.target.value)}
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium">Role</label>
                   <select
@@ -231,11 +259,21 @@ const UsersList = () => {
                     <option value="client">Client</option>
                   </select>
                 </div>
-
+                <div>
+                  <label className="block text-sm font-medium">New Password (optional)</label>
+                  <input
+                    type="password"
+                    className="border w-full px-3 py-2 rounded mt-1"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="Set a new password"
+                    autoComplete="new-password"
+                  />
+                </div>
                 <div className="flex justify-between pt-4">
                   <button
                     type="button"
-                    onClick={() => setEditingUser(null)}
+                    onClick={() => { setEditingUser(null); setEditPassword(''); setEditFeedback(''); }}
                     className="text-sm px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
                   >
                     Cancel
