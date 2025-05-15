@@ -15,6 +15,7 @@ import FormAssignRoles from './pages/FormAssignRoles';
 import UserFiles from './pages/UserFiles';
 import EmbedPage from './pages/EmbedPage';
 import CompleteProfile from './pages/CompleteProfile';
+import Settings from './pages/Settings';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -119,6 +120,11 @@ function App() {
           <Route path="/my-files" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
               <UserFiles />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute allowedRoles={['recruitpro', 'jobseeker']}>
+              <Settings />
             </ProtectedRoute>
           } />
           {/* Embed Route */}
