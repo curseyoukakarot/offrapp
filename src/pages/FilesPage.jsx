@@ -11,48 +11,83 @@ const FilesPage = () => {
   const [file, setFile] = useState(null);
   const [selectedUser, setSelectedUser] = useState('');
   const [users, setUsers] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, redirecting to login...');
+      return;
+    }
     // Fetch role from users table
     const fetchRole = async () => {
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      setRole(userRow?.role || 'authenticated');
-      fetchFiles();
-      fetchUsers();
+      try {
+        console.log('Fetching role for user:', user.id);
+        const { data: userRow, error: roleError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (roleError) {
+          console.error('Error fetching role:', roleError);
+          setError('Failed to fetch user role');
+          return;
+        }
+
+        console.log('User role:', userRow?.role);
+        setRole(userRow?.role || 'authenticated');
+        await fetchFiles();
+        await fetchUsers();
+      } catch (err) {
+        console.error('Error in fetchRole:', err);
+        setError('An error occurred while fetching user data');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchRole();
   }, [user]);
 
   const fetchFiles = async () => {
     try {
+      console.log('Fetching files...');
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      const { data } = await supabase
+      const { data, error: filesError } = await supabase
         .from('files')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (filesError) {
+        console.error('Error fetching files:', filesError);
+        setError('Failed to fetch files');
+        return;
+      }
+
+      console.log('Files fetched:', data?.length || 0);
       setFiles(data || []);
     } catch (error) {
       console.error('Error in fetchFiles:', error);
-    } finally {
-      setLoading(false);
+      setError('An error occurred while fetching files');
     }
   };
 
   const fetchUsers = async () => {
     try {
-      const { data } = await supabase.from('users').select('id, email');
+      console.log('Fetching users...');
+      const { data, error: usersError } = await supabase.from('users').select('id, email');
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        setError('Failed to fetch users');
+        return;
+      }
+      console.log('Users fetched:', data?.length || 0);
       setUsers(data || []);
     } catch (error) {
       console.error('Error in fetchUsers:', error);
+      setError('An error occurred while fetching users');
     }
   };
 
@@ -120,6 +155,20 @@ const FilesPage = () => {
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen text-gray-600">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar role={role} />
+        <main className="flex-1 bg-gray-50 p-8 ml-64">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p className="font-bold">Error</p>
+            <p>{error}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
