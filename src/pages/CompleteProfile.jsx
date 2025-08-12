@@ -55,6 +55,7 @@ const CompleteProfile = () => {
       return;
     }
     // Send welcome email using the existing user variable
+    await import('../lib/api');
     await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/send-welcome-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

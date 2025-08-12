@@ -1,8 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Highcharts from 'highcharts';
 import type { Options as HighchartsOptions, SeriesOptionsType } from 'highcharts';
+import { Link } from 'react-router-dom';
+import NotifyAdminsModal from '../../components/modals/NotifyAdminsModal';
+import ImpersonateUserModal from '../../components/modals/ImpersonateUserModal';
 
 export default function SuperAdminPage() {
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
   useEffect(() => {
     const load = async () => {
       // Fetch metrics
@@ -68,11 +72,12 @@ export default function SuperAdminPage() {
 
   // Handlers (stubbed – to be wired to APIs)
   const onSuspend = () => {};
-  const onImpersonate = () => {};
+  const [showImpersonate, setShowImpersonate] = useState(false);
+  const onImpersonate = () => { setShowImpersonate(true); };
   const onPurgeCache = () => {};
   const onRebuildIndex = () => {};
   const onCreateTenant = () => {};
-  const onNotifyAdmins = () => {};
+  const onNotifyAdmins = () => { setShowNotifyModal(true); };
 
   return (
     <div className="bg-gray-50">
@@ -146,11 +151,11 @@ export default function SuperAdminPage() {
               <span>App Health</span>
               <span className="ml-auto bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">3</span>
             </span>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <Link to="/super/jobs" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-list-check"></i>
               <span>Queues &amp; Jobs</span>
               <span className="ml-auto bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs">23</span>
-            </span>
+            </Link>
             <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-puzzle-piece"></i>
               <span>Integrations</span>
@@ -159,10 +164,10 @@ export default function SuperAdminPage() {
               <i className="fa-solid fa-bell"></i>
               <span>Notifications</span>
             </span>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <Link to="/super/audit" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-clipboard-list"></i>
               <span>Audit Logs</span>
-            </span>
+            </Link>
             <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-gear"></i>
               <span>Settings</span>
@@ -293,6 +298,8 @@ export default function SuperAdminPage() {
           </div>
         </div>
       </div>
+      <NotifyAdminsModal open={showNotifyModal} onClose={() => setShowNotifyModal(false)} />
+      <ImpersonateUserModal open={showImpersonate} onClose={() => setShowImpersonate(false)} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getJSON, postJSON } from '../../lib/api';
 
 type Job = {
   id: string;
@@ -20,10 +21,7 @@ export default function JobsPage() {
   async function load() {
     setLoading(true);
     try {
-      const [jr, cr] = await Promise.all([
-        fetch('/api/jobs/recent').then((r) => r.json()),
-        fetch('/api/jobs/cron').then((r) => r.json()),
-      ]);
+      const [jr, cr] = await Promise.all([getJSON('/api/jobs/recent'), getJSON('/api/jobs/cron')]);
       setJobs(jr.jobs || []);
       setCron(cr.cron || []);
     } finally {
@@ -36,17 +34,17 @@ export default function JobsPage() {
   }, []);
 
   const retry = async (id: string) => {
-    await fetch(`/api/jobs/${id}/retry`, { method: 'POST' });
+    await postJSON(`/api/jobs/${id}/retry`);
     load();
   };
 
   const cancel = async (id: string) => {
-    await fetch(`/api/jobs/${id}/cancel`, { method: 'POST' });
+    await postJSON(`/api/jobs/${id}/cancel`);
     load();
   };
 
   const toggleCron = async (name: string) => {
-    await fetch(`/api/jobs/cron/${name}/toggle`, { method: 'POST' });
+    await postJSON(`/api/jobs/cron/${name}/toggle`);
     load();
   };
 

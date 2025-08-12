@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getJSON } from '../../lib/api';
 
 type Log = { id: string; actor_user_id: string; action: string; entity_type: string; entity_id: string | null; tenant_id: string | null; reason: string | null; created_at: string };
 
@@ -10,9 +11,8 @@ export default function AuditLogsPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/audit?limit=200');
-        const json = await res.json();
-        setLogs(json.logs || []);
+        const json = await getJSON('/api/audit?limit=200');
+        setLogs((json as any).logs || []);
       } finally {
         setLoading(false);
       }

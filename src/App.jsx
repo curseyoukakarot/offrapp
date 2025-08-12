@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import SuperAdminPage from './pages/super/SuperAdminPage';
 import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
+import JobsPage from './pages/super/JobsPage.tsx';
+import AuditLogsPage from './pages/super/AuditLogsPage.tsx';
 import AdminEmbedsManagerV2 from './pages/AdminEmbedsManagerV2';
 import RecruitProDashboard from './pages/RecruitProDashboard';
 import JobSeekerDashboard from './pages/JobSeekerDashboard';
@@ -158,6 +160,22 @@ function App() {
             element={
               <SuperAdminRoute>
                 <SuperAdminPage />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/jobs"
+            element={
+              <SuperAdminRoute>
+                <JobsPage />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/audit"
+            element={
+              <SuperAdminRoute>
+                <AuditLogsPage />
               </SuperAdminRoute>
             }
           />
