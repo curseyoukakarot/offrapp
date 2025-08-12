@@ -69,7 +69,7 @@ enabled = true
 # Port to use for Supabase Studio.
 port = 54323
 # External URL of the API server that frontend connects to.
-api_url = "https://offr.app"
+api_url = "${API_BASE_URL}"
 # OpenAI API Key to use for Supabase AI in the Supabase Studio.
 openai_api_key = "env(OPENAI_API_KEY)"
 
@@ -105,9 +105,9 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://offr.app"
+site_url = "${PUBLIC_APP_URL}"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://offr.app"]
+additional_redirect_urls = ["${PUBLIC_APP_URL}"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.
@@ -171,7 +171,7 @@ host = "smtp.sendgrid.net"
 port = 587
 user = "apikey"
 pass = "env(SENDGRID_API_KEY)"
-admin_email = "admin@offr.app"
+admin_email = "admin@nestbase.io"
 sender_name = "Offr"
 
 # Uncomment to customize email template

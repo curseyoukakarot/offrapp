@@ -5,6 +5,12 @@ import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import sgMail from '@sendgrid/mail';
 import tenantsRouter from './src/server/routes/tenants.js';
+import impersonateRouter from './src/server/routes/impersonate.js';
+import metricsRouter from './src/server/routes/metrics.js';
+import jobsRouter from './src/server/routes/jobs.js';
+import notificationsRouter from './src/server/routes/notifications.js';
+import auditRouter from './src/server/routes/audit.js';
+import { impersonationMiddleware } from './src/server/middleware/impersonation.js';
 
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
 console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Loaded' : 'Missing');
@@ -12,10 +18,31 @@ console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY 
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Attach user to req if Authorization token present
+app.use(async (req, _res, next) => {
+  try {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.substring(7) : null;
+    if (!token) return next();
+    const { data } = await supabase.auth.getUser(token);
+    req.authedUser = data.user || null;
+  } catch (_e) {
+    // ignore
+  }
+  next();
+});
+// Impersonation header injection
+app.use(impersonationMiddleware);
 app.use('/api/tenants', tenantsRouter);
+app.use('/api/impersonate', impersonateRouter);
+app.use('/api/metrics', metricsRouter);
+app.use('/api/jobs', jobsRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/audit', auditRouter);
 
 // ✅ Supabase setup
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const SENDGRID_FROM = process.env.SENDGRID_FROM || 'noreply@nestbase.io';
 
 // ✅ Supabase invite helper function
 async function inviteUser(email, role) {
@@ -141,7 +168,7 @@ app.post('/api/send-welcome-email', async (req, res) => {
   const { email, first_name, user_id } = req.body;
   const msg = {
     to: email,
-    from: 'noreply@offr.app', // Updated sender address
+    from: SENDGRID_FROM,
     templateId: 'd-2779cc0fb09c47b9a5c8b853a14e0baa',
     dynamic_template_data: {
       first_name: first_name

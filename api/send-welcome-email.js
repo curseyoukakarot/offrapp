@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const { email, first_name, user_id } = req.body;
   const msg = {
     to: email,
-    from: 'noreply@offr.app',
+    from: process.env.SENDGRID_FROM || 'noreply@nestbase.io',
     templateId: 'd-2779cc0fb09c47b9a5c8b853a14e0baa',
     dynamic_template_data: {
       first_name: first_name

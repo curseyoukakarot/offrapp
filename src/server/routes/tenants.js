@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { logAudit } from '../utils/audit.js';
 
 const router = Router();
 
@@ -59,6 +60,7 @@ router.post('/', async (req, res) => {
     const { name, slug, plan } = req.body || {};
     const { data, error } = await supabase.from('tenants').insert([{ name, slug, plan }]).select('*').single();
     if (error) throw error;
+    await logAudit({ action: 'tenant.create', entityType: 'tenant', entityId: data.id, reason: null, before: null, after: data, req });
     res.json({ tenant: data });
   } catch (e) {
     console.error(e);
@@ -108,6 +110,7 @@ router.post('/:id/memberships', async (req, res) => {
     if (!allowed) return res.status(403).json({ error: 'forbidden' });
     const { data, error } = await supabase.from('memberships').upsert({ tenant_id: tid, user_id, role }, { onConflict: 'tenant_id,user_id' }).select('*').single();
     if (error) throw error;
+    await logAudit({ action: 'membership.upsert', entityType: 'membership', entityId: data.id, tenantId: tid, reason: null, before: null, after: data, req });
     res.json({ membership: data });
   } catch (e) {
     console.error(e);
@@ -134,6 +137,7 @@ router.patch('/:id/memberships/:userId', async (req, res) => {
     if (!allowed) return res.status(403).json({ error: 'forbidden' });
     const { data, error } = await supabase.from('memberships').update({ role }).eq('tenant_id', tid).eq('user_id', targetUser).select('*').single();
     if (error) throw error;
+    await logAudit({ action: 'membership.update', entityType: 'membership', entityId: data.id, tenantId: tid, reason: null, before: null, after: data, req });
     res.json({ membership: data });
   } catch (e) {
     console.error(e);
@@ -159,6 +163,7 @@ router.delete('/:id/memberships/:userId', async (req, res) => {
     if (!allowed) return res.status(403).json({ error: 'forbidden' });
     const { error } = await supabase.from('memberships').delete().eq('tenant_id', tid).eq('user_id', targetUser);
     if (error) throw error;
+    await logAudit({ action: 'membership.delete', entityType: 'membership', entityId: targetUser, tenantId: tid, reason: null, before: null, after: null, req });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -185,6 +190,7 @@ router.post('/:id/domains', async (req, res) => {
     const txtToken = Math.random().toString(36).slice(2);
     const { data, error } = await supabase.from('tenant_domains').insert([{ tenant_id: tid, domain, type, txt_token: txtToken }]).select('*').single();
     if (error) throw error;
+    await logAudit({ action: 'domain.add', entityType: 'tenant_domain', entityId: data.id, tenantId: tid, reason: null, before: null, after: data, req });
     res.json({ domain: data, txt_token: txtToken });
   } catch (e) {
     console.error(e);
@@ -216,6 +222,7 @@ router.post('/:id/domains/:domain/verify', async (req, res) => {
       .select('*')
       .single();
     if (error) throw error;
+    await logAudit({ action: 'domain.verify', entityType: 'tenant_domain', entityId: data.id, tenantId: tid, reason: null, before: null, after: data, req });
     res.json({ domain: data });
   } catch (e) {
     console.error(e);
@@ -241,6 +248,7 @@ router.delete('/:id/domains/:domain', async (req, res) => {
     if (!allowed) return res.status(403).json({ error: 'forbidden' });
     const { error } = await supabase.from('tenant_domains').delete().eq('tenant_id', tid).eq('domain', domain);
     if (error) throw error;
+    await logAudit({ action: 'domain.remove', entityType: 'tenant_domain', entityId: null, tenantId: tid, reason: null, before: null, after: null, req });
     res.json({ ok: true });
   } catch (e) {
     console.error(e);

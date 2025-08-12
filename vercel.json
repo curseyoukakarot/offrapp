@@ -1,1 +1,12 @@
-{"rewrites": [{"source": "/(.*)", "destination": "/index.html"}]}
+{
+  "redirects": [
+    {
+      "source": "https://offr.app/:path*",
+      "destination": "https://nestbase.io/:path*",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

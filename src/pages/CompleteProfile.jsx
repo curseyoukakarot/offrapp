@@ -55,7 +55,7 @@ const CompleteProfile = () => {
       return;
     }
     // Send welcome email using the existing user variable
-    await fetch('https://offr.app/api/send-welcome-email', {
+    await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/send-welcome-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

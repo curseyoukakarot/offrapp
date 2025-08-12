@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import ImpersonationBanner from './components/ImpersonationBanner.tsx'
+import SystemBanner from './components/SystemBanner.tsx'
 import { useEffect } from 'react'
 
 function Root() {
@@ -20,6 +22,10 @@ function Root() {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Root />
+    <>
+      <SystemBanner />
+      <ImpersonationBanner />
+      <Root />
+    </>
   </StrictMode>,
 )

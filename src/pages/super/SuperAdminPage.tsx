@@ -4,40 +4,66 @@ import type { Options as HighchartsOptions, SeriesOptionsType } from 'highcharts
 
 export default function SuperAdminPage() {
   useEffect(() => {
-    // Requests Chart
-    const requestsEl = document.getElementById('requests-chart');
-    if (requestsEl) {
-      const requestsOptions: HighchartsOptions = {
-      chart: { type: 'spline', backgroundColor: 'transparent' },
-        title: { text: undefined },
-      xAxis: { categories: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'] },
-      yAxis: [{ title: { text: 'Requests/min' } }, { title: { text: 'Errors' }, opposite: true }],
-        series: [
-          { type: 'spline', name: 'Requests', data: [120, 180, 250, 320, 280, 200], color: '#3B82F6' },
-          { type: 'spline', name: 'Errors', data: [2, 1, 3, 5, 2, 1], color: '#EF4444', yAxis: 1 },
-        ] as SeriesOptionsType[],
-      legend: { enabled: false },
-        credits: { enabled: false },
-      };
-      (Highcharts as any).chart(requestsEl as HTMLElement, requestsOptions);
-    }
+    const load = async () => {
+      // Fetch metrics
+      const [uptimeRes, usersRes, storageRes, jobsRes, reqErrRes] = await Promise.all([
+        fetch('/api/metrics/uptime'),
+        fetch('/api/metrics/active-users'),
+        fetch('/api/metrics/storage'),
+        fetch('/api/metrics/jobs'),
+        fetch('/api/metrics/requests-errors?window=24h'),
+      ]);
+      const uptime = await uptimeRes.json();
+      const users = await usersRes.json();
+      const storage = await storageRes.json();
+      const jobs = await jobsRes.json();
+      const reqErr = await reqErrRes.json();
 
-    // Queue Chart
-    const queueEl = document.getElementById('queue-chart');
-    if (queueEl) {
-      const queueOptions: HighchartsOptions = {
-      chart: { type: 'area', backgroundColor: 'transparent' },
-        title: { text: undefined },
-      xAxis: { categories: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'] },
-      yAxis: { title: { text: 'Queue Depth' } },
-        series: [
-          { type: 'area', name: 'Jobs', data: [45, 32, 28, 35, 42, 23], color: '#8B5CF6', fillOpacity: 0.3 },
-        ] as SeriesOptionsType[],
-      legend: { enabled: false },
-        credits: { enabled: false },
-      };
-      (Highcharts as any).chart(queueEl as HTMLElement, queueOptions);
-    }
+      // Requests Chart
+      const requestsEl = document.getElementById('requests-chart');
+      if (requestsEl) {
+        const requestsOptions: HighchartsOptions = {
+          chart: { type: 'spline', backgroundColor: 'transparent' },
+          title: { text: undefined },
+          xAxis: { categories: reqErr.x },
+          yAxis: [{ title: { text: 'Requests/min' } }, { title: { text: 'Errors' }, opposite: true }],
+          series: [
+            { type: 'spline', name: 'Requests', data: reqErr.requests, color: '#3B82F6' },
+            { type: 'spline', name: 'Errors', data: reqErr.errors, color: '#EF4444', yAxis: 1 },
+          ] as SeriesOptionsType[],
+          legend: { enabled: false },
+          credits: { enabled: false },
+        };
+        (Highcharts as any).chart(requestsEl as HTMLElement, requestsOptions);
+      }
+
+      // Queue Chart (using jobs queued as last point; keep placeholder trend)
+      const queueEl = document.getElementById('queue-chart');
+      if (queueEl) {
+        const trend = [45, 32, 28, 35, 42, jobs.queued || 23];
+        const queueOptions: HighchartsOptions = {
+          chart: { type: 'area', backgroundColor: 'transparent' },
+          title: { text: undefined },
+          xAxis: { categories: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'] },
+          yAxis: { title: { text: 'Queue Depth' } },
+          series: [
+            { type: 'area', name: 'Jobs', data: trend, color: '#8B5CF6', fillOpacity: 0.3 },
+          ] as SeriesOptionsType[],
+          legend: { enabled: false },
+          credits: { enabled: false },
+        };
+        (Highcharts as any).chart(queueEl as HTMLElement, queueOptions);
+      }
+
+      // Update metric chips (using DOM to preserve exact structure)
+      const uptimeEls = document.querySelectorAll('#status-cards span.bg-green-100');
+      if (uptimeEls[0]) uptimeEls[0].textContent = `${uptime.p24h}%`;
+      const activeUsersLabel = document.querySelector('#status-cards h3 + p');
+      if (activeUsersLabel) activeUsersLabel.textContent = `${users.today} today • ${users.tenants} tenants`;
+      const storageBadge = document.querySelector('#status-cards .bg-yellow-100');
+      if (storageBadge) storageBadge.textContent = `${Math.round((storage.usedTb / storage.quotaTb) * 100)}%`;
+    };
+    load();
   }, []);
 
   // Handlers (stubbed – to be wired to APIs)
