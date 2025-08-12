@@ -2,13 +2,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import SuperAdminPage from './pages/super/SuperAdminPage';
 import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
-import AdminEmbedsManager from './pages/AdminEmbedsManager';
+import AdminEmbedsManagerV2 from './pages/AdminEmbedsManagerV2';
 import RecruitProDashboard from './pages/RecruitProDashboard';
 import JobSeekerDashboard from './pages/JobSeekerDashboard';
 import Dashboard from './pages/Dashboard';
+import ClientDashboard from './pages/ClientDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import UsersList from './pages/UsersList';
 import FilesPage from './pages/FilesPage';
+import AdminFilesManager from './pages/AdminFilesManager';
 import FormsList from './pages/FormsList';
 import FormBuilder from './pages/FormBuilder';
 import FormRenderer from './pages/FormRenderer';
@@ -60,12 +63,12 @@ function App() {
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <Dashboard />
+              <AdminDashboard />
             </ProtectedRoute>
           } />
           <Route path="/admin-embeds" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminEmbedsManager />
+              <AdminEmbedsManagerV2 />
             </ProtectedRoute>
           } />
           <Route path="/crm/users" element={
@@ -93,10 +96,22 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* Client Routes */}
+          <Route path="/dashboard/client" element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <ClientDashboard />
+            </ProtectedRoute>
+          } />
+
           {/* Shared Routes */}
           <Route path="/files" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
               <FilesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/files" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminFilesManager />
             </ProtectedRoute>
           } />
           <Route path="/forms" element={

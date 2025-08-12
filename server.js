@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import sgMail from '@sendgrid/mail';
+import tenantsRouter from './src/server/routes/tenants.js';
 
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
 console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Loaded' : 'Missing');
@@ -11,6 +12,7 @@ console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/api/tenants', tenantsRouter);
 
 // ✅ Supabase setup
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
 const Sidebar = () => {
-  const { userRole, signOut } = useAuth();
+  const { userRole, signOut, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const [embeds, setEmbeds] = useState([]);
 
@@ -91,6 +91,16 @@ const Sidebar = () => {
 
       <nav className="mt-6">
         <div className="px-4 space-y-2">
+          {isSuperAdmin && (
+            <NavLink to="/super" className={({ isActive }) =>
+              `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+              }`
+            }>
+              <i className="fa-solid fa-wand-magic-sparkles mr-3" />
+              <span>Super Admin</span>
+            </NavLink>
+          )}
           {/* Dashboard Link - hardcoded per role */}
           <NavLink to={getDashboardRoute()} className={({ isActive }) =>
             `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${

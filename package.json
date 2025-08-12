@@ -8,6 +8,7 @@
     "dev:api": "node dev-server.js",
     "dev:web": "vite",
     "dev:all": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
+    "seed:multitenant": "ts-node --compiler-options '{\"module\":\"esnext\"}' scripts/seed_multitenant.ts",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -38,6 +39,8 @@
     "globals": "^16.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
     "vite": "^6.3.5"
   }
 }
