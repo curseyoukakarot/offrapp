@@ -266,6 +266,16 @@ function App() {
             }
           />
           <Route
+            path="/super/users"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <UsersList />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+          <Route
             path="/super/settings"
             element={
               <SuperAdminRoute>
