@@ -4,12 +4,16 @@ import { supabase } from '../supabaseClient';
 export default function AdminFilesManager() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
   const [roles] = useState(['admin', 'recruitpro', 'jobseeker', 'client']);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [files, setFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message: string }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -22,23 +26,52 @@ export default function AdminFilesManager() {
   useEffect(() => {
     const load = async () => {
       const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-      const [usr, fls] = await Promise.all([
-        fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({ users: [] })),
-        fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({ files: [] })),
-      ]);
-      setUsers(usr.users || []);
-      setFiles(fls.files || []);
+      try {
+        setLoadingUsers(true);
+        const usrRes = await fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const usr = await usrRes.json();
+        setUsers(usr.users || []);
+      } catch (_e) {
+        setUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+
+      try {
+        setLoadingFiles(true);
+        const flsRes = await fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const fls = await flsRes.json();
+        setFiles(fls.files || []);
+      } catch (_e) {
+        setFiles([]);
+      } finally {
+        setLoadingFiles(false);
+      }
     };
     load();
   }, []);
 
+  const humanFileSize = (bytes) => {
+    if (!bytes && bytes !== 0) return '';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = bytes === 0 ? 0 : Math.floor(Math.log(bytes) / Math.log(1024));
+    const val = (bytes / Math.pow(1024, i)).toFixed(1);
+    return `${val} ${sizes[i]}`;
+  };
+
   const handleUploadAssign = async () => {
     if (!file) return alert('Choose a file');
     if (!selectedUser && selectedRoles.length === 0) return alert('Select a user or roles');
+    setUploading(true);
     const { data: { session } } = await supabase.auth.getSession();
     const storagePath = `${selectedUser || 'roles'}/${file.name}`;
     const { error: upErr } = await supabase.storage.from('user-files').upload(storagePath, file);
-    if (upErr) return alert('Upload failed: ' + upErr.message);
+    if (upErr) {
+      setUploading(false);
+      setToast({ type: 'error', message: `Upload failed: ${upErr.message}` });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
     const baseUrl = import.meta.env.VITE_SUPABASE_URL;
     const fileUrl = `${baseUrl}/storage/v1/object/public/user-files/${storagePath}`;
     const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
@@ -48,11 +81,18 @@ export default function AdminFilesManager() {
       body: JSON.stringify({ title: title || file.name, file_url: fileUrl, user_id: selectedUser || null, assigned_roles: selectedRoles }),
     });
     const json = await resp.json();
-    if (!resp.ok) return alert('Save failed: ' + (json?.error || json?.message || 'unknown'));
+    if (!resp.ok) {
+      setUploading(false);
+      setToast({ type: 'error', message: `Save failed: ${json?.error || json?.message || 'unknown'}` });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
     setTitle(''); setSelectedUser(''); setSelectedRoles([]); setFile(null);
     const fls = await fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({ files: [] }));
     setFiles(fls.files || []);
-    alert('Uploaded & assigned');
+    setUploading(false);
+    setToast({ type: 'success', message: 'Uploaded & assigned' });
+    setTimeout(() => setToast(null), 2500);
   };
 
   return (
@@ -139,6 +179,24 @@ export default function AdminFilesManager() {
                 <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
               </label>
 
+              {file && (
+                <div className="mt-4 border border-gray-200 rounded-lg p-3 flex items-center justify-between bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <i className="fa-solid fa-file text-gray-500"></i>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{file.name}</div>
+                      <div className="text-xs text-gray-500">{humanFileSize(file.size)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {uploading && <span className="text-xs text-blue-600">Uploading…</span>}
+                    <button className="text-gray-500 hover:text-red-600 text-sm" onClick={() => !uploading && setFile(null)} disabled={uploading}>
+                      <i className="fa-solid fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Upload Form */}
               <div className="mt-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,6 +206,8 @@ export default function AdminFilesManager() {
                       <option value="">Select user…</option>
                       {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
                     </select>
+                    {loadingUsers && <div className="text-xs text-gray-500 mt-1">Loading users…</div>}
+                    {!loadingUsers && users.length === 0 && <div className="text-xs text-gray-500 mt-1">No users found for this tenant.</div>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
@@ -174,7 +234,7 @@ export default function AdminFilesManager() {
                         </label>
                       ))}
                     </div>
-                    <button onClick={handleUploadAssign} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all">Upload &amp; Assign</button>
+                    <button onClick={handleUploadAssign} disabled={uploading} className={`px-6 py-2 rounded-lg font-medium transition-all text-white ${uploading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{uploading ? 'Uploading…' : 'Upload & Assign'}</button>
                   </div>
                 </div>
               </div>
@@ -208,6 +268,16 @@ export default function AdminFilesManager() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
+                    {loadingFiles && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-6 text-center text-sm text-gray-500">Loading files…</td>
+                      </tr>
+                    )}
+                    {!loadingFiles && files.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-6 text-center text-sm text-gray-500">No files yet.</td>
+                      </tr>
+                    )}
                     {files.map((f) => (
                       <tr key={f.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setDrawerOpen(true)}>
                         <td className="px-6 py-4">
