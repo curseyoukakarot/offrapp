@@ -1,279 +1,277 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import FormAssignRoles from './FormAssignRoles'; // make sure this is imported!
-import { useUser } from '../lib/useUser';
 
-const FormsList = () => {
-  const { user } = useUser();
-  const [forms, setForms] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredForms, setFilteredForms] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [formsPerPage] = useState(5);
-  const [role, setRole] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function FormsList() {
   const navigate = useNavigate();
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [formToEdit, setFormToEdit] = useState(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editRoles, setEditRoles] = useState([]);
-  const [notification, setNotification] = useState(null);
-
-  useEffect(() => {
-    if (!user) return;
-    // Fetch role from users table
-    const fetchRole = async () => {
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      setRole(userRow?.role || 'authenticated');
-      fetchForms();
-    };
-    fetchRole();
-  }, [user]);
-
-  const fetchForms = async () => {
-    try {
-      const { data, error } = await supabase.from('forms').select('*').order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error fetching forms:', error.message);
-      } else {
-        setForms(data || []);
-      }
-    } catch (error) {
-      console.error('Error in fetchForms:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Filter forms by search and assigned_roles
-    let filtered = forms.filter(form =>
-      form.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    if (role && role !== 'admin') {
-      filtered = filtered.filter(form => Array.isArray(form.assigned_roles) && form.assigned_roles.includes(role));
-    }
-    setFilteredForms(filtered);
-    setCurrentPage(1);
-  }, [searchTerm, forms, role]);
-
-  const indexOfLastForm = currentPage * formsPerPage;
-  const indexOfFirstForm = indexOfLastForm - formsPerPage;
-  const currentForms = filteredForms.slice(indexOfFirstForm, indexOfLastForm);
-  const totalPages = Math.ceil(filteredForms.length / formsPerPage);
-
-  const handleNewForm = () => navigate('/forms/new');
-  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
-  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
-
-  // Edit form handlers
-  const openEditModal = (form) => {
-    setFormToEdit(form);
-    setEditTitle(form.title);
-    setEditRoles(form.assigned_roles || []);
-    setEditModalOpen(true);
-  };
-  const closeEditModal = () => {
-    setEditModalOpen(false);
-    setFormToEdit(null);
-    setEditTitle('');
-    setEditRoles([]);
-  };
-  const handleEditForm = async (e) => {
-    e.preventDefault();
-    if (!formToEdit) return;
-    const { error } = await supabase
-      .from('forms')
-      .update({ title: editTitle, assigned_roles: editRoles })
-      .eq('id', formToEdit.id);
-    if (!error) {
-      fetchForms();
-      closeEditModal();
-      setNotification({ type: 'success', message: 'Form updated successfully!' });
-    } else {
-      setNotification({ type: 'error', message: 'Failed to update form.' });
-    }
-    setTimeout(() => setNotification(null), 3000);
-  };
-  const handleDeleteForm = async (formId) => {
-    if (!window.confirm('Are you sure you want to delete this form? This cannot be undone.')) return;
-    const { error } = await supabase.from('forms').delete().eq('id', formId);
-    if (!error) {
-      fetchForms();
-      setNotification({ type: 'success', message: 'Form deleted successfully!' });
-    } else {
-      setNotification({ type: 'error', message: 'Failed to delete form.' });
-    }
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen text-gray-600">Loading...</div>;
-  }
+  const [isCardView, setIsCardView] = useState(true);
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-      <main className="flex-1 bg-gray-50 p-8 ml-64">
-        {/* Notification Popup */}
-        {notification && (
-          <div className={`fixed top-8 right-8 z-50 px-6 py-4 rounded shadow-lg text-white transition-all ${
-            notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-          }`}>
-            {notification.message}
-          </div>
-        )}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Forms</h1>
-          {role === 'admin' && (
-            <button
-              onClick={handleNewForm}
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
-            >
-              + New Form
-            </button>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search by form title..."
-            className="w-full px-4 py-2 border rounded"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {currentForms.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded shadow text-gray-500">
-            <p>No forms found.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {currentForms.map((form) => (
-              <div
-                key={form.id}
-                className={`bg-white p-6 rounded shadow border border-transparent transition relative ${role === 'admin' ? 'cursor-pointer hover:border-blue-500' : 'cursor-pointer hover:border-blue-500'}`}
-                onClick={() => navigate(`/forms/${form.id}`)}
-              >
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">{form.title}</h3>
-                <p className="text-sm text-gray-500 mb-2">Created: {new Date(form.created_at).toLocaleDateString()}</p>
-                {role === 'admin' && (
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      className="px-3 py-1 text-xs rounded bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                      onClick={(e) => { e.stopPropagation(); openEditModal(form); }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="px-3 py-1 text-xs rounded bg-red-100 text-red-600 hover:bg-red-200"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteForm(form.id); }}
-                    >
-                      Delete
-                    </button>
-                    <button
-                      className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-800 hover:bg-blue-200"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/forms/${form.id}/responses`); }}
-                    >
-                      Responses
-                    </button>
-                  </div>
-                )}
+    <div className="bg-gray-50">
+      <div id="header" className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">Form Management</h1>
+              <div className="bg-gray-100 px-3 py-1 rounded-full">
+                <span className="text-sm text-gray-600">12 forms</span>
               </div>
-            ))}
+            </div>
+            <button
+              id="new-form-btn"
+              onClick={() => navigate('/forms/new')}
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+            >
+              <i className="fa-solid fa-plus"></i>
+              <span>New Form</span>
+            </button>
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Edit Modal */}
-        {editModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
-            <div className="bg-white p-8 rounded-lg shadow w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Edit Form</h2>
-              <form onSubmit={handleEditForm} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Form Title</label>
-                  <input
-                    type="text"
-                    className="border w-full px-4 py-2 rounded"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Assign to Roles</label>
-                  <select
-                    multiple
-                    value={editRoles}
-                    onChange={(e) =>
-                      setEditRoles(Array.from(e.target.selectedOptions, (option) => option.value))
-                    }
-                    className="border px-3 py-2 rounded w-full"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="jobseeker">Jobseeker</option>
-                    <option value="client">Client</option>
-                    <option value="recruitpro">RecruitPro</option>
-                  </select>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
-                    onClick={closeEditModal}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
+      <div id="main-layout" className="flex h-[calc(100vh-80px)]">
+        <div id="left-panel" className="w-1/2 border-r border-gray-200 bg-white">
+          <div id="search-filter-bar" className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="relative flex-1">
+                <i className="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" placeholder="Search forms..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+              </div>
+              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option>All Status</option>
+                <option>Published</option>
+                <option>Draft</option>
+                <option>Archived</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">View:</span>
+                <button
+                  id="card-view-btn"
+                  onClick={() => setIsCardView(true)}
+                  className={`p-2 rounded-md ${isCardView ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                >
+                  <i className="fa-solid fa-grip"></i>
+                </button>
+                <button
+                  id="table-view-btn"
+                  onClick={() => setIsCardView(false)}
+                  className={`p-2 rounded-md ${!isCardView ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                >
+                  <i className="fa-solid fa-list"></i>
+                </button>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Sort by:</span>
+                <select className="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                  <option>Last Updated</option>
+                  <option>Name</option>
+                  <option>Responses</option>
+                </select>
+              </div>
             </div>
           </div>
-        )}
 
-        {totalPages > 1 && (
-          <div className="flex justify-between mt-6">
-            <button
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-            >
-              Next
+          <div id="forms-list" className="p-6 overflow-y-auto">
+            <div id="form-card-1" className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">Employee Feedback Form</h3>
+                  <p className="text-sm text-gray-600 mb-3">Quarterly employee satisfaction survey</p>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Published</span>
+                    <span className="text-xs text-gray-500">Last updated 2 days ago</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Admin</span>
+                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">HR Manager</span>
+                  </div>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                  <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-eye"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-edit"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-copy"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <span>124 responses</span>
+                <span>85% completion rate</span>
+              </div>
+            </div>
+
+            <div id="form-card-2" className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">Job Application Form</h3>
+                  <p className="text-sm text-gray-600 mb-3">Standard application form for open positions</p>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">Draft</span>
+                    <span className="text-xs text-gray-500">Last updated 1 week ago</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Jobseeker</span>
+                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">RecruitPro</span>
+                  </div>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                  <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-eye"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-edit"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-copy"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <span>0 responses</span>
+                <span>-</span>
+              </div>
+            </div>
+
+            <div id="form-card-3" className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">Client Onboarding</h3>
+                  <p className="text-sm text-gray-600 mb-3">New client information collection form</p>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Published</span>
+                    <span className="text-xs text-gray-500">Last updated 3 days ago</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">Client</span>
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Admin</span>
+                  </div>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                  <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-eye"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-edit"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-copy"></i>
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg">
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <span>67 responses</span>
+                <span>92% completion rate</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="right-panel" className="w-1/2 bg-gray-50 relative">
+          <div id="form-details-header" className="bg-white border-b border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Employee Feedback Form</h2>
+              <div className="flex space-x-2">
+                <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  <i className="fa-solid fa-eye mr-2"></i>View Live
+                </button>
+                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                  <i className="fa-solid fa-edit mr-2"></i>Edit
+                </button>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-4">Quarterly employee satisfaction survey to gather feedback on workplace culture, management, and overall job satisfaction.</p>
+
+            <div id="tabs" className="flex space-x-6 border-b border-gray-200">
+              <button className="pb-3 border-b-2 border-primary text-primary font-medium">Role Assignment</button>
+              <button className="pb-3 text-gray-500 hover:text-gray-700">Preview</button>
+              <button className="pb-3 text-gray-500 hover:text-gray-700">Responses</button>
+            </div>
+          </div>
+
+          <div id="role-assignment-tab" className="p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Assign Roles</h3>
+              <p className="text-sm text-gray-600 mb-4">Select which user roles can access this form</p>
+
+              <div className="space-y-3">
+                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" defaultChecked className="mr-3 text-primary" />
+                  <div className="flex items-center">
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mr-3">Admin</span>
+                    <span className="text-gray-700">Full access to all forms and responses</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" className="mr-3 text-primary" />
+                  <div className="flex items-center">
+                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mr-3">Jobseeker</span>
+                    <span className="text-gray-700">Can view and submit assigned forms</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" className="mr-3 text-primary" />
+                  <div className="flex items-center">
+                    <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mr-3">Client</span>
+                    <span className="text-gray-700">Limited access to client-specific forms</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" defaultChecked className="mr-3 text-primary" />
+                  <div className="flex items-center">
+                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium mr-3">HR Manager</span>
+                    <span className="text-gray-700">Access to HR-related forms and analytics</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <h4 className="font-semibold text-gray-900 mb-3">Current Assignments</h4>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium flex items-center">
+                  Admin
+                  <button className="ml-2 text-blue-600 hover:text-blue-800">
+                    <i className="fa-solid fa-times"></i>
+                  </button>
+                </span>
+                <span className="bg-purple-100 text-purple-800 px-3 py-2 rounded-full text-sm font-medium flex items-center">
+                  HR Manager
+                  <button className="ml-2 text-purple-600 hover:text-purple-800">
+                    <i className="fa-solid fa-times"></i>
+                  </button>
+                </span>
+              </div>
+              <div className="text-sm text-gray-500 mb-4">
+                <i className="fa-solid fa-users mr-2"></i>
+                2 roles assigned • Last updated by John Doe
+              </div>
+            </div>
+          </div>
+
+          <div id="save-button-container" className="absolute bottom-6 right-6">
+            <button className="bg-secondary text-white px-8 py-3 rounded-xl hover:bg-green-600 transition-colors shadow-lg">
+              <i className="fa-solid fa-save mr-2"></i>Save Assignments
             </button>
           </div>
-        )}
-
-        {/* Assign Roles section - only visible to admin */}
-        {role === 'admin' && (
-          <div className="mt-12">
-            <FormAssignRoles />
-          </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default FormsList;
+}
