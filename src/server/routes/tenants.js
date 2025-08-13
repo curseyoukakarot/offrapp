@@ -246,6 +246,37 @@ router.delete('/:id/domains/:domain', async (req, res) => {
   }
 });
 
+// Utility: attach ALL users to a tenant (super-admin only)
+router.post('/:id/backfill-all-users', async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const user = req.authedUser;
+    const tid = req.params.id;
+    // Super admin gate
+    let superFlag = false;
+    if (user) {
+      const { data: roles } = await supabase.from('user_global_roles').select('role').eq('user_id', user.id);
+      superFlag = isSuperAdmin(roles || []);
+    }
+    if (!superFlag) return res.status(403).json({ error: 'forbidden' });
+
+    // Fetch all user ids
+    const { data: users, error: uErr } = await supabase.from('users').select('id').limit(5000);
+    if (uErr) throw uErr;
+    const rows = (users || []).map((u) => ({ tenant_id: tid, user_id: u.id, role: 'member' }));
+    if (rows.length === 0) return res.json({ inserted: 0 });
+    const { data: inserted, error: mErr } = await supabase
+      .from('memberships')
+      .upsert(rows, { onConflict: 'tenant_id,user_id' })
+      .select('user_id');
+    if (mErr) throw mErr;
+    res.json({ inserted: (inserted || []).length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;
 
 

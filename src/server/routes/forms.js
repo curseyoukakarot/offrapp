@@ -17,7 +17,8 @@ router.get('/', async (req, res) => {
     const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 500);
 
     let query = supabase.from('forms').select('*').order('updated_at', { ascending: false }).limit(limit);
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    // Include global (tenant_id IS NULL) plus active tenant
+    if (tenantId) query = query.or(`tenant_id.eq.${tenantId},tenant_id.is.null`);
 
     const { data, error, status } = await query;
     if (error) {
