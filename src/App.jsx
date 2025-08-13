@@ -27,6 +27,9 @@ import SuperAdminLayout from './layouts/SuperAdminLayout';
 import AdminLayout from './layouts/AdminLayout';
 import ClientLayout from './layouts/ClientLayout.jsx';
 import TenantsDomainsPage from './pages/super/TenantsDomainsPage.tsx';
+import AppHealthPage from './pages/super/AppHealthPage.tsx';
+import IntegrationsPage from './pages/super/IntegrationsPage.tsx';
+import NotificationsPage from './pages/super/NotificationsPage.tsx';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -227,6 +230,36 @@ function App() {
               <SuperAdminRoute>
                 <SuperAdminLayout>
                   <TenantsDomainsPage />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/health"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <AppHealthPage />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/integrations"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <IntegrationsPage />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/notifications"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <NotificationsPage />
                 </SuperAdminLayout>
               </SuperAdminRoute>
             }

@@ -40,7 +40,7 @@ router.get('/active', async (req, res) => {
   try {
     const supabase = getSupabase();
     const user = req.authedUser;
-    const tenantId = req.headers['x-tenant-id'] as string | undefined;
+    const tenantId = req.headers['x-tenant-id'];
     const now = new Date().toISOString();
     // Basic filter: active window, and audience match (all or includes tenant)
     let query = supabase.from('announcements').select('*').lte('start_at', now).gte('end_at', now);
@@ -53,6 +53,19 @@ router.get('/active', async (req, res) => {
       return false;
     });
     res.json({ banners });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// History (simple list)
+router.get('/history', async (_req, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ history: data || [] });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
