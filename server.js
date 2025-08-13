@@ -21,6 +21,13 @@ console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY 
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Ensure JSON content type for API responses
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/')) {
+    res.setHeader('Content-Type', 'application/json');
+  }
+  next();
+});
 
 // ✅ Supabase setup (must be initialized BEFORE middleware/routes use it)
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -40,6 +47,15 @@ app.use(async (req, _res, next) => {
 });
 // Impersonation header injection
 app.use(impersonationMiddleware);
+// Log tenant/user context for triage
+app.use((req, _res, next) => {
+  if (req.url.startsWith('/api/')) {
+    const tenantId = req.headers['x-tenant-id'];
+    const userId = req.authedUser?.id || null;
+    console.log(`[API] ${req.method} ${req.url} tenant=${tenantId || 'none'} user=${userId || 'anon'}`);
+  }
+  next();
+});
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/impersonate', impersonateRouter);
 app.use('/api/metrics', metricsRouter);
@@ -224,4 +240,15 @@ app.post('/api/search/reindex', async (req, res) => {
 });
 app.post('/api/notify/admins', async (req, res) => {
   res.json({ ok: true });
+});
+
+// Express error handler to avoid plain text FUNCTION_INVOCATION_FAILED
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error('[UNHANDLED]', err);
+  try {
+    res.status(500).json({ error: err?.message || 'Server error' });
+  } catch (_e) {
+    res.status(500).send('{"error":"Server error"}');
+  }
 });

@@ -10,9 +10,9 @@ DECLARE
   r RECORD;
 BEGIN
   FOR r IN
-    SELECT polname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'memberships'
+    SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'memberships'
   LOOP
-    EXECUTE format('DROP POLICY IF EXISTS %I ON public.memberships', r.polname);
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.memberships', r.policyname);
   END LOOP;
 END$$;
 
@@ -31,6 +31,12 @@ AS $$
       AND lower(ugr.role) IN ('super_admin','superadmin','super-admin')
   );
 $$;
+
+-- Drop by name (idempotent)
+DROP POLICY IF EXISTS memberships_select_self_or_super ON public.memberships;
+DROP POLICY IF EXISTS memberships_insert_super ON public.memberships;
+DROP POLICY IF EXISTS memberships_update_super ON public.memberships;
+DROP POLICY IF EXISTS memberships_delete_super ON public.memberships;
 
 -- SELECT: a user can see their own memberships; super admins can see all
 CREATE POLICY memberships_select_self_or_super
