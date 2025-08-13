@@ -77,27 +77,28 @@ export default function SuperAdminLayout({ children }: Props) {
               <i className="fa-solid fa-credit-card"></i>
               <span>Billing</span>
             </span>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <Link to="/super/health" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-heart-pulse"></i>
               <span>App Health</span>
               <span className="ml-auto bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">3</span>
-            </span>
-            <Link to="/super/health" className="hidden"></Link>
+            </Link>
             <Link to="/super/jobs" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-list-check"></i>
               <span>Queues &amp; Jobs</span>
               <span className="ml-auto bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs">23</span>
             </Link>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <Link to="/super/integrations" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-puzzle-piece"></i>
               <span>Integrations</span>
-            </span>
-            <Link to="/super/integrations" className="hidden"></Link>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+            </Link>
+            <Link to="/super/notifications" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-bell"></i>
               <span>Notifications</span>
-            </span>
-            <Link to="/super/notifications" className="hidden"></Link>
+            </Link>
+            <Link to="/super/settings" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+              <i className="fa-solid fa-gear"></i>
+              <span>Settings</span>
+            </Link>
             <Link to="/super/audit" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-clipboard-list"></i>
               <span>Audit Logs</span>

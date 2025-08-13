@@ -30,6 +30,7 @@ import TenantsDomainsPage from './pages/super/TenantsDomainsPage.tsx';
 import AppHealthPage from './pages/super/AppHealthPage.tsx';
 import IntegrationsPage from './pages/super/IntegrationsPage.tsx';
 import NotificationsPage from './pages/super/NotificationsPage.tsx';
+import SettingsPage from './pages/super/SettingsPage.tsx';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -260,6 +261,16 @@ function App() {
               <SuperAdminRoute>
                 <SuperAdminLayout>
                   <NotificationsPage />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/settings"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <SettingsPage />
                 </SuperAdminLayout>
               </SuperAdminRoute>
             }
