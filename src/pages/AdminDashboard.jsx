@@ -38,7 +38,7 @@ export default function AdminDashboard() {
           // Pull newest by membership.created_at within active tenant
           const { data, error } = await supabase
             .from('memberships')
-            .select('created_at, user:users(id, email, role, created_at, last_sign_in_at, profiles(first_name, last_name, avatar_url))')
+            .select('created_at, user:users(id, email, role, created_at, last_sign_in_at)')
             .eq('tenant_id', tenantId)
             .order('created_at', { ascending: false })
             .limit(3);
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
           // Fallback: latest created users visible to this admin
           const { data, error } = await supabase
             .from('users')
-            .select('id, email, role, created_at, last_sign_in_at, profiles(first_name, last_name, avatar_url)')
+            .select('id, email, role, created_at, last_sign_in_at')
             .order('created_at', { ascending: false })
             .limit(3);
           if (error) throw error;
@@ -212,10 +212,8 @@ export default function AdminDashboard() {
                   <div className="text-sm text-gray">No recent users.</div>
                 )}
                 {recentUsers.map((u) => {
-                  const first = u?.profiles?.first_name || '';
-                  const last = u?.profiles?.last_name || '';
-                  const name = (first || last) ? `${first} ${last}`.trim() : (u.email?.split('@')[0] || 'User');
-                  const avatar = u?.profiles?.avatar_url || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg';
+                  const name = u.email?.split('@')[0] || 'User';
+                  const avatar = 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg';
                   const isActive = !!u.last_sign_in_at;
                   return (
                     <div key={u.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
