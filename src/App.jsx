@@ -143,10 +143,10 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/forms" element={
-            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
-              <ClientLayout>
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
                 <FormsList />
-              </ClientLayout>
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/forms/new" element={
