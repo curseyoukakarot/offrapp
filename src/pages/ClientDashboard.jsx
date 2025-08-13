@@ -19,80 +19,8 @@ export default function ClientDashboard({ variant }) {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Sidebar */}
-      <div id="sidebar" className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 transform lg:translate-x-0 transition-transform duration-300">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">Offr.app</h1>
-        </div>
-
-        <nav className="mt-6 px-4">
-          <span className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200 mb-2 cursor-pointer">
-            <i className="fa-solid fa-home w-5 h-5 mr-3"></i>
-            <span className="font-medium">Dashboard</span>
-          </span>
-          <span className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200 mb-2 cursor-pointer">
-            <i className="fa-solid fa-folder w-5 h-5 mr-3"></i>
-            <span className="font-medium">Files</span>
-          </span>
-          <span className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200 mb-2 cursor-pointer">
-            <i className="fa-solid fa-clipboard-list w-5 h-5 mr-3"></i>
-            <span className="font-medium">Forms</span>
-          </span>
-
-          <div className="mt-6">
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Embedded Tools</h3>
-            <span className="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200 mb-1 cursor-pointer">
-              <i className="fa-solid fa-calendar w-4 h-4 mr-3"></i>
-              <span className="text-sm">Calendly</span>
-            </span>
-            <span className="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200 mb-1 cursor-pointer">
-              <i className="fa-solid fa-tasks w-4 h-4 mr-3"></i>
-              <span className="text-sm">Monday.com</span>
-            </span>
-            <span className="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200 mb-1 cursor-pointer">
-              <i className="fa-solid fa-book w-4 h-4 mr-3"></i>
-              <span className="text-sm">Notion</span>
-            </span>
-          </div>
-        </nav>
-
-        <div className="absolute bottom-6 left-6 right-6">
-          <div className="flex items-center">
-            <img
-              src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg"
-              alt="User"
-              className="w-10 h-10 rounded-full"
-            />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Sarah Chen</p>
-              <p className="text-xs text-gray-500">Client Account</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
+      {/* Content only; header/sidebar provided by ClientLayout */}
       <div id="main-content" className="lg:ml-64 min-h-screen">
-        {/* Header */}
-        <header id="header" className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
-              <i className="fa-solid fa-bars text-gray-600"></i>
-            </button>
-            <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-                <i className="fa-solid fa-bell text-gray-600"></i>
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
-              <img
-                src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg"
-                alt="User"
-                className="w-8 h-8 rounded-full"
-              />
-            </div>
-          </div>
-        </header>
-
         {/* Welcome Banner */}
         <div id="welcome-banner" className="p-6">
           <div className={`bg-gradient-to-r ${variant === 'recruitpro' ? 'from-purple-600 to-purple-700' : variant === 'jobseeker' ? 'from-green-600 to-green-700' : 'from-blue-600 to-blue-700'} rounded-2xl p-8 text-white`}>
@@ -241,7 +169,7 @@ export default function ClientDashboard({ variant }) {
           <AssignedFormsViewer />
         </div>
 
-        {/* Pages Tab */}
+        {/* Pages Tab */
         <div id="pages-tab" className={`tab-content px-6 ${activeTab === 'pages' ? '' : 'hidden'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">

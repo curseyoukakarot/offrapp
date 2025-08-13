@@ -23,6 +23,9 @@ import UserFiles from './pages/UserFiles';
 import EmbedPage from './pages/EmbedPage';
 import CompleteProfile from './pages/CompleteProfile';
 import Settings from './pages/Settings';
+import SuperAdminLayout from './layouts/SuperAdminLayout';
+import AdminLayout from './layouts/AdminLayout';
+import ClientLayout from './layouts/ClientLayout.jsx';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -65,91 +68,123 @@ function App() {
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/admin-embeds" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminEmbedsManagerV2 />
+              <AdminLayout>
+                <AdminEmbedsManagerV2 />
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/crm/users" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <UsersList />
+              <AdminLayout>
+                <UsersList />
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/assign-roles" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <FormAssignRoles />
+              <AdminLayout>
+                <FormAssignRoles />
+              </AdminLayout>
             </ProtectedRoute>
           } />
 
           {/* RecruitPro Routes */}
           <Route path="/dashboard/recruitpro" element={
             <ProtectedRoute allowedRoles={['recruitpro']}>
-              <RecruitProDashboard />
+              <ClientLayout>
+                <RecruitProDashboard />
+              </ClientLayout>
             </ProtectedRoute>
           } />
 
           {/* Job Seeker Routes */}
           <Route path="/dashboard/jobseeker" element={
             <ProtectedRoute allowedRoles={['jobseeker']}>
-              <JobSeekerDashboard />
+              <ClientLayout>
+                <JobSeekerDashboard />
+              </ClientLayout>
             </ProtectedRoute>
           } />
 
           {/* Client Routes */}
           <Route path="/dashboard/client" element={
             <ProtectedRoute allowedRoles={['client']}>
-              <ClientDashboard />
+              <ClientLayout>
+                <ClientDashboard />
+              </ClientLayout>
             </ProtectedRoute>
           } />
 
           {/* Shared Routes */}
           <Route path="/files" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
-              <FilesPage />
+              <ClientLayout>
+                <FilesPage />
+              </ClientLayout>
             </ProtectedRoute>
           } />
           <Route path="/admin/files" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminFilesManager />
+              <AdminLayout>
+                <AdminFilesManager />
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/forms" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
-              <FormsList />
+              <ClientLayout>
+                <FormsList />
+              </ClientLayout>
             </ProtectedRoute>
           } />
           <Route path="/forms/new" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro']}>
-              <FormBuilder />
+              <AdminLayout>
+                <FormBuilder />
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/forms/:id" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
-              <FormRenderer />
+              <ClientLayout>
+                <FormRenderer />
+              </ClientLayout>
             </ProtectedRoute>
           } />
           <Route path="/forms/:id/responses" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro']}>
-              <FormResponses />
+              <AdminLayout>
+                <FormResponses />
+              </AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/my-files" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
-              <UserFiles />
+              <ClientLayout>
+                <UserFiles />
+              </ClientLayout>
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
             <ProtectedRoute allowedRoles={['recruitpro', 'jobseeker']}>
-              <Settings />
+              <ClientLayout>
+                <Settings />
+              </ClientLayout>
             </ProtectedRoute>
           } />
           {/* Embed Route */}
           <Route path="/embed/:id" element={
             <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
-              <EmbedPage />
+              <ClientLayout>
+                <EmbedPage />
+              </ClientLayout>
             </ProtectedRoute>
           } />
           <Route path="/complete-profile" element={<CompleteProfile />} />
@@ -159,7 +194,9 @@ function App() {
             path="/super"
             element={
               <SuperAdminRoute>
-                <SuperAdminPage />
+                <SuperAdminLayout>
+                  <SuperAdminPage />
+                </SuperAdminLayout>
               </SuperAdminRoute>
             }
           />
@@ -167,7 +204,9 @@ function App() {
             path="/super/jobs"
             element={
               <SuperAdminRoute>
-                <JobsPage />
+                <SuperAdminLayout>
+                  <JobsPage />
+                </SuperAdminLayout>
               </SuperAdminRoute>
             }
           />
@@ -175,7 +214,9 @@ function App() {
             path="/super/audit"
             element={
               <SuperAdminRoute>
-                <AuditLogsPage />
+                <SuperAdminLayout>
+                  <AuditLogsPage />
+                </SuperAdminLayout>
               </SuperAdminRoute>
             }
           />
