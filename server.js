@@ -229,6 +229,7 @@ app.post('/api/send-welcome-email', async (req, res) => {
 
 // For Vercel deployment
 export default app;
+export const config = { api: { bodyParser: false } };
 
 // --- Super Admin no-op endpoints (stubs) ---
 app.post('/api/tenants/:id/suspend', async (req, res) => {
