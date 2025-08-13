@@ -64,11 +64,17 @@ export function useAuth(): AuthState {
       if (!mounted) return;
       setIsSuperAdmin(superFlag);
 
-      // Memberships
-      const { data: mems } = await supabase
-        .from('memberships')
-        .select('tenant_id, role');
-      setMemberships(mems || []);
+      // Memberships (policies may be mid-migration; fail soft)
+      let mems: any[] = [];
+      try {
+        const resp = await supabase
+          .from('memberships')
+          .select('tenant_id, role');
+        mems = resp.data || [];
+      } catch (_e) {
+        mems = [];
+      }
+      setMemberships(mems);
 
       // Resolve tenant records for switcher label (best-effort)
       const tenantIds = Array.from(new Set((mems || []).map((m: any) => m.tenant_id)));
@@ -92,7 +98,7 @@ export function useAuth(): AuthState {
         }
         return tenantsList[0];
       };
-      const nextActive = pick(tenants.length ? tenants : (await supabase.from('tenants').select('id, name').in('id', tenantIds)).data || [], storedId);
+      const nextActive = pick(tenants.length ? tenants : (tenantIds.length ? (await supabase.from('tenants').select('id, name').in('id', tenantIds)).data || [] : []), storedId);
       setActiveTenant(nextActive);
       setLoading(false);
     };
