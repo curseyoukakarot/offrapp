@@ -21,10 +21,13 @@ export default function AdminFilesManager() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: u } = await supabase.from('users').select('id, email').order('email');
-      setUsers(u || []);
-      const { data: f } = await supabase.from('files').select('*').order('created_at', { ascending: false }).limit(100);
-      setFiles(f || []);
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const [usr, fls] = await Promise.all([
+        fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({ users: [] })),
+        fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({ files: [] })),
+      ]);
+      setUsers(usr.users || []);
+      setFiles(fls.files || []);
     };
     load();
   }, []);
@@ -38,12 +41,17 @@ export default function AdminFilesManager() {
     if (upErr) return alert('Upload failed: ' + upErr.message);
     const baseUrl = import.meta.env.VITE_SUPABASE_URL;
     const fileUrl = `${baseUrl}/storage/v1/object/public/user-files/${storagePath}`;
-    const payload = { title: title || file.name, file_url: fileUrl, uploaded_by: session?.user?.id || null, user_id: selectedUser || null, assigned_roles: selectedRoles.length ? selectedRoles : null };
-    const { error: insErr } = await supabase.from('files').insert([payload]);
-    if (insErr) return alert('Save failed: ' + insErr.message);
+    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+    const resp = await fetch('/api/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
+      body: JSON.stringify({ title: title || file.name, file_url: fileUrl, user_id: selectedUser || null, assigned_roles: selectedRoles }),
+    });
+    const json = await resp.json();
+    if (!resp.ok) return alert('Save failed: ' + (json?.error || json?.message || 'unknown'));
     setTitle(''); setSelectedUser(''); setSelectedRoles([]); setFile(null);
-    const { data: f } = await supabase.from('files').select('*').order('created_at', { ascending: false }).limit(100);
-    setFiles(f || []);
+    const fls = await fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({ files: [] }));
+    setFiles(fls.files || []);
     alert('Uploaded & assigned');
   };
 
