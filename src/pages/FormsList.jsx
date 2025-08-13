@@ -272,6 +272,15 @@ export default function FormsList() {
           </div>
         </div>
       </div>
+      {/* Global CTA to create a new form */}
+      <button
+        onClick={() => navigate('/forms/new')}
+        className="fixed bottom-20 right-6 bg-primary text-white px-5 py-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors z-30 flex items-center gap-2"
+        aria-label="Create new form"
+      >
+        <i className="fa-solid fa-plus"></i>
+        <span className="hidden sm:inline">New Form</span>
+      </button>
     </div>
   );
 }
