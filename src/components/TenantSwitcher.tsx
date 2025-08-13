@@ -23,7 +23,7 @@ export default function TenantSwitcher() {
         .then((results: any[]) => {
           const map: Record<string, { name?: string; slug?: string }> = {};
           results.forEach((r: any) => {
-            if (r && r.tenant) map[r.tenant.id] = { name: r.tenant.name, slug: r.tenant.slug };
+            if (r && r.tenant) map[r.tenant.id] = { name: r.tenant.name };
           });
           setIdToInfo((prev) => ({ ...prev, ...map }));
         })
@@ -46,7 +46,7 @@ export default function TenantSwitcher() {
       >
         {memberships.map((m: any) => {
           const info = idToInfo[m.tenant_id] || {};
-          const label = info.name || info.slug ? `${info.name || info.slug}${info.slug ? ` (${info.slug})` : ''}` : m.tenant_id;
+          const label = info.name ? `${info.name}` : m.tenant_id;
           return (
             <option key={m.tenant_id} value={m.tenant_id}>{label}</option>
           );

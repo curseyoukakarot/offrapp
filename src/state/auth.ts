@@ -75,7 +75,7 @@ export function useAuth(): AuthState {
       if (tenantIds.length) {
         const { data: trows } = await supabase
           .from('tenants')
-          .select('id, name, slug')
+          .select('id, name')
           .in('id', tenantIds);
         setTenants(trows || []);
       } else {
@@ -92,7 +92,7 @@ export function useAuth(): AuthState {
         }
         return tenantsList[0];
       };
-      const nextActive = pick(tenants.length ? tenants : (await supabase.from('tenants').select('id, name, slug').in('id', tenantIds)).data || [], storedId);
+      const nextActive = pick(tenants.length ? tenants : (await supabase.from('tenants').select('id, name').in('id', tenantIds)).data || [], storedId);
       setActiveTenant(nextActive);
       setLoading(false);
     };
