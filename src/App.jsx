@@ -15,7 +15,7 @@ import UsersList from './pages/UsersList';
 import FilesPage from './pages/FilesPage';
 import AdminFilesManager from './pages/AdminFilesManager';
 import FormsList from './pages/FormsList';
-import FormBuilder from './pages/FormBuilder';
+import FormBuilder from './pages/FormBuilder.tsx';
 import FormRenderer from './pages/FormRenderer';
 import FormResponses from './pages/FormResponses';
 import FormAssignRoles from './pages/FormAssignRoles';
