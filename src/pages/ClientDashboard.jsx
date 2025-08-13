@@ -169,7 +169,7 @@ export default function ClientDashboard({ variant }) {
           <AssignedFormsViewer />
         </div>
 
-        {/* Pages Tab */
+        {/* Pages Tab */}
         <div id="pages-tab" className={`tab-content px-6 ${activeTab === 'pages' ? '' : 'hidden'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
