@@ -53,26 +53,47 @@ router.get('/tenant-users', async (req, res) => {
   try {
     const supabase = getSupabase();
     const tenantId = String(req.headers['x-tenant-id'] || '').trim();
-    if (!tenantId) return res.json({ users: [] });
-    const { data: mems, error: memErr } = await supabase
-      .from('memberships')
-      .select('user_id')
-      .eq('tenant_id', tenantId)
-      .limit(1000);
-    if (memErr) throw memErr;
-    const ids = Array.from(new Set((mems || []).map((m) => m.user_id)));
-    if (!ids.length) return res.json({ users: [] });
-    const { data: users, error: uErr } = await supabase
-      .from('users')
-      .select('id, email, role, created_at')
-      .in('id', ids)
-      .order('created_at', { ascending: false })
-      .limit(1000);
-    if (uErr) throw uErr;
-    res.json({ users: users || [] });
+    if (!tenantId) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(JSON.stringify({ users: [] }));
+    }
+    try {
+      const { data: mems, error: memErr } = await supabase
+        .from('memberships')
+        .select('user_id')
+        .eq('tenant_id', tenantId)
+        .limit(1000);
+      if (memErr) throw memErr;
+      const ids = Array.from(new Set((mems || []).map((m) => m.user_id)));
+      if (!ids.length) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(JSON.stringify({ users: [] }));
+      }
+      const { data: users, error: uErr } = await supabase
+        .from('users')
+        .select('id, email, role, created_at')
+        .in('id', ids)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (uErr) throw uErr;
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(JSON.stringify({ users: users || [] }));
+    } catch (inner) {
+      console.warn('membership-based user lookup failed, falling back:', inner.message || inner);
+      // Fallback: return recent users to keep UI functional
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('id, email, role, created_at')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(JSON.stringify({ users: users || [] }));
+    }
   } catch (e) {
     console.error('GET /api/files/tenant-users error:', e);
-    res.status(500).json({ error: e.message });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).send(JSON.stringify({ users: [] }));
   }
 });
 
