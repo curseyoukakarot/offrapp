@@ -33,14 +33,28 @@ export default function AdminDashboard() {
     const loadRecent = async () => {
       setUsersLoading(true);
       try {
-        // Match Users Management "Date Added" → users.created_at (desc)
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, email, role, created_at, last_sign_in_at')
-          .order('created_at', { ascending: false })
-          .limit(3);
-        if (error) throw error;
-        setRecentUsers(data || []);
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id');
+        if (tenantId) {
+          // Pull newest by membership.created_at within active tenant
+          const { data, error } = await supabase
+            .from('memberships')
+            .select('created_at, user:users(id, email, role, created_at, last_sign_in_at, profiles(first_name, last_name, avatar_url))')
+            .eq('tenant_id', tenantId)
+            .order('created_at', { ascending: false })
+            .limit(3);
+          if (error) throw error;
+          const mapped = (data || []).map((m) => m.user).filter(Boolean);
+          setRecentUsers(mapped);
+        } else {
+          // Fallback: latest created users visible to this admin
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, email, role, created_at, last_sign_in_at, profiles(first_name, last_name, avatar_url)')
+            .order('created_at', { ascending: false })
+            .limit(3);
+          if (error) throw error;
+          setRecentUsers(data || []);
+        }
       } catch (e) {
         console.warn('Failed to load recent users', e.message || e);
         setRecentUsers([]);
@@ -198,8 +212,10 @@ export default function AdminDashboard() {
                   <div className="text-sm text-gray">No recent users.</div>
                 )}
                 {recentUsers.map((u) => {
-                  const name = u.email?.split('@')[0] || 'User';
-                  const avatar = 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg';
+                  const first = u?.profiles?.first_name || '';
+                  const last = u?.profiles?.last_name || '';
+                  const name = (first || last) ? `${first} ${last}`.trim() : (u.email?.split('@')[0] || 'User');
+                  const avatar = u?.profiles?.avatar_url || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg';
                   const isActive = !!u.last_sign_in_at;
                   return (
                     <div key={u.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
