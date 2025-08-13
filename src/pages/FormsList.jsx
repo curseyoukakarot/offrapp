@@ -14,7 +14,8 @@ export default function FormsList() {
       try {
         const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
         const res = await fetch('/api/forms?limit=200', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
-        const json = await res.json();
+        const isJson = (res.headers.get('content-type') || '').includes('application/json');
+        const json = isJson ? await res.json() : { forms: [] };
         if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load forms');
         setForms(json.forms || []);
       } catch (e) {

@@ -23,13 +23,16 @@ router.get('/', async (req, res) => {
     if (error) {
       console.warn('GET /api/forms supabase error:', status, error.message);
       // Return empty list on auth/rls errors to avoid HTML error pages surfacing to client
-      return res.status(200).json({ forms: [] });
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(JSON.stringify({ forms: [] }));
     }
-    return res.json({ forms: data || [] });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).send(JSON.stringify({ forms: data || [] }));
   } catch (e) {
     console.error('GET /api/forms exception:', e);
     // Fail soft with empty list so the client never parses HTML
-    return res.status(200).json({ forms: [] });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).send(JSON.stringify({ forms: [] }));
   }
 });
 
