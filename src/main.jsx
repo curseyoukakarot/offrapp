@@ -4,7 +4,6 @@ import './index.css'
 import App from './App.jsx'
 import ImpersonationBanner from './components/ImpersonationBanner.tsx'
 import SystemBanner from './components/SystemBanner.tsx'
-import CommandPalette from './components/CommandPalette.tsx'
 import { useEffect } from 'react'
 
 function Root() {
@@ -26,7 +25,6 @@ createRoot(document.getElementById('root')).render(
     <>
       <SystemBanner />
       <ImpersonationBanner />
-      <CommandPalette />
       <Root />
     </>
   </StrictMode>,
