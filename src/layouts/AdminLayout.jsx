@@ -62,7 +62,7 @@ export default function AdminLayout({ children }) {
                   <i className="fa-solid fa-desktop"></i>
                   <span>Dashboard Screens</span>
                 </Link>
-                <Link to="/forms/new" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+                <Link to="/forms" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
                   <i className="fa-solid fa-clipboard-list"></i>
                   <span>Forms</span>
                 </Link>
