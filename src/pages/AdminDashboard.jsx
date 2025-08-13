@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 export default function AdminDashboard() {
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+
   useEffect(() => {
     // Counter animation
     function animateCounter(element) {
@@ -23,6 +27,27 @@ export default function AdminDashboard() {
     counters.forEach((counter) => {
       setTimeout(() => animateCounter(counter), Math.random() * 500);
     });
+  }, []);
+
+  useEffect(() => {
+    const loadRecent = async () => {
+      setUsersLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, email, created_at, last_sign_in_at, profiles(first_name, last_name, avatar_url)')
+          .order('created_at', { ascending: false })
+          .limit(3);
+        if (error) throw error;
+        setRecentUsers(data || []);
+      } catch (e) {
+        console.warn('Failed to load recent users', e.message || e);
+        setRecentUsers([]);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    loadRecent();
   }, []);
 
   return (
@@ -165,53 +190,38 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" className="w-10 h-10 rounded-full" alt="User 1" />
-                    <div>
-                      <p className="text-sm font-medium text-text">Sarah Wilson</p>
-                      <p className="text-xs text-gray">sarah@company.com</p>
+                {usersLoading && (
+                  <div className="text-sm text-gray">Loading…</div>
+                )}
+                {!usersLoading && recentUsers.length === 0 && (
+                  <div className="text-sm text-gray">No recent users.</div>
+                )}
+                {recentUsers.map((u) => {
+                  const first = u.profiles?.first_name || '';
+                  const last = u.profiles?.last_name || '';
+                  const name = (first || last) ? `${first} ${last}`.trim() : (u.email || 'User');
+                  const avatar = u.profiles?.avatar_url || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg';
+                  const isActive = !!u.last_sign_in_at;
+                  return (
+                    <div key={u.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <img src={avatar} className="w-10 h-10 rounded-full" alt={name} />
+                        <div>
+                          <p className="text-sm font-medium text-text">{name}</p>
+                          <p className="text-xs text-gray">{u.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 text-xs rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {isActive ? 'Active' : 'Pending'}
+                        </span>
+                        <button className="text-gray hover:text-text">
+                          <i className="fa-solid fa-ellipsis-h"></i>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
-                    <button className="text-gray hover:text-text">
-                      <i className="fa-solid fa-ellipsis-h"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" className="w-10 h-10 rounded-full" alt="User 2" />
-                    <div>
-                      <p className="text-sm font-medium text-text">David Chen</p>
-                      <p className="text-xs text-gray">david@company.com</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Pending</span>
-                    <button className="text-gray hover:text-text">
-                      <i className="fa-solid fa-ellipsis-h"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" className="w-10 h-10 rounded-full" alt="User 3" />
-                    <div>
-                      <p className="text-sm font-medium text-text">Alex Rodriguez</p>
-                      <p className="text-xs text-gray">alex@company.com</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
-                    <button className="text-gray hover:text-text">
-                      <i className="fa-solid fa-ellipsis-h"></i>
-                    </button>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
 
               <Link to="/crm/users" className="w-full mt-4 py-2 text-primary hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium text-center block">
