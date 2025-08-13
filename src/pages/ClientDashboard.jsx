@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import AssignedFormsViewer from '../components/AssignedFormsViewer';
 
-export default function ClientDashboard() {
+export default function ClientDashboard({ variant }) {
   const [activeTab, setActiveTab] = useState('files');
 
   const tabBtn = (key, label, icon) => (
@@ -94,7 +95,7 @@ export default function ClientDashboard() {
 
         {/* Welcome Banner */}
         <div id="welcome-banner" className="p-6">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
+          <div className={`bg-gradient-to-r ${variant === 'recruitpro' ? 'from-purple-600 to-purple-700' : variant === 'jobseeker' ? 'from-green-600 to-green-700' : 'from-blue-600 to-blue-700'} rounded-2xl p-8 text-white`}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-bold mb-2">Welcome back, Sarah!</h2>
@@ -237,62 +238,7 @@ export default function ClientDashboard() {
 
         {/* Forms Tab */}
         <div id="forms-tab" className={`tab-content px-6 ${activeTab === 'forms' ? '' : 'hidden'}`}>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <i className="fa-solid fa-clipboard-list text-orange-600"></i>
-                </div>
-                <div className="ml-4">
-                  <p className="font-medium text-gray-900">1 form pending</p>
-                  <p className="text-sm text-gray-500">Intake form needs completion</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <i className="fa-solid fa-clipboard-list text-orange-600 text-xl"></i>
-                  </div>
-                  <div className="ml-4">
-                    <h4 className="font-semibold text-gray-900">Client Intake Form</h4>
-                    <p className="text-sm text-gray-500">Required information for project setup</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">Not Started</span>
-                  <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                    Start
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i className="fa-solid fa-check-circle text-green-600 text-xl"></i>
-                  </div>
-                  <div className="ml-4">
-                    <h4 className="font-semibold text-gray-900">Project Preferences</h4>
-                    <p className="text-sm text-gray-500">Design and functionality preferences</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Completed</span>
-                  <button className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
-                    View
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AssignedFormsViewer />
         </div>
 
         {/* Pages Tab */}
