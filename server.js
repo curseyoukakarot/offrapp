@@ -12,6 +12,7 @@ import notificationsRouter from './src/server/routes/notifications.js';
 import auditRouter from './src/server/routes/audit.js';
 import usersRouter from './src/server/routes/users.js';
 import filesRouter from './src/server/routes/files.js';
+import formsRouter from './src/server/routes/forms.js';
 import { impersonationMiddleware } from './src/server/middleware/impersonation.js';
 
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
@@ -43,6 +44,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/forms', formsRouter);
 
 // ✅ Supabase setup
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);

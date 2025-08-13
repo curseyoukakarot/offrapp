@@ -1,9 +1,30 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function FormsList() {
   const navigate = useNavigate();
   const [isCardView, setIsCardView] = useState(true);
+  const [forms, setForms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const res = await fetch('/api/forms?limit=200', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load forms');
+        setForms(json.forms || []);
+      } catch (e) {
+        setError(e.message || String(e));
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="bg-gray-50">
@@ -13,7 +34,7 @@ export default function FormsList() {
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-gray-900">Form Management</h1>
               <div className="bg-gray-100 px-3 py-1 rounded-full">
-                <span className="text-sm text-gray-600">12 forms</span>
+                <span className="text-sm text-gray-600">{loading ? 'Loading…' : `${forms.length} forms`}</span>
               </div>
             </div>
             <button
@@ -73,110 +94,63 @@ export default function FormsList() {
           </div>
 
           <div id="forms-list" className="p-6 overflow-y-auto">
-            <div id="form-card-1" className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
+            {loading && (
+              <div className="text-sm text-gray-500">Loading forms…</div>
+            )}
+            {!loading && error && (
+              <div className="text-sm text-red-600">{error}</div>
+            )}
+            {!loading && !error && forms.length === 0 && (
+              <div className="text-sm text-gray-500">No forms found.</div>
+            )}
+            {!loading && !error && forms.map((form) => (
+            <div key={form.id} className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">Employee Feedback Form</h3>
-                  <p className="text-sm text-gray-600 mb-3">Quarterly employee satisfaction survey</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">{form.title || 'Untitled Form'}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{form.description || ''}</p>
                   <div className="flex items-center space-x-2 mb-3">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Published</span>
-                    <span className="text-xs text-gray-500">Last updated 2 days ago</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${form.status === 'published' ? 'bg-green-100 text-green-800' : form.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>{(form.status || 'draft').replace(/^./, c => c.toUpperCase())}</span>
+                    <span className="text-xs text-gray-500">Last updated {new Date(form.updated_at || form.created_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Admin</span>
-                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">HR Manager</span>
+                    {(Array.isArray(form.assigned_roles) ? form.assigned_roles : []).map((r) => (
+                      <span key={r} className={`px-2 py-1 rounded-full text-xs ${r === 'admin' ? 'bg-blue-100 text-blue-800' : r === 'recruitpro' ? 'bg-purple-100 text-purple-800' : r === 'jobseeker' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{r}</span>
+                    ))}
                   </div>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg">
+                  <button title="Preview" className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg" onClick={(e) => { e.stopPropagation(); navigate(`/forms/${form.id}`); }}>
                     <i className="fa-solid fa-eye"></i>
                   </button>
-                  <button className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg">
+                  <button title="Edit" className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg" onClick={(e) => { e.stopPropagation(); navigate(`/forms/new?edit=${form.id}`); }}>
                     <i className="fa-solid fa-edit"></i>
                   </button>
-                  <button className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg">
+                  <button title="Copy" className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg" onClick={async (e) => {
+                    e.stopPropagation();
+                    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+                    const res = await fetch(`/api/forms/${form.id}/copy`, { method: 'POST', headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+                    const json = await res.json();
+                    if (res.ok) setForms((prev) => [json.form, ...prev]);
+                  }}>
                     <i className="fa-solid fa-copy"></i>
                   </button>
-                  <button className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg">
+                  <button title="Delete" className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg" onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm('Delete this form?')) return;
+                    const res = await fetch(`/api/forms/${form.id}`, { method: 'DELETE' });
+                    if (res.ok) setForms((prev) => prev.filter((f) => f.id !== form.id));
+                  }}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>124 responses</span>
-                <span>85% completion rate</span>
+                <span>{form.responses_count ?? 0} responses</span>
+                <span>{form.completion_rate ? `${form.completion_rate}% completion rate` : '-'}</span>
               </div>
             </div>
-
-            <div id="form-card-2" className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">Job Application Form</h3>
-                  <p className="text-sm text-gray-600 mb-3">Standard application form for open positions</p>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">Draft</span>
-                    <span className="text-xs text-gray-500">Last updated 1 week ago</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Jobseeker</span>
-                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">RecruitPro</span>
-                  </div>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-eye"></i>
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-edit"></i>
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-copy"></i>
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>0 responses</span>
-                <span>-</span>
-              </div>
-            </div>
-
-            <div id="form-card-3" className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">Client Onboarding</h3>
-                  <p className="text-sm text-gray-600 mb-3">New client information collection form</p>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Published</span>
-                    <span className="text-xs text-gray-500">Last updated 3 days ago</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">Client</span>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Admin</span>
-                  </div>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-eye"></i>
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-edit"></i>
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-copy"></i>
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg">
-                    <i className="fa-solid fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>67 responses</span>
-                <span>92% completion rate</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
