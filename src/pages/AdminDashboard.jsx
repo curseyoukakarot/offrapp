@@ -33,28 +33,16 @@ export default function AdminDashboard() {
     const loadRecent = async () => {
       setUsersLoading(true);
       try {
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id');
-        if (tenantId) {
-          // Pull newest by membership.created_at within active tenant
-          const { data, error } = await supabase
-            .from('memberships')
-            .select('created_at, user:users(id, email, role, created_at, last_sign_in_at)')
-            .eq('tenant_id', tenantId)
-            .order('created_at', { ascending: false })
-            .limit(3);
-          if (error) throw error;
-          const mapped = (data || []).map((m) => m.user).filter(Boolean);
-          setRecentUsers(mapped);
-        } else {
-          // Fallback: latest created users visible to this admin
-          const { data, error } = await supabase
-            .from('users')
-            .select('id, email, role, created_at, last_sign_in_at')
-            .order('created_at', { ascending: false })
-            .limit(3);
-          if (error) throw error;
-          setRecentUsers(data || []);
-        }
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const res = await fetch('/api/users/recent', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
+          },
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || 'Failed to load');
+        setRecentUsers(json.users || []);
       } catch (e) {
         console.warn('Failed to load recent users', e.message || e);
         setRecentUsers([]);
