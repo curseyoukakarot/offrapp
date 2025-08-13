@@ -21,6 +21,10 @@ console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ✅ Supabase setup (must be initialized BEFORE middleware/routes use it)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const SENDGRID_FROM = process.env.SENDGRID_FROM || 'noreply@nestbase.io';
 // Attach user to req if Authorization token present
 app.use(async (req, _res, next) => {
   try {
@@ -45,10 +49,6 @@ app.use('/api/audit', auditRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/forms', formsRouter);
-
-// ✅ Supabase setup
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const SENDGRID_FROM = process.env.SENDGRID_FROM || 'noreply@nestbase.io';
 
 // ✅ Supabase invite helper function
 async function inviteUser(email, role) {
