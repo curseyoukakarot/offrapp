@@ -69,13 +69,30 @@ router.get('/tenant-users', async (req, res) => {
         res.setHeader('Content-Type', 'application/json');
         return res.status(200).send(JSON.stringify({ users: [] }));
       }
-      const { data: users, error: uErr } = await supabase
+      let { data: users, error: uErr } = await supabase
         .from('users')
         .select('id, email, role, created_at')
         .in('id', ids)
         .order('created_at', { ascending: false })
         .limit(1000);
       if (uErr) throw uErr;
+      // Fallback: if public.users is incomplete, fetch missing profiles from auth
+      const foundIds = new Set((users || []).map((u) => u.id));
+      const missing = ids.filter((id) => !foundIds.has(id));
+      if (missing.length > 0) {
+        const fetched = [];
+        for (const uid of missing) {
+          try {
+            const { data: adminUser } = await supabase.auth.admin.getUserById(uid);
+            if (adminUser?.user) {
+              fetched.push({ id: uid, email: adminUser.user.email || '', role: 'member', created_at: adminUser.user.created_at });
+            }
+          } catch (_e) {
+            // ignore individual failures
+          }
+        }
+        users = [...(users || []), ...fetched];
+      }
       res.setHeader('Content-Type', 'application/json');
       return res.status(200).send(JSON.stringify({ users: users || [] }));
     } catch (inner) {
