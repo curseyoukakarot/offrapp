@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {
   useEffect(() => {
@@ -58,18 +59,18 @@ export default function AdminDashboard() {
         {/* Sidebar */}
         <aside id="sidebar" className="w-64 bg-white border-r border-gray-200 h-screen sticky top-16">
           <nav className="p-4 space-y-2">
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-primary/10 border-r-2 border-primary text-primary cursor-pointer">
+            <Link to="/dashboard/admin" className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-primary/10 border-r-2 border-primary text-primary cursor-pointer">
               <i className="fa-solid fa-chart-line"></i>
               <span className="font-medium">Dashboard</span>
-            </span>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+            </Link>
+            <Link to="/crm/users" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
               <i className="fa-solid fa-users"></i>
               <span>User Management</span>
-            </span>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+            </Link>
+            <Link to="/admin/files" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
               <i className="fa-solid fa-cloud-upload"></i>
               <span>File Upload</span>
-            </span>
+            </Link>
 
             <div className="pt-4">
               <div className="flex items-center justify-between px-3 py-2 text-gray text-sm font-medium">
@@ -77,14 +78,14 @@ export default function AdminDashboard() {
                 <i className="fa-solid fa-chevron-down"></i>
               </div>
               <div className="ml-4 space-y-1">
-                <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+                <Link to="/admin-embeds" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
                   <i className="fa-solid fa-desktop"></i>
                   <span>Dashboard Screens</span>
-                </span>
-                <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+                </Link>
+                <Link to="/forms/new" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
                   <i className="fa-solid fa-clipboard-list"></i>
                   <span>Forms</span>
-                </span>
+                </Link>
               </div>
             </div>
           </nav>
@@ -277,9 +278,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <button className="w-full mt-4 py-2 text-primary hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium">
+              <Link to="/crm/users" className="w-full mt-4 py-2 text-primary hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium text-center block">
                 View All Users
-              </button>
+              </Link>
             </section>
           </div>
         </main>
