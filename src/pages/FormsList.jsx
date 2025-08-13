@@ -275,7 +275,7 @@ export default function FormsList() {
       {/* Global CTA to create a new form */}
       <button
         onClick={() => navigate('/forms/new')}
-        className="fixed bottom-20 right-6 bg-primary text-white px-5 py-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors z-30 flex items-center gap-2"
+        className="fixed bottom-24 right-6 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50 flex items-center gap-2 ring-1 ring-blue-700/20"
         aria-label="Create new form"
       >
         <i className="fa-solid fa-plus"></i>
