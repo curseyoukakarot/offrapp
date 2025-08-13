@@ -15,29 +15,21 @@ router.get('/', async (req, res) => {
     const supabase = getSupabase();
     const tenantId = String(req.headers['x-tenant-id'] || '').trim();
     const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 500);
-    if (tenantId) {
-      // Avoid RLS recursion by first resolving IDs from memberships, then filtering
-      const { data: mems, error: memErr } = await supabase
-        .from('memberships')
-        .select('tenant_id')
-        .eq('tenant_id', tenantId)
-        .limit(1);
-      if (memErr) throw memErr;
+
+    let query = supabase.from('forms').select('*').order('updated_at', { ascending: false }).limit(limit);
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+
+    const { data, error, status } = await query;
+    if (error) {
+      console.warn('GET /api/forms supabase error:', status, error.message);
+      // Return empty list on auth/rls errors to avoid HTML error pages surfacing to client
+      return res.status(200).json({ forms: [] });
     }
-    const { data, error } = await supabase
-      .from('forms')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(limit)
-      .maybeSingle ? {} : {};
-    // If tenantId set and table has tenant_id, filter client-side as fallback
-    const rows = Array.isArray(data) ? data : (data ? [data] : []);
-    const filtered = tenantId ? rows.filter((r) => r.tenant_id === tenantId) : rows;
-    if (error) throw error;
-    res.json({ forms: filtered });
+    return res.json({ forms: data || [] });
   } catch (e) {
-    console.error('GET /api/forms error:', e);
-    res.status(500).json({ error: e.message });
+    console.error('GET /api/forms exception:', e);
+    // Fail soft with empty list so the client never parses HTML
+    return res.status(200).json({ forms: [] });
   }
 });
 
