@@ -1,6 +1,8 @@
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ClientLayout({ children, variant }) {
+  const { signOut } = useAuth();
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Sidebar from ClientDashboard */}
@@ -38,6 +40,9 @@ export default function ClientLayout({ children, variant }) {
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
               </button>
               <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="User" className="w-8 h-8 rounded-full" />
+              <button title="Sign out" onClick={signOut} className="p-2 text-gray-600 hover:text-gray-900">
+                <i className="fa-solid fa-right-from-bracket"></i>
+              </button>
             </div>
           </div>
         </header>

@@ -1,10 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import CommandPalette from '../components/CommandPalette';
+import { supabase } from '../supabaseClient';
 
 type Props = { children: React.ReactNode };
 
 export default function SuperAdminLayout({ children }: Props) {
+  const doSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      window.location.href = '/login';
+    }
+  };
   const onSuspend = () => {};
   const onImpersonate = () => {};
   const onPurgeCache = () => {};
@@ -33,6 +41,9 @@ export default function SuperAdminLayout({ children }: Props) {
           <div className="w-8 h-8 rounded-full bg-gray-300">
             <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" className="w-8 h-8 rounded-full" alt="Admin" />
           </div>
+          <button title="Sign out" onClick={doSignOut} className="p-2 text-gray-600 hover:text-gray-900">
+            <i className="fa-solid fa-right-from-bracket"></i>
+          </button>
         </div>
       </div>
 
@@ -103,10 +114,7 @@ export default function SuperAdminLayout({ children }: Props) {
               <i className="fa-solid fa-clipboard-list"></i>
               <span>Audit Logs</span>
             </Link>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
-              <i className="fa-solid fa-gear"></i>
-              <span>Settings</span>
-            </span>
+            
           </nav>
         </div>
 

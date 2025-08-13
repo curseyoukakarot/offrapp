@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AdminLayout({ children }) {
+  const { signOut } = useAuth();
   return (
     <div className="bg-bg">
       {/* Header from AdminDashboard */}
@@ -21,12 +23,15 @@ export default function AdminLayout({ children }) {
               <input type="text" placeholder="Search users, files, forms..." className="w-80 pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors" />
               <i className="fa-solid fa-search absolute left-3 top-3 text-gray text-sm"></i>
             </div>
-            <div className="flex items-center space-x-3">
-              <button className="p-2 text-gray hover:text-text transition-colors">
-                <i className="fa-solid fa-bell"></i>
-              </button>
-              <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" className="w-8 h-8 rounded-full" alt="Admin" />
-            </div>
+          <div className="flex items-center space-x-3">
+            <button className="p-2 text-gray hover:text-text transition-colors">
+              <i className="fa-solid fa-bell"></i>
+            </button>
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" className="w-8 h-8 rounded-full" alt="Admin" />
+            <button title="Sign out" onClick={signOut} className="p-2 text-gray-600 hover:text-gray-900">
+              <i className="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
           </div>
         </div>
       </header>
