@@ -270,6 +270,10 @@ router.post('/:id/backfill-all-users', async (req, res) => {
       .upsert(rows, { onConflict: 'tenant_id,user_id' })
       .select('user_id');
     if (mErr) throw mErr;
+    // Also fix tenant name if provided
+    if (req.body?.tenant_name) {
+      await supabase.from('tenants').update({ name: req.body.tenant_name }).eq('id', tid);
+    }
     res.json({ inserted: (inserted || []).length });
   } catch (e) {
     console.error(e);
