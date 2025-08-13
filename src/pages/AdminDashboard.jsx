@@ -34,14 +34,23 @@ export default function AdminDashboard() {
       setUsersLoading(true);
       try {
         const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-        const res = await fetch('/api/users/recent', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
-          },
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json?.error || 'Failed to load');
+        const doFetch = async (withTenant) => {
+          const res = await fetch('/api/users/recent', {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(withTenant && tenantId ? { 'x-tenant-id': tenantId } : {}),
+            },
+          });
+          const json = await res.json();
+          return { res, json };
+        };
+
+        let { res, json } = await doFetch(true);
+        if (!res.ok) {
+          // If tenant-scoped query fails (e.g., RLS recursion on memberships), retry globally
+          ({ res, json } = await doFetch(false));
+        }
+        if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load');
         setRecentUsers(json.users || []);
       } catch (e) {
         console.warn('Failed to load recent users', e.message || e);

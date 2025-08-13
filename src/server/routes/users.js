@@ -59,23 +59,28 @@ router.get('/recent', async (req, res) => {
     }
 
     if (tenantId) {
-      const { data: mems, error: memErr } = await supabase
-        .from('memberships')
-        .select('user_id, created_at')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (memErr) throw memErr;
-      const ids = Array.from(new Set((mems || []).map((m) => m.user_id)));
-      if (ids.length === 0) return res.json({ users: [] });
-      const { data: users, error: uErr } = await supabase
-        .from('users')
-        .select('id, email, role, created_at')
-        .in('id', ids)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (uErr) throw uErr;
-      return res.json({ users: users || [] });
+      try {
+        const { data: mems, error: memErr } = await supabase
+          .from('memberships')
+          .select('user_id, created_at')
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        if (memErr) throw memErr;
+        const ids = Array.from(new Set((mems || []).map((m) => m.user_id)));
+        if (ids.length === 0) return res.json({ users: [] });
+        const { data: users, error: uErr } = await supabase
+          .from('users')
+          .select('id, email, role, created_at')
+          .in('id', ids)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        if (uErr) throw uErr;
+        return res.json({ users: users || [] });
+      } catch (e) {
+        console.warn('Falling back to global users due to memberships query error:', e.message || e);
+        // fall through to global
+      }
     }
 
     // Global fallback: newest users
