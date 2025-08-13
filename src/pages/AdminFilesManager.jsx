@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 export default function AdminFilesManager() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [roles] = useState(['admin', 'recruitpro', 'jobseeker', 'client']);
+  const [selectedRoles, setSelectedRoles] = useState([]);
+  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState('');
+  const [files, setFiles] = useState([]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -10,6 +18,34 @@ export default function AdminFilesManager() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [drawerOpen]);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: u } = await supabase.from('users').select('id, email').order('email');
+      setUsers(u || []);
+      const { data: f } = await supabase.from('files').select('*').order('created_at', { ascending: false }).limit(100);
+      setFiles(f || []);
+    };
+    load();
+  }, []);
+
+  const handleUploadAssign = async () => {
+    if (!file) return alert('Choose a file');
+    if (!selectedUser && selectedRoles.length === 0) return alert('Select a user or roles');
+    const { data: { session } } = await supabase.auth.getSession();
+    const storagePath = `${selectedUser || 'roles'}/${file.name}`;
+    const { error: upErr } = await supabase.storage.from('user-files').upload(storagePath, file);
+    if (upErr) return alert('Upload failed: ' + upErr.message);
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const fileUrl = `${baseUrl}/storage/v1/object/public/user-files/${storagePath}`;
+    const payload = { title: title || file.name, file_url: fileUrl, uploaded_by: session?.user?.id || null, user_id: selectedUser || null, assigned_roles: selectedRoles.length ? selectedRoles : null };
+    const { error: insErr } = await supabase.from('files').insert([payload]);
+    if (insErr) return alert('Save failed: ' + insErr.message);
+    setTitle(''); setSelectedUser(''); setSelectedRoles([]); setFile(null);
+    const { data: f } = await supabase.from('files').select('*').order('created_at', { ascending: false }).limit(100);
+    setFiles(f || []);
+    alert('Uploaded & assigned');
+  };
 
   return (
     <div className="bg-gray-50 font-sans">
@@ -88,21 +124,22 @@ export default function AdminFilesManager() {
               </div>
 
               {/* Drag & Drop Zone */}
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-all cursor-pointer">
+              <label className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-all cursor-pointer block">
                 <i className="fa-solid fa-cloud-upload text-4xl text-gray-400 mb-4"></i>
                 <p className="text-lg font-medium text-gray-700 mb-2">Drop files here or click to browse</p>
                 <p className="text-sm text-gray-500">Support for PDF, DOC, images up to 100MB</p>
-              </div>
+                <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              </label>
 
               {/* Upload Form */}
               <div className="mt-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Recipient</label>
-                    <div className="relative">
-                      <input type="text" placeholder="Search users..." className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
-                      <i className="fa-solid fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    </div>
+                    <select className="w-full border border-gray-300 rounded-lg px-3 py-2" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+                      <option value="">Select user…</option>
+                      {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
@@ -120,9 +157,17 @@ export default function AdminFilesManager() {
                     <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                     <span className="ml-2 text-sm text-gray-700">Notify user</span>
                   </label>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all">
-                    Upload &amp; Assign
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm text-gray-500">Assign to roles:</div>
+                    <div className="flex items-center gap-2">
+                      {roles.map((r) => (
+                        <label key={r} className="inline-flex items-center gap-1 text-xs">
+                          <input type="checkbox" checked={selectedRoles.includes(r)} onChange={(e) => setSelectedRoles((prev) => e.target.checked ? [...prev, r] : prev.filter((x) => x !== r))} /> {r}
+                        </label>
+                      ))}
+                    </div>
+                    <button onClick={handleUploadAssign} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all">Upload &amp; Assign</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -155,60 +200,32 @@ export default function AdminFilesManager() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    <tr className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setDrawerOpen(true)}>
-                      <td className="px-6 py-4">
-                        <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <i className="fa-solid fa-file-pdf text-red-500 mr-3"></i>
-                          <span className="text-sm font-medium text-gray-900">Resume_Final.pdf</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" className="w-6 h-6 rounded-full mr-2" alt="Recipient" />
-                          <span className="text-sm text-gray-900">Sarah Wilson</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">2.4 MB</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Viewed</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">2 hours ago</td>
-                      <td className="px-6 py-4">
-                        <button className="text-gray-400 hover:text-gray-600 transition-all">
-                          <i className="fa-solid fa-ellipsis-vertical"></i>
-                        </button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setDrawerOpen(true)}>
-                      <td className="px-6 py-4">
-                        <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <i className="fa-solid fa-file-image text-blue-500 mr-3"></i>
-                          <span className="text-sm font-medium text-gray-900">Portfolio_Design.jpg</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" className="w-6 h-6 rounded-full mr-2" alt="Recipient" />
-                          <span className="text-sm text-gray-900">John Smith</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">5.1 MB</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Sent</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">1 day ago</td>
-                      <td className="px-6 py-4">
-                        <button className="text-gray-400 hover:text-gray-600 transition-all">
-                          <i className="fa-solid fa-ellipsis-vertical"></i>
-                        </button>
-                      </td>
-                    </tr>
+                    {files.map((f) => (
+                      <tr key={f.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setDrawerOpen(true)}>
+                        <td className="px-6 py-4">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <i className="fa-solid fa-file text-gray-500 mr-3"></i>
+                            <span className="text-sm font-medium text-gray-900">{f.title || f.file_url.split('/').pop()}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{f.user_id || (Array.isArray(f.assigned_roles) && f.assigned_roles.join(', ')) || '—'}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">—</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">—</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(f.created_at).toLocaleString()}</td>
+                        <td className="px-6 py-4">
+                          <button className="text-gray-400 hover:text-gray-600 transition-all">
+                            <i className="fa-solid fa-ellipsis-vertical"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
