@@ -63,11 +63,11 @@ export default function SuperAdminLayout({ children }: Props) {
               <i className="fa-solid fa-gauge-high"></i>
               <span className="font-medium">Overview</span>
             </Link>
-            <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <Link to="/super/tenants" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-building"></i>
               <span>Tenants &amp; Domains</span>
               <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">142</span>
-            </span>
+            </Link>
             <span className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-users"></i>
               <span>Users &amp; Roles</span>
