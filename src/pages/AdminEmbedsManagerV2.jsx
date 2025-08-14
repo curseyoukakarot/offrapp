@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 
 export default function AdminEmbedsManagerV2() {
   const [audience, setAudience] = useState('user-type');
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [selectedUser, setSelectedUser] = useState('');
 
   useEffect(() => {
     // Table row hover effects to show actions
@@ -9,6 +12,23 @@ export default function AdminEmbedsManagerV2() {
     rows.forEach((row) => {
       row.classList.add('group');
     });
+  }, []);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      try {
+        setLoadingUsers(true);
+        const res = await fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        setUsers(Array.isArray(json.users) ? json.users : []);
+      } catch {
+        setUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    loadUsers();
   }, []);
 
   const Chip = ({ children }) => {
@@ -124,7 +144,13 @@ export default function AdminEmbedsManagerV2() {
                   </label>
 
                   <div id="user-search" className="ml-6" style={{ display: audience === 'individual' ? 'block' : 'none' }}>
-                    <input type="text" placeholder="Search users..." className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select user</label>
+                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+                      <option value="">Choose a user…</option>
+                      {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
+                    </select>
+                    {loadingUsers && <div className="text-xs text-gray-500 mt-1">Loading users…</div>}
+                    {!loadingUsers && users.length === 0 && <div className="text-xs text-gray-500 mt-1">No users found for this tenant.</div>}
                   </div>
                 </div>
               </div>
