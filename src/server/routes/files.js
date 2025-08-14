@@ -69,43 +69,24 @@ router.get('/tenant-users', async (req, res) => {
         res.setHeader('Content-Type', 'application/json');
         return res.status(200).send(JSON.stringify({ users: [] }));
       }
-      let { data: users, error: uErr } = await supabase
-        .from('users')
-        .select('id, email, role, created_at')
-        .in('id', ids)
-        .order('created_at', { ascending: false })
-        .limit(1000);
-      if (uErr) throw uErr;
-      // Fallback: if public.users is incomplete, fetch missing profiles from auth
-      const foundIds = new Set((users || []).map((u) => u.id));
-      const missing = ids.filter((id) => !foundIds.has(id));
-      if (missing.length > 0) {
-        const fetched = [];
-        for (const uid of missing) {
-          try {
-            const { data: adminUser } = await supabase.auth.admin.getUserById(uid);
-            if (adminUser?.user) {
-              fetched.push({ id: uid, email: adminUser.user.email || '', role: 'member', created_at: adminUser.user.created_at });
-            }
-          } catch (_e) {
-            // ignore individual failures
+      // Fetch user records directly from auth using service role to avoid public.users schema assumptions
+      const users = [];
+      for (const uid of ids) {
+        try {
+          const { data: adminUser, error: aErr } = await supabase.auth.admin.getUserById(uid);
+          if (!aErr && adminUser?.user) {
+            users.push({ id: uid, email: adminUser.user.email || '', created_at: adminUser.user.created_at });
           }
+        } catch (_e) {
+          // ignore individual failures
         }
-        users = [...(users || []), ...fetched];
       }
       res.setHeader('Content-Type', 'application/json');
-      return res.status(200).send(JSON.stringify({ users: users || [] }));
+      return res.status(200).send(JSON.stringify({ users }));
     } catch (inner) {
-      console.warn('membership-based user lookup failed, falling back:', inner.message || inner);
-      // Fallback: return recent users to keep UI functional
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('id, email, role, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
+      console.warn('membership-based user lookup failed:', inner.message || inner);
       res.setHeader('Content-Type', 'application/json');
-      return res.status(200).send(JSON.stringify({ users: users || [] }));
+      return res.status(200).send(JSON.stringify({ users: [] }));
     }
   } catch (e) {
     console.error('GET /api/files/tenant-users error:', e);
