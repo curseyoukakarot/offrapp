@@ -118,6 +118,14 @@ const Sidebar = () => {
                 <span>Files</span>
               </NavLink>
               {/* Removed Forms link as requested */}
+              <NavLink to="/settings" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-gear mr-3" />
+                <span>Settings</span>
+              </NavLink>
               <NavLink to="/admin-embeds" className={({ isActive }) =>
                 `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
                   isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
@@ -129,6 +137,7 @@ const Sidebar = () => {
             </>
           ) : (
             <>
+              {/* Single Dashboard link only */}
               <NavLink to={getDashboardRoute()} className={({ isActive }) =>
                 `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
                   isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
@@ -144,6 +153,14 @@ const Sidebar = () => {
               }>
                 <i className="fa-solid fa-folder mr-3" />
                 <span>Files</span>
+              </NavLink>
+              <NavLink to="/settings" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-gear mr-3" />
+                <span>Settings</span>
               </NavLink>
               {/* Forms intentionally omitted for members */}
             </>
