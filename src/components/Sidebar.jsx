@@ -70,11 +70,6 @@ const Sidebar = () => {
     }
   };
 
-  // Hide sidebar entirely for non-admin roles
-  if (!isAdmin) {
-    return null;
-  }
-
   return (
     <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
       <div className="p-6">
@@ -103,36 +98,58 @@ const Sidebar = () => {
             <span>Dashboard</span>
           </NavLink>
 
-          {/* Admin Menu Items */}
-          <>
-            <NavLink to="/crm/users" className={({ isActive }) =>
-              `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-              }`
-            }>
-              <i className="fa-solid fa-users mr-3" />
-              <span>Users List</span>
-            </NavLink>
-            <NavLink to="/files" className={({ isActive }) =>
-              `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-              }`
-            }>
-              <i className="fa-solid fa-folder mr-3" />
-              <span>Files</span>
-            </NavLink>
-            {/* Removed Forms link as requested */}
-            <NavLink to="/admin-embeds" className={({ isActive }) =>
-              `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-              }`
-            }>
-              <i className="fa-solid fa-layer-group mr-3" />
-              <span>Admin Embeds</span>
-            </NavLink>
-          </>
+          {/* Menu Items */}
+          {isAdmin ? (
+            <>
+              <NavLink to="/crm/users" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-users mr-3" />
+                <span>Users List</span>
+              </NavLink>
+              <NavLink to="/files" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-folder mr-3" />
+                <span>Files</span>
+              </NavLink>
+              {/* Removed Forms link as requested */}
+              <NavLink to="/admin-embeds" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-layer-group mr-3" />
+                <span>Admin Embeds</span>
+              </NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to={getDashboardRoute()} className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-house mr-3" />
+                <span>Dashboard</span>
+              </NavLink>
+              <NavLink to="/files" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-folder mr-3" />
+                <span>Files</span>
+              </NavLink>
+              {/* Forms intentionally omitted for members */}
+            </>
+          )}
 
-          {/* Dynamic Embeds for admin view */}
+          {/* Dynamic Embeds */}
           {embeds.length > 0 && (
             <div className="mt-6">
               <div className="text-xs text-gray-400 uppercase mb-2">Embedded Tools</div>
