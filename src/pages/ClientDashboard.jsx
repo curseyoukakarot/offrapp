@@ -6,8 +6,10 @@ export default function ClientDashboard({ variant }) {
 
   const tabBtn = (key, label, icon) => (
     <button
-      className={`tab-button px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-        activeTab === key ? 'text-white tab-active' : 'text-gray-600 hover:text-gray-900'
+      className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+        activeTab === key
+          ? 'bg-white text-gray-900 shadow'
+          : 'text-gray-600 hover:text-gray-900'
       }`}
       data-tab={key}
       onClick={() => setActiveTab(key)}
