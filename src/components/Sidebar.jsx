@@ -26,7 +26,6 @@ const Sidebar = () => {
         const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
         const json = await res.json();
         const all = Array.isArray(json.embeds) ? json.embeds : [];
-        // Filter by role/user client-side, since API returns tenant scoped
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
         const visible = all.filter(e =>
@@ -56,7 +55,6 @@ const Sidebar = () => {
     }
   };
 
-  // Hardcoded dashboard route for each role
   const getDashboardRoute = () => {
     switch (userRole) {
       case 'admin':
@@ -71,6 +69,11 @@ const Sidebar = () => {
         return '/';
     }
   };
+
+  // Hide sidebar entirely for non-admin roles
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
@@ -91,7 +94,6 @@ const Sidebar = () => {
               <span>Super Admin</span>
             </NavLink>
           )}
-          {/* Dashboard Link - hardcoded per role */}
           <NavLink to={getDashboardRoute()} className={({ isActive }) =>
             `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
               isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
@@ -101,135 +103,36 @@ const Sidebar = () => {
             <span>Dashboard</span>
           </NavLink>
 
-          {/* Settings Link for RecruitPro and Job Seeker */}
-          {(isRecruitPro || isJobSeeker) && (
-            <NavLink to="/settings" className={({ isActive }) =>
+          {/* Admin Menu Items */}
+          <>
+            <NavLink to="/crm/users" className={({ isActive }) =>
               `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
                 isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
               }`
             }>
-              <i className="fa-solid fa-gear mr-3" />
-              <span>Settings</span>
+              <i className="fa-solid fa-users mr-3" />
+              <span>Users List</span>
             </NavLink>
-          )}
+            <NavLink to="/files" className={({ isActive }) =>
+              `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+              }`
+            }>
+              <i className="fa-solid fa-folder mr-3" />
+              <span>Files</span>
+            </NavLink>
+            {/* Removed Forms link as requested */}
+            <NavLink to="/admin-embeds" className={({ isActive }) =>
+              `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+              }`
+            }>
+              <i className="fa-solid fa-layer-group mr-3" />
+              <span>Admin Embeds</span>
+            </NavLink>
+          </>
 
-          {/* Admin Menu Items */}
-          {isAdmin && (
-            <>
-              <NavLink to="/crm/users" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-users mr-3" />
-                <span>Users List</span>
-              </NavLink>
-              <NavLink to="/files" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-folder mr-3" />
-                <span>Files</span>
-              </NavLink>
-              <NavLink to="/forms" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-file-lines mr-3" />
-                <span>Forms</span>
-              </NavLink>
-              <NavLink to="/admin-embeds" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-layer-group mr-3" />
-                <span>Admin Embeds</span>
-              </NavLink>
-            </>
-          )}
-
-          {/* RecruitPro Menu Items */}
-          {isRecruitPro && (
-            <>
-              <NavLink to="/my-files" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-folder mr-3" />
-                <span>User Files</span>
-              </NavLink>
-              <NavLink to="/forms" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-file-lines mr-3" />
-                <span>Forms</span>
-              </NavLink>
-              <a href="https://academy.careerkitchen.co" target="_blank" rel="noreferrer" className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
-                <i className="fa-solid fa-graduation-cap mr-3" />
-                <span>RecruitPro Training</span>
-              </a>
-            </>
-          )}
-
-          {/* Job Seeker Menu Items */}
-          {isJobSeeker && (
-            <>
-              <NavLink to="/files" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-folder mr-3" />
-                <span>Files</span>
-              </NavLink>
-              <NavLink to="/forms" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-file-lines mr-3" />
-                <span>Forms</span>
-              </NavLink>
-            </>
-          )}
-
-          {/* Client Menu Items */}
-          {isClient && (
-            <>
-              <NavLink to="/files" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-folder mr-3" />
-                <span>Files</span>
-              </NavLink>
-              <NavLink to="/forms" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover-bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-file-lines mr-3" />
-                <span>Forms</span>
-              </NavLink>
-              <NavLink to="/embedded-tools" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-tools mr-3" />
-                <span>Embedded Tools</span>
-              </NavLink>
-            </>
-          )}
-
-          {/* Dynamic Embeds */}
+          {/* Dynamic Embeds for admin view */}
           {embeds.length > 0 && (
             <div className="mt-6">
               <div className="text-xs text-gray-400 uppercase mb-2">Embedded Tools</div>
