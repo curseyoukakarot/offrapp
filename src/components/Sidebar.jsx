@@ -21,31 +21,21 @@ const Sidebar = () => {
   useEffect(() => {
     const fetchEmbeds = async () => {
       if (!userRole) return;
-      
-      // Fetch role-based embeds
-      const { data: roleEmbeds, error: roleError } = await supabase
-        .from('embeds')
-        .select('*')
-        .eq('embed_type', 'role')
-        .eq('role', userRole)
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-
-      // Fetch user-specific embeds
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      
-      const { data: userEmbeds, error: userError } = await supabase
-        .from('embeds')
-        .select('*')
-        .eq('embed_type', 'user')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-
-      if (!roleError && !userError) {
-        const allEmbeds = [...(roleEmbeds || []), ...(userEmbeds || [])];
-        setEmbeds(allEmbeds);
+      try {
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        const all = Array.isArray(json.embeds) ? json.embeds : [];
+        // Filter by role/user client-side, since API returns tenant scoped
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        const visible = all.filter(e =>
+          (e.embed_type === 'role' && e.role === userRole && e.is_active) ||
+          (e.embed_type === 'user' && e.user_id === userId && e.is_active)
+        ).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        setEmbeds(visible);
+      } catch (_e) {
+        setEmbeds([]);
       }
     };
     fetchEmbeds();
@@ -222,7 +212,7 @@ const Sidebar = () => {
               </NavLink>
               <NavLink to="/forms" className={({ isActive }) =>
                 `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover-bg-gray-100'
                 }`
               }>
                 <i className="fa-solid fa-file-lines mr-3" />
