@@ -17,6 +17,12 @@ export default function FormsList() {
     setAssignedRoles(Array.isArray(activeForm?.assigned_roles) ? activeForm.assigned_roles : []);
   }, [activeForm?.id]);
 
+  // Responses state
+  const [responses, setResponses] = useState([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
+  const [respDrawerOpen, setRespDrawerOpen] = useState(false);
+  const [activeResponse, setActiveResponse] = useState(null);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -35,6 +41,23 @@ export default function FormsList() {
     };
     load();
   }, [tenantId]);
+
+  useEffect(() => {
+    if (tab !== 'responses' || !activeId) return;
+    const load = async () => {
+      setLoadingResponses(true);
+      try {
+        const res = await fetch(`/api/form-responses?formId=${encodeURIComponent(activeId)}`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        setResponses(json.responses || []);
+      } catch (_e) {
+        setResponses([]);
+      } finally {
+        setLoadingResponses(false);
+      }
+    };
+    load();
+  }, [tab, activeId, tenantId]);
 
   const saveAssignments = async () => {
     if (!activeForm) return;
@@ -267,8 +290,25 @@ export default function FormsList() {
 
               {tab === 'responses' && (
                 <div className="p-6">
-                  <div className="bg-white border rounded-2xl p-6">
-                    <div className="text-sm text-gray-500">Responses dashboard coming soon.</div>
+                  <div className="bg-white border rounded-2xl p-6 min-h-[420px]">
+                    <h3 className="text-lg font-semibold mb-4">Responses</h3>
+                    {loadingResponses ? (
+                      <div className="text-sm text-gray-500">Loading…</div>
+                    ) : responses.length === 0 ? (
+                      <div className="text-sm text-gray-500">No responses yet.</div>
+                    ) : (
+                      <div className="divide-y">
+                        {responses.map((r) => (
+                          <button key={r.id} className="w-full text-left py-3 flex items-center justify-between hover:bg-gray-50 px-2 rounded" onClick={() => { setActiveResponse(r); setRespDrawerOpen(true); }}>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{r.user_email || r.user_id || 'Anonymous'}</div>
+                              <div className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString()}</div>
+                            </div>
+                            <i className="fa-solid fa-chevron-right text-gray-400"></i>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -278,6 +318,28 @@ export default function FormsList() {
           )}
         </div>
       </div>
+
+      {/* Response Drawer */}
+      <div className={`fixed inset-y-0 right-0 w-[520px] bg-white shadow-xl border-l border-gray-200 transform transition-transform z-50 ${respDrawerOpen ? '' : 'translate-x-full hidden'}`}>
+        <div className="flex flex-col h-full">
+          <div className="p-6 border-b flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Response</div>
+              <div className="text-lg font-semibold">{activeResponse?.user_email || activeResponse?.user_id || 'Anonymous'}</div>
+              <div className="text-xs text-gray-500">{activeResponse?.created_at ? new Date(activeResponse.created_at).toLocaleString() : ''}</div>
+            </div>
+            <button className="text-gray-400 hover:text-gray-600" onClick={() => setRespDrawerOpen(false)}>
+              <i className="fa-solid fa-times text-xl"></i>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            {activeResponse ? (
+              <pre className="text-xs bg-gray-50 border rounded p-4 whitespace-pre-wrap break-words">{JSON.stringify(activeResponse.answers || activeResponse.data || activeResponse, null, 2)}</pre>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       {/* Floating CTA */}
       <button
         onClick={() => navigate('/forms/new')}
