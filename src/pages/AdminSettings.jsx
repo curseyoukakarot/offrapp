@@ -19,6 +19,15 @@ export default function AdminSettings() {
   });
   const [savingBrand, setSavingBrand] = useState(false);
 
+  // Domains state
+  const [domains, setDomains] = useState([]);
+  const [loadingDomains, setLoadingDomains] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createdTxt, setCreatedTxt] = useState(null); // { domain, type, txtRecord }
+  const [verifying, setVerifying] = useState(''); // domain string
+  const [removing, setRemoving] = useState('');
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -50,12 +59,95 @@ export default function AdminSettings() {
             client: { label: json?.role_labels?.client || 'Client', color: json?.role_colors?.client || 'gray' },
           });
         }
+        // Domains list
+        await fetchDomains();
       } finally {
         setLoading(false);
       }
     };
     load();
   }, []);
+
+  const fetchDomains = async () => {
+    try {
+      setLoadingDomains(true);
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/tenants/${tenantId}/domains`, { headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
+      const json = await res.json();
+      setDomains(json?.domains || []);
+    } catch (_e) {
+      setDomains([]);
+    } finally {
+      setLoadingDomains(false);
+    }
+  };
+
+  const copy = async (text) => {
+    try { await navigator.clipboard.writeText(text); setToast({ type: 'success', message: 'Copied!' }); setTimeout(() => setToast(null), 1200); } catch (_e) {}
+  };
+
+  const addDomain = async (e) => {
+    e.preventDefault();
+    if (!newDomain) return;
+    try {
+      setCreating(true);
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/tenants/${tenantId}/domains`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ domain: newDomain })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Failed');
+      setCreatedTxt(json);
+      setNewDomain('');
+      await fetchDomains();
+    } catch (e2) {
+      setToast({ type: 'error', message: e2.message || 'Add failed' });
+      setTimeout(() => setToast(null), 2500);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const verifyDomain = async (domain) => {
+    try {
+      setVerifying(domain);
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/tenants/${tenantId}/domains/${encodeURIComponent(domain)}/verify`, {
+        method: 'POST', headers: { Authorization: `Bearer ${session?.access_token || ''}` }
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || json?.reason || 'Verify failed');
+      await fetchDomains();
+      setToast({ type: 'success', message: 'Domain verified' });
+      setTimeout(() => setToast(null), 2000);
+    } catch (e2) {
+      setToast({ type: 'error', message: e2.message || 'Verification failed' });
+      setTimeout(() => setToast(null), 2500);
+    } finally { setVerifying(''); }
+  };
+
+  const removeDomain = async (domain) => {
+    if (!window.confirm(`Remove ${domain}?`)) return;
+    try {
+      setRemoving(domain);
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/tenants/${tenantId}/domains/${encodeURIComponent(domain)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
+      if (!res.ok && res.status !== 204) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || 'Remove failed');
+      }
+      await fetchDomains();
+    } catch (e2) {
+      setToast({ type: 'error', message: e2.message || 'Remove failed' });
+      setTimeout(() => setToast(null), 2500);
+    } finally { setRemoving(''); }
+  };
 
   const saveContact = async (e) => {
     e.preventDefault();
@@ -141,7 +233,7 @@ export default function AdminSettings() {
   return (
     <div className="space-y-8">
       {toast && (
-        <div className={`text-sm px-3 py-2 rounded ${toast.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{toast.message}</div>
+        <div className={`${'text-sm px-3 py-2 rounded'} ${toast.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{toast.message}</div>
       )}
 
       {/* Brand & Legal */}
@@ -150,7 +242,7 @@ export default function AdminSettings() {
           <h2 className="text-lg font-semibold text-gray-900">Brand &amp; Legal</h2>
           <div className="space-x-2">
             <button className="px-3 py-1.5 text-sm rounded bg-gray-100" onClick={() => setBrand({ name: '', support_email: '', logo_url: '', favicon_url: '' })}>Reset</button>
-            <button className={`px-3 py-1.5 text-sm rounded text-white ${savingBrand ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} onClick={saveBrand} disabled={savingBrand}>Save</button>
+            <button className={`${'px-3 py-1.5 text-sm rounded text-white'} ${savingBrand ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} onClick={saveBrand} disabled={savingBrand}>Save</button>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,6 +250,82 @@ export default function AdminSettings() {
           <input className="border rounded px-3 py-2" placeholder="Support email" value={brand.support_email} onChange={(e) => setBrand((b) => ({ ...b, support_email: e.target.value }))} />
           <input className="border rounded px-3 py-2 md:col-span-2" placeholder="Logo URL" value={brand.logo_url} onChange={(e) => setBrand((b) => ({ ...b, logo_url: e.target.value }))} />
           <input className="border rounded px-3 py-2 md:col-span-2" placeholder="Favicon URL" value={brand.favicon_url} onChange={(e) => setBrand((b) => ({ ...b, favicon_url: e.target.value }))} />
+        </div>
+      </section>
+
+      {/* Domain Settings */}
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Domains</h2>
+        </div>
+        <form onSubmit={addDomain} className="flex items-center gap-3 mb-4">
+          <input className="border rounded px-3 py-2 flex-1" placeholder="client.com or app.client.com" value={newDomain} onChange={(e) => setNewDomain(e.target.value)} />
+          <button disabled={creating || !newDomain} className={`${'px-4 py-2 rounded text-white'} ${creating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{creating ? 'Adding…' : 'Add domain'}</button>
+        </form>
+        {createdTxt && (
+          <div className="border rounded-lg p-4 bg-gray-50 mb-4">
+            <div className="text-sm text-gray-700 mb-2">Add this DNS TXT record to verify ownership:</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className="flex items-center justify-between border rounded px-3 py-2 bg-white">
+                <div><div className="text-gray-500">Host/Name</div><div className="font-mono text-gray-900">{createdTxt.txtRecord?.name}</div></div>
+                <button type="button" className="text-blue-600" onClick={() => copy(createdTxt.txtRecord?.name)}>Copy</button>
+              </div>
+              <div className="flex items-center justify-between border rounded px-3 py-2 bg-white">
+                <div><div className="text-gray-500">Type</div><div className="font-mono text-gray-900">TXT</div></div>
+              </div>
+              <div className="flex items-center justify-between border rounded px-3 py-2 bg-white md:col-span-1">
+                <div><div className="text-gray-500">Value</div><div className="font-mono text-gray-900 truncate max-w-[280px]" title={createdTxt.txtRecord?.value}>{createdTxt.txtRecord?.value}</div></div>
+                <button type="button" className="text-blue-600" onClick={() => copy(createdTxt.txtRecord?.value)}>Copy</button>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500 mt-2">DNS changes can take a few minutes to propagate.</div>
+            <div className="mt-3">
+              <button type="button" className="px-3 py-1.5 rounded bg-green-600 text-white" onClick={() => verifyDomain(createdTxt.domain)}>Verify Now</button>
+            </div>
+          </div>
+        )}
+
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-4 py-2">Domain</th>
+                <th className="text-left px-4 py-2">Type</th>
+                <th className="text-left px-4 py-2">Status</th>
+                <th className="text-left px-4 py-2">Verified At</th>
+                <th className="text-right px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingDomains && (
+                <tr><td className="px-4 py-3" colSpan={5}>Loading…</td></tr>
+              )}
+              {!loadingDomains && domains.length === 0 && (
+                <tr><td className="px-4 py-3 text-gray-500" colSpan={5}>No domains yet.</td></tr>
+              )}
+              {domains.map((d) => (
+                <tr key={d.id} className="border-t">
+                  <td className="px-4 py-2">{d.domain}</td>
+                  <td className="px-4 py-2 uppercase">{d.type}</td>
+                  <td className="px-4 py-2">
+                    {d.ssl_status === 'ready' ? (
+                      <span className="inline-flex items-center gap-1 text-green-700"><span className="w-2 h-2 rounded-full bg-green-500"></span> SSL active</span>
+                    ) : d.ssl_status === 'failed' ? (
+                      <span className="inline-flex items-center gap-1 text-red-700"><span className="w-2 h-2 rounded-full bg-red-500"></span> Failed</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-yellow-700"><span className="w-2 h-2 rounded-full bg-yellow-400"></span> Pending</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2">{d.verified_at ? new Date(d.verified_at).toLocaleString() : '—'}</td>
+                  <td className="px-4 py-2 text-right space-x-2">
+                    <button className={`px-2 py-1 rounded ${verifying === d.domain ? 'bg-gray-200' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => verifyDomain(d.domain)} disabled={!!verifying}>Verify</button>
+                    <a className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200" href={`https://${d.domain}`} target="_blank" rel="noreferrer">Open</a>
+                    <button className={`px-2 py-1 rounded ${removing === d.domain ? 'bg-red-200' : 'bg-red-100 hover:bg-red-200'}`} onClick={() => removeDomain(d.domain)} disabled={!!removing}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
