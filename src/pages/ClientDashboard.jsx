@@ -9,6 +9,11 @@ export default function ClientDashboard({ variant }) {
   const { userRole } = useAuth();
   const [embeds, setEmbeds] = useState([]);
   const [loadingEmbeds, setLoadingEmbeds] = useState(true);
+  const [files, setFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState(null);
+  const [toast, setToast] = useState(null); // { type, message }
 
   const tabBtn = (key, label, icon) => (
     <button
@@ -50,6 +55,63 @@ export default function ClientDashboard({ variant }) {
     };
     loadEmbeds();
   }, [userRole]);
+
+  useEffect(() => {
+    const loadFiles = async () => {
+      try {
+        setLoadingFiles(true);
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        const res = await fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        const all = Array.isArray(json.files) ? json.files : [];
+        // Member-visible files: assigned directly to user OR role matches
+        const mine = all.filter((f) => (f.user_id === userId) || (Array.isArray(f.assigned_roles) && f.assigned_roles.includes(userRole)));
+        // newest first
+        mine.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        setFiles(mine);
+      } catch (_e) {
+        setFiles([]);
+      } finally {
+        setLoadingFiles(false);
+      }
+    };
+    loadFiles();
+  }, [userRole]);
+
+  const handleUpload = async () => {
+    if (!file) return setToast({ type: 'error', message: 'Choose a file' });
+    try {
+      setUploading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const path = `${userId}/${file.name}`;
+      const { error: upErr } = await supabase.storage.from('user-files').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const fileUrl = `${baseUrl}/storage/v1/object/public/user-files/${path}`;
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const resp = await fetch('/api/files', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) }, body: JSON.stringify({ title: file.name, file_url: fileUrl, user_id: userId, assigned_roles: [] }) });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json?.error || json?.message || 'Save failed');
+      // refresh list
+      setFile(null);
+      const res = await fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+      const ref = await res.json();
+      const all = Array.isArray(ref.files) ? ref.files : [];
+      const mine = all.filter((f) => (f.user_id === userId) || (Array.isArray(f.assigned_roles) && f.assigned_roles.includes(userRole)));
+      mine.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+      setFiles(mine);
+      setToast({ type: 'success', message: 'Uploaded' });
+      setTimeout(() => setToast(null), 2000);
+    } catch (e) {
+      setToast({ type: 'error', message: String(e.message || e) });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -109,92 +171,71 @@ export default function ClientDashboard({ variant }) {
           {/* Recent Activity */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i className="fa-solid fa-file-arrow-down text-blue-600"></i>
+            {loadingFiles ? (
+              <div className="text-sm text-gray-500">Loading…</div>
+            ) : files.length === 0 ? (
+              <div className="text-sm text-gray-500">No recent files.</div>
+            ) : (
+              files.slice(0, 3).map((f) => (
+                <div key={f.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg mb-3 last:mb-0">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <i className="fa-solid fa-file-arrow-down text-blue-600"></i>
+                    </div>
+                    <div className="ml-4">
+                      <p className="font-medium text-gray-900 truncate max-w-[40ch]">{f.title || f.file_url.split('/').pop()}</p>
+                      <p className="text-sm text-gray-500">{new Date(f.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <a href={f.file_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-700 font-medium">View</a>
                 </div>
-                <div className="ml-4">
-                  <p className="font-medium text-gray-900">3 files from admin</p>
-                  <p className="text-sm text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              <button className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
-            </div>
+              ))
+            )}
           </div>
 
           {/* Upload Zone */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h3>
-            <div className="upload-zone rounded-lg p-8 text-center">
+            {toast && (
+              <div className={`mb-3 text-sm px-3 py-2 rounded ${toast.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{toast.message}</div>
+            )}
+            <div className="rounded-lg p-8 text-center border-2 border-dashed border-gray-300">
               <i className="fa-solid fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-              <p className="text-lg font-medium text-gray-900 mb-2">Drag and drop files here</p>
-              <p className="text-gray-500 mb-4">or click to browse</p>
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                Select Files
-              </button>
+              <p className="text-lg font-medium text-gray-900 mb-2">Click to choose a file</p>
+              <input type="file" className="hidden" id="member-file-input" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <label htmlFor="member-file-input" className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 cursor-pointer inline-block mr-2">Select File</label>
+              <button onClick={handleUpload} disabled={uploading || !file} className={`px-6 py-3 rounded-lg text-white ${uploading || !file ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{uploading ? 'Uploading…' : 'Upload'}</button>
+              {file && <div className="mt-3 text-sm text-gray-600">{file.name}</div>}
             </div>
           </div>
 
-          {/* File Filters */}
-          <div className="flex space-x-4 mb-6">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">All Files</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Sent by Admin</button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Uploaded by Me</button>
-          </div>
+          {/* Files List */}
+          {loadingFiles ? (
+            <div className="text-sm text-gray-500 mb-6">Loading files…</div>
+          ) : files.length === 0 ? (
+            <div className="text-sm text-gray-500 mb-6">No files yet.</div>
+          ) : null}
 
           {/* Files Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <i className="fa-solid fa-file-pdf text-red-600 text-xl"></i>
+            {files.map((f) => (
+              <div key={f.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i className="fa-solid fa-file text-blue-600 text-xl"></i>
+                  </div>
+                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{f.user_id ? ("Uploaded") : ("From Admin")}</span>
                 </div>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">From Admin</span>
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Project Brief.pdf</h4>
-              <p className="text-sm text-gray-500 mb-4">2 hours ago</p>
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">View</button>
-                <button className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
-                  <i className="fa-solid fa-download"></i>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i className="fa-solid fa-file-word text-blue-600 text-xl"></i>
+                <h4 className="font-semibold text-gray-900 mb-2 truncate">{f.title || f.file_url.split('/').pop()}</h4>
+                <p className="text-sm text-gray-500 mb-4">{new Date(f.created_at).toLocaleString()}</p>
+                <div className="flex space-x-2">
+                  <a href={f.file_url} target="_blank" rel="noreferrer" className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 text-center">View</a>
+                  <a href={f.file_url} download className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                    <i className="fa-solid fa-download"></i>
+                  </a>
                 </div>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Uploaded</span>
               </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Requirements.docx</h4>
-              <p className="text-sm text-gray-500 mb-4">1 day ago</p>
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">View</button>
-                <button className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
-                  <i className="fa-solid fa-download"></i>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <i className="fa-solid fa-file-excel text-green-600 text-xl"></i>
-                </div>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">From Admin</span>
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Budget Template.xlsx</h4>
-              <p className="text-sm text-gray-500 mb-4">3 days ago</p>
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">View</button>
-                <button className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
-                  <i className="fa-solid fa-download"></i>
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
