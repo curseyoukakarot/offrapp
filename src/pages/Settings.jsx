@@ -16,7 +16,9 @@ const Settings = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  // Contact Info
+  // Contact Info / Profile
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [linkedin, setLinkedin] = useState('');
 
@@ -34,9 +36,11 @@ const Settings = () => {
       // Get profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('phone, linkedin')
+        .select('first_name, last_name, phone, linkedin')
         .eq('id', user.id)
         .maybeSingle();
+      setFirstName(profile?.first_name || '');
+      setLastName(profile?.last_name || '');
       setPhone(profile?.phone || '');
       setLinkedin(profile?.linkedin || '');
       setEmail(user.email || '');
@@ -87,7 +91,7 @@ const Settings = () => {
     setSuccess(''); setError('');
     const { error: profileError } = await supabase
       .from('profiles')
-      .upsert({ id: user.id, phone, linkedin });
+      .upsert({ id: user.id, first_name: firstName, last_name: lastName, phone, linkedin });
     if (profileError) setError(profileError.message);
     else setSuccess('Contact info updated!');
   };
@@ -121,6 +125,10 @@ const Settings = () => {
         {/* Contact Info */}
         <form onSubmit={handleContactInfo} className="bg-white p-4 rounded shadow space-y-3">
           <h2 className="font-semibold mb-2">Contact Info</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input type="text" placeholder="First Name" className="w-full border p-2 rounded" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            <input type="text" placeholder="Last Name" className="w-full border p-2 rounded" value={lastName} onChange={e => setLastName(e.target.value)} />
+          </div>
           <input type="text" placeholder="Phone" className="w-full border p-2 rounded" value={phone} onChange={e => setPhone(e.target.value)} />
           <input type="text" placeholder="LinkedIn URL" className="w-full border p-2 rounded" value={linkedin} onChange={e => setLinkedin(e.target.value)} />
           <button className="bg-blue-600 text-white px-4 py-2 rounded">Update Contact Info</button>

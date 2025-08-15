@@ -60,7 +60,7 @@ export default function ClientDashboard({ variant }) {
           <div className={`bg-gradient-to-r ${variant === 'recruitpro' ? 'from-purple-600 to-purple-700' : variant === 'jobseeker' ? 'from-green-600 to-green-700' : 'from-blue-600 to-blue-700'} rounded-2xl p-8 text-white`}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold mb-2">Welcome back, Sarah!</h2>
+                <DynamicGreeting />
                 <p className="text-blue-100 text-lg">You have 2 pending tasks to complete</p>
               </div>
               <div className="flex items-center">
@@ -233,6 +233,29 @@ export default function ClientDashboard({ variant }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function DynamicGreeting() {
+  const [name, setName] = useState('');
+  useEffect(() => {
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return setName('');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', uid)
+        .maybeSingle();
+      const first = (profile?.first_name || '').trim();
+      const last = (profile?.last_name || '').trim();
+      setName([first, last].filter(Boolean).join(' '));
+    };
+    load();
+  }, []);
+  return (
+    <h2 className="text-3xl font-bold mb-2">{name ? `Welcome back, ${name}!` : 'Welcome back!'}</h2>
   );
 }
 
