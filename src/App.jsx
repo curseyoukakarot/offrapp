@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import UsersList from './pages/UsersList';
 import FilesPage from './pages/FilesPage';
 import AdminFilesManager from './pages/AdminFilesManager';
+import AdminSettings from './pages/AdminSettings.jsx';
 import FormsList from './pages/FormsList';
 import FormBuilder from './pages/FormBuilder.tsx';
 import FormRenderer from './pages/FormRenderer';
@@ -89,6 +90,13 @@ function App() {
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminLayout>
                 <UsersList />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/settings" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminSettings />
               </AdminLayout>
             </ProtectedRoute>
           } />
