@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AssignedFormsViewer from '../components/AssignedFormsViewer';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 export default function ClientDashboard({ variant }) {
   const [activeTab, setActiveTab] = useState('files');
+  const { userRole } = useAuth();
+  const [embeds, setEmbeds] = useState([]);
+  const [loadingEmbeds, setLoadingEmbeds] = useState(true);
 
   const tabBtn = (key, label, icon) => (
     <button
@@ -18,6 +24,32 @@ export default function ClientDashboard({ variant }) {
       {label}
     </button>
   );
+
+  useEffect(() => {
+    const loadEmbeds = async () => {
+      try {
+        setLoadingEmbeds(true);
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        const all = Array.isArray(json.embeds) ? json.embeds : [];
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        const visible = all
+          .filter(e => (
+            (e.embed_type === 'role' && e.role === userRole && e.is_active) ||
+            (e.embed_type === 'user' && e.user_id === userId && e.is_active)
+          ))
+          .sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        setEmbeds(visible);
+      } catch (_e) {
+        setEmbeds([]);
+      } finally {
+        setLoadingEmbeds(false);
+      }
+    };
+    loadEmbeds();
+  }, [userRole]);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -173,42 +205,31 @@ export default function ClientDashboard({ variant }) {
 
         {/* Pages Tab */}
         <div id="pages-tab" className={`tab-content px-6 ${activeTab === 'pages' ? '' : 'hidden'}`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
-              <div className="h-40 bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                <i className="fa-solid fa-calendar text-white text-4xl"></i>
-              </div>
-              <div className="p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">Calendly Scheduler</h4>
-                <p className="text-sm text-gray-500 mb-4">Book meetings and consultations</p>
-                <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                  Open Tool
-                </button>
-              </div>
+          {loadingEmbeds ? (
+            <div className="text-sm text-gray-500">Loading pages…</div>
+          ) : embeds.length === 0 ? (
+            <div className="text-sm text-gray-500">No pages assigned yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {embeds.map((e) => (
+                <div key={e.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                  <div className={`h-40 bg-gradient-to-br ${e.provider === 'calendly' ? 'from-blue-500 to-blue-600' : e.provider === 'monday' ? 'from-purple-500 to-purple-600' : 'from-gray-700 to-gray-800'} flex items-center justify-center`}>
+                    {e.provider === 'calendly' && <i className="fa-solid fa-calendar text-white text-4xl"></i>}
+                    {e.provider === 'monday' && <i className="fa-solid fa-tasks text-white text-4xl"></i>}
+                    {e.provider === 'notion' && <i className="fa-solid fa-n text-white text-4xl"></i>}
+                    {e.provider === 'custom' && <i className="fa-solid fa-link text-white text-4xl"></i>}
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">{e.title}</h4>
+                    <p className="text-sm text-gray-500 mb-4 capitalize">{e.provider}</p>
+                    <Link to={`/embed/${e.id}`} className="w-full inline-block text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                      Open Tool
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
-              <div className="h-40 bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                <i className="fa-solid fa-tasks text-white text-4xl"></i>
-              </div>
-              <div className="p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">Monday.com Board</h4>
-                <p className="text-sm text-gray-500 mb-4">Track project progress and tasks</p>
-                <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                  Open Tool
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
-              <div className="h-40 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                <i className="fa-solid fa-book text-white text-4xl"></i>
-              </div>
-              <div className="p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">Notion Workspace</h4>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
