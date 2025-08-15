@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useTenantConfig } from '../lib/tenantConfig';
 
 export default function AdminEmbedsManagerV2() {
   const [audience, setAudience] = useState('user-type');
   const [embeds, setEmbeds] = useState([]);
   const [loadingEmbeds, setLoadingEmbeds] = useState(true);
+  const { roleLabel } = useTenantConfig();
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
@@ -326,7 +328,7 @@ export default function AdminEmbedsManagerV2() {
                         <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{e.embed_type === 'role' ? 'User Type' : 'Individual'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {e.embed_type === 'role' ? (
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{e.role || 'all'}</span>
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{roleLabel(e.role || 'all')}</span>
                           ) : (
                             <span className="text-sm text-gray-900">{(users.find((u) => u.id === e.user_id)?.email) || e.user_id || '—'}</span>
                           )}

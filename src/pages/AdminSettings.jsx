@@ -182,9 +182,9 @@ export default function AdminSettings() {
       <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Role Types &amp; Banner Colors</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.keys(roles).map((key) => (
+          {Object.keys(roles).map((key, idx) => (
             <div key={key} className="border rounded p-4 space-y-2">
-              <div className="text-sm text-gray-500 uppercase">{key}</div>
+              <div className="text-sm text-gray-500 uppercase">{key === 'admin' ? 'ADMIN' : idx === 1 ? 'ROLE TYPE 2' : idx === 2 ? 'ROLE TYPE 3' : 'ROLE TYPE 4'}</div>
               <input className="border rounded px-3 py-2 w-full" value={roles[key].label} onChange={(e) => setRoles((r) => ({ ...r, [key]: { ...r[key], label: e.target.value } }))} />
               <select className="border rounded px-3 py-2 w-full" value={roles[key].color} onChange={(e) => setRoles((r) => ({ ...r, [key]: { ...r[key], color: e.target.value } }))}>
                 <option value="blue">Blue</option>

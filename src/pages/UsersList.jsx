@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../lib/useUser';
+import { useTenantConfig } from '../lib/tenantConfig';
 
 const UsersList = () => {
   const { user } = useUser();
+  const { roleLabel } = useTenantConfig();
   const [users, setUsers] = useState([]);
   const [profiles, setProfiles] = useState({});
   const [search, setSearch] = useState('');
@@ -160,7 +162,7 @@ const UsersList = () => {
     const rows = filteredUsers.map((u) => [
       profiles[u.id]?.first_name && profiles[u.id]?.last_name ? `${profiles[u.id].first_name} ${profiles[u.id].last_name}` : u.email.split('@')[0],
       u.email,
-      u.role,
+      roleLabel((u.role || '').toLowerCase()),
       u.created_at,
     ]);
     const csv = [headers.join(','), ...rows.map((r) => r.map((f) => `"${String(f).replace(/"/g, '""')}"`).join(','))].join('\n');
@@ -199,8 +201,8 @@ const UsersList = () => {
           {selectedIds.length > 0 && (
             <div className="ml-auto flex items-center gap-2">
               <span className="text-sm text-gray-600">{selectedIds.length} selected</span>
-              <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => bulkChangeRole('client')}>Change role → Client</button>
-              <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => bulkChangeRole('recruitpro')}>→ RecruitPro</button>
+              <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => bulkChangeRole('client')}>Change role → {roleLabel('client')}</button>
+              <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => bulkChangeRole('recruitpro')}>→ {roleLabel('recruitpro')}</button>
               <button className="px-3 py-1 bg-red-100 text-red-700 rounded" onClick={() => selectedIds.forEach((id) => handleDeleteUser(id))}>Delete</button>
             </div>
           )}
@@ -247,7 +249,7 @@ const UsersList = () => {
                     </button>
                   </td>
                   <td className="p-3">{u.email}</td>
-                  <td className="p-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs ${roleChip(u.role)}`}>{u.role || '—'}</span></td>
+                  <td className="p-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs ${roleChip(u.role)}`}>{roleLabel((u.role || '').toLowerCase())}</span></td>
                   <td className="p-3 text-gray-500">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '—'}</td>
                   <td className="p-3 text-gray-500">{new Date(u.created_at).toLocaleDateString()}</td>
                   <td className="p-3">
@@ -301,7 +303,7 @@ const UsersList = () => {
           <div className="p-6 space-y-6 overflow-y-auto h-full">
             <div>
               <div className="text-sm text-gray-500 mb-1">Role</div>
-              <div className={`inline-flex px-2 py-1 rounded-full text-xs ${roleChip(drawerUser.role)}`}>{drawerUser.role || '—'}</div>
+              <div className={`inline-flex px-2 py-1 rounded-full text-xs ${roleChip(drawerUser.role)}`}>{roleLabel((drawerUser.role || '').toLowerCase())}</div>
             </div>
             <div>
               <div className="text-sm text-gray-500 mb-1">Activity (last 30 days)</div>
