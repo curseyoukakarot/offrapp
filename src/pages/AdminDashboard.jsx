@@ -1,66 +1,81 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
 
 export default function AdminDashboard() {
   const [recentUsers, setRecentUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
-  useEffect(() => {
-    // Counter animation
-    function animateCounter(element) {
-      const targetAttr = element.getAttribute('data-count') || '0';
-      const target = parseInt(String(targetAttr).replace(/,/g, ''), 10) || 0;
-      const duration = 2000;
-      const step = target / (duration / 16);
-      let current = 0;
-      const timer = setInterval(() => {
-        current += step;
-        if (current >= target) {
-          current = target;
-          clearInterval(timer);
-        }
-        element.textContent = Math.floor(current).toLocaleString();
-      }, 16);
-    }
-    const counters = document.querySelectorAll('.counter');
-    counters.forEach((counter) => {
-      setTimeout(() => animateCounter(counter), Math.random() * 500);
-    });
-  }, []);
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    activeClients: 0,
+    totalForms: 0,
+    filesUploaded: 0,
+  });
+  const [tenantUsers, setTenantUsers] = useState([]);
+  const [recentFiles, setRecentFiles] = useState([]);
 
   useEffect(() => {
+    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+
+    const loadCounts = async () => {
+      try {
+        const [usersRes, formsRes, filesRes] = await Promise.all([
+          fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ users: [] })),
+          fetch('/api/forms?limit=1000', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ forms: [] })),
+          fetch('/api/files?limit=1000', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ files: [] })),
+        ]);
+        const users = Array.isArray(usersRes?.users) ? usersRes.users : [];
+        const forms = Array.isArray(formsRes?.forms) ? formsRes.forms : [];
+        const files = Array.isArray(filesRes?.files) ? filesRes.files : [];
+        // recent by created_at desc
+        const recent = [...files].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+        setTenantUsers(users);
+        setRecentFiles(recent);
+        setStats({
+          totalClients: users.length,
+          activeClients: users.length, // until we track last_sign_in_at reliably
+          totalForms: forms.length,
+          filesUploaded: files.length,
+        });
+      } catch (_e) {
+        setTenantUsers([]);
+        setRecentFiles([]);
+        setStats({ totalClients: 0, activeClients: 0, totalForms: 0, filesUploaded: 0 });
+      }
+    };
+
     const loadRecent = async () => {
       setUsersLoading(true);
       try {
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
         const doFetch = async (withTenant) => {
-          const res = await fetch('/api/users/recent', {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(withTenant && tenantId ? { 'x-tenant-id': tenantId } : {}),
-            },
-          });
+          const headers = withTenant && tenantId ? { 'x-tenant-id': tenantId } : {};
+          const res = await fetch('/api/users/recent', { headers });
           const json = await res.json();
           return { res, json };
         };
-
         let { res, json } = await doFetch(true);
-        if (!res.ok) {
-          // If tenant-scoped query fails (e.g., RLS recursion on memberships), retry globally
-          ({ res, json } = await doFetch(false));
-        }
-        if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load');
+        if (!res.ok) ({ res, json } = await doFetch(false));
+        if (!res.ok) throw new Error(json?.error || json?.message || 'Failed');
         setRecentUsers(json.users || []);
-      } catch (e) {
-        console.warn('Failed to load recent users', e.message || e);
+      } catch (_e) {
         setRecentUsers([]);
       } finally {
         setUsersLoading(false);
       }
     };
+
+    loadCounts();
     loadRecent();
   }, []);
+
+  const timeAgo = (iso) => {
+    if (!iso) return '';
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    const m = Math.floor(diff / 60); if (m < 60) return `${m} min ago`;
+    const h = Math.floor(m / 60); if (h < 24) return `${h} hr ago`;
+    const d = Math.floor(h / 24); return `${d}d ago`;
+  };
 
   return (
     <div className="bg-bg">
@@ -73,18 +88,14 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray text-sm font-medium">Total Clients</p>
-                    <p className="text-3xl font-bold text-text counter" data-count="1,247">0</p>
+                    <p className="text-3xl font-bold text-text">{stats.totalClients.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-users text-primary"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-green-600 flex items-center">
-                    <i className="fa-solid fa-arrow-up mr-1"></i>
-                    12%
-                  </span>
-                  <span className="text-gray ml-2">vs last month</span>
+                  <span className="text-gray ml-2">Current tenant members</span>
                 </div>
               </div>
 
@@ -92,18 +103,14 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray text-sm font-medium">Active Clients</p>
-                    <p className="text-3xl font-bold text-text counter" data-count="892">0</p>
+                    <p className="text-3xl font-bold text-text">{stats.activeClients.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-user-check text-green-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-green-600 flex items-center">
-                    <i className="fa-solid fa-arrow-up mr-1"></i>
-                    8%
-                  </span>
-                  <span className="text-gray ml-2">vs last month</span>
+                  <span className="text-gray ml-2">Active = all members (placeholder)</span>
                 </div>
               </div>
 
@@ -111,18 +118,14 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray text-sm font-medium">Total Forms</p>
-                    <p className="text-3xl font-bold text-text counter" data-count="156">0</p>
+                    <p className="text-3xl font-bold text-text">{stats.totalForms.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-clipboard-list text-purple-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-green-600 flex items-center">
-                    <i className="fa-solid fa-arrow-up mr-1"></i>
-                    24%
-                  </span>
-                  <span className="text-gray ml-2">vs last month</span>
+                  <span className="text-gray ml-2">Forms available to this tenant</span>
                 </div>
               </div>
 
@@ -130,18 +133,14 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray text-sm font-medium">Files Uploaded</p>
-                    <p className="text-3xl font-bold text-text counter" data-count="2,431">0</p>
+                    <p className="text-3xl font-bold text-text">{stats.filesUploaded.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-cloud-upload text-orange-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-green-600 flex items-center">
-                    <i className="fa-solid fa-arrow-up mr-1"></i>
-                    16%
-                  </span>
-                  <span className="text-gray ml-2">vs last month</span>
+                  <span className="text-gray ml-2">All files for this tenant</span>
                 </div>
               </div>
             </div>
@@ -155,10 +154,10 @@ export default function AdminDashboard() {
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray mb-2">Assign to User</label>
                 <select className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary">
-                  <option>Select a user...</option>
-                  <option>John Doe</option>
-                  <option>Jane Smith</option>
-                  <option>Mike Johnson</option>
+                  <option value="">Select a user...</option>
+                  {tenantUsers.map((u) => (
+                    <option key={u.id} value={u.id}>{u.email}</option>
+                  ))}
                 </select>
               </div>
 
@@ -174,20 +173,18 @@ export default function AdminDashboard() {
               <div className="mt-6">
                 <h4 className="text-sm font-medium text-gray mb-3">Recent Uploads</h4>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <i className="fa-solid fa-file-pdf text-red-500"></i>
-                      <span className="text-sm text-text">document.pdf</span>
+                  {recentFiles.length === 0 && (
+                    <div className="text-sm text-gray">No uploads yet.</div>
+                  )}
+                  {recentFiles.map((f) => (
+                    <div key={f.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <i className="fa-solid fa-file text-gray-500"></i>
+                        <span className="text-sm text-text">{f.title || (f.file_url || '').split('/').pop()}</span>
+                      </div>
+                      <span className="text-xs text-gray">{timeAgo(f.created_at)}</span>
                     </div>
-                    <span className="text-xs text-gray">2 min ago</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <i className="fa-solid fa-file-excel text-green-500"></i>
-                      <span className="text-sm text-text">spreadsheet.xlsx</span>
-                    </div>
-                    <span className="text-xs text-gray">5 min ago</span>
-                  </div>
+                  ))}
                 </div>
               </div>
             </section>
