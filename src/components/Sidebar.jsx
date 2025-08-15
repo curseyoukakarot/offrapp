@@ -7,6 +7,7 @@ const Sidebar = () => {
   const { userRole, signOut, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const [embeds, setEmbeds] = useState([]);
+  const [tenantName, setTenantName] = useState('Career Kitchen');
 
   const isAdmin = userRole === 'admin';
   const isRecruitPro = userRole === 'recruitpro';
@@ -23,6 +24,11 @@ const Sidebar = () => {
       if (!userRole) return;
       try {
         const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        // Tenant branding
+        try {
+          const tc = await fetch('/api/tenant-config', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({}));
+          if (tc?.name) setTenantName(tc.name);
+        } catch {}
         const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
         const json = await res.json();
         const all = Array.isArray(json.embeds) ? json.embeds : [];
@@ -73,7 +79,7 @@ const Sidebar = () => {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
       <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-800">Career Kitchen</h2>
+        <h2 className="text-xl font-bold text-gray-800">{tenantName}</h2>
         <p className="text-sm text-gray-500">{getRoleTitle()}</p>
       </div>
 
