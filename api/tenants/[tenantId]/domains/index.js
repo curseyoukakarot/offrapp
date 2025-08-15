@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { hasFeature } from '../../../_plans';
 
 function svc() { return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY); }
 
@@ -26,6 +27,9 @@ export default async function handler(req, res) {
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
       const domainRaw = String(body.domain || '').trim().toLowerCase();
       if (!/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(domainRaw)) return res.status(400).json({ error: 'Invalid domain' });
+      // feature guard by plan
+      const { data: tenant } = await svc().from('tenants').select('plan').eq('id', tenantId).maybeSingle();
+      if (!hasFeature(tenant?.plan || 'starter', 'custom_domain')) return res.status(403).json({ error: 'Plan does not include custom domains' });
       const type = domainRaw.split('.').length === 2 ? 'apex' : 'sub';
       const txt = crypto.randomBytes(24).toString('hex');
       const { data, error } = await svc().from('tenant_domains').insert({ tenant_id: tenantId, domain: domainRaw, type, txt_token: txt, ssl_status: 'pending' }).select('*').single();

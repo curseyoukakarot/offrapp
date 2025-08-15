@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolveNestbaseTxt } from '../../../_dns';
 import { vercelAddDomain, vercelGetDomain } from '../../../_vercelClient';
+import { hasFeature } from '../../../_plans';
 
 function svc() { return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY); }
 
@@ -22,6 +23,8 @@ export default async function handler(req, res) {
     const isAdmin = await assertAdmin(tenantId, user.id);
     if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
 
+    const { data: tenant } = await svc().from('tenants').select('plan').eq('id', tenantId).maybeSingle();
+    if (!hasFeature(tenant?.plan || 'starter', 'custom_domain')) return res.status(403).json({ error: 'Plan does not include custom domains' });
     const { data: row, error } = await svc().from('tenant_domains').select('*').eq('tenant_id', tenantId).eq('domain', domain).maybeSingle();
     if (error) return res.status(400).json({ error: error.message });
     if (!row) return res.status(404).json({ error: 'Domain not found' });

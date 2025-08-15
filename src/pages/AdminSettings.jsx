@@ -27,6 +27,7 @@ export default function AdminSettings() {
   const [createdTxt, setCreatedTxt] = useState(null); // { domain, type, txtRecord }
   const [verifying, setVerifying] = useState(''); // domain string
   const [removing, setRemoving] = useState('');
+  const [customDomainEnabled, setCustomDomainEnabled] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -41,7 +42,7 @@ export default function AdminSettings() {
         setPhone(profile?.phone || '');
         setLinkedin(profile?.linkedin || '');
         setEmail(session?.user?.email || '');
-        // Tenant branding
+        // Tenant branding + features
         const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
         const res = await fetch('/api/tenant-config', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
         const json = await res.json();
@@ -59,6 +60,9 @@ export default function AdminSettings() {
             client: { label: json?.role_labels?.client || 'Client', color: json?.role_colors?.client || 'gray' },
           });
         }
+        // Feature guard
+        const enabled = json?.features?.custom_domain !== false;
+        setCustomDomainEnabled(!!enabled);
         // Domains list
         await fetchDomains();
       } finally {
@@ -258,11 +262,18 @@ export default function AdminSettings() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Domains</h2>
         </div>
-        <form onSubmit={addDomain} className="flex items-center gap-3 mb-4">
-          <input className="border rounded px-3 py-2 flex-1" placeholder="client.com or app.client.com" value={newDomain} onChange={(e) => setNewDomain(e.target.value)} />
-          <button disabled={creating || !newDomain} className={`${'px-4 py-2 rounded text-white'} ${creating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{creating ? 'Adding…' : 'Add domain'}</button>
-        </form>
-        {createdTxt && (
+        {!customDomainEnabled ? (
+          <div className="p-4 border rounded-lg bg-yellow-50 text-yellow-800 mb-4 text-sm">
+            Custom domains are not included in your current plan. <a href="#/billing" className="underline">Upgrade</a> to enable.
+          </div>
+        ) : null}
+        {customDomainEnabled && (
+          <form onSubmit={addDomain} className="flex items-center gap-3 mb-4">
+            <input className="border rounded px-3 py-2 flex-1" placeholder="client.com or app.client.com" value={newDomain} onChange={(e) => setNewDomain(e.target.value)} />
+            <button disabled={creating || !newDomain} className={`${'px-4 py-2 rounded text-white'} ${creating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{creating ? 'Adding…' : 'Add domain'}</button>
+          </form>
+        )}
+        {createdTxt && customDomainEnabled && (
           <div className="border rounded-lg p-4 bg-gray-50 mb-4">
             <div className="text-sm text-gray-700 mb-2">Add this DNS TXT record to verify ownership:</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
@@ -318,9 +329,15 @@ export default function AdminSettings() {
                   </td>
                   <td className="px-4 py-2">{d.verified_at ? new Date(d.verified_at).toLocaleString() : '—'}</td>
                   <td className="px-4 py-2 text-right space-x-2">
-                    <button className={`px-2 py-1 rounded ${verifying === d.domain ? 'bg-gray-200' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => verifyDomain(d.domain)} disabled={!!verifying}>Verify</button>
-                    <a className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200" href={`https://${d.domain}`} target="_blank" rel="noreferrer">Open</a>
-                    <button className={`px-2 py-1 rounded ${removing === d.domain ? 'bg-red-200' : 'bg-red-100 hover:bg-red-200'}`} onClick={() => removeDomain(d.domain)} disabled={!!removing}>Remove</button>
+                    {customDomainEnabled ? (
+                      <>
+                        <button className={`px-2 py-1 rounded ${verifying === d.domain ? 'bg-gray-200' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => verifyDomain(d.domain)} disabled={!!verifying}>Verify</button>
+                        <a className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200" href={`https://${d.domain}`} target="_blank" rel="noreferrer">Open</a>
+                        <button className={`px-2 py-1 rounded ${removing === d.domain ? 'bg-red-200' : 'bg-red-100 hover:bg-red-200'}`} onClick={() => removeDomain(d.domain)} disabled={!!removing}>Remove</button>
+                      </>
+                    ) : (
+                      <a className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200" href={`https://${d.domain}`} target="_blank" rel="noreferrer">Open</a>
+                    )}
                   </td>
                 </tr>
               ))}

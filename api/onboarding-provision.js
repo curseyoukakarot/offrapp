@@ -42,6 +42,11 @@ export default async function handler(req, res) {
     await svc.from('embeds').insert({ tenant_id: tenant.id, title: 'Welcome to Nestbase', url: 'https://nestbase.io', active: true });
     await svc.from('forms').insert({ tenant_id: tenant.id, title: 'Client Intake', status: 'draft', assigned_roles: ['admin'] });
 
+    // Cookie/host note: we keep the user on the same host during provisioning.
+    // If you redirect to a different host (e.g., slug.nestbase.app), ensure the
+    // auth cookie is set for that host. Here we simply return slug and let the
+    // client perform a navigation; the app should establish a session on the
+    // destination host via Supabase auth (token exchange or regular login).
     // Clear onboarding cookie
     res.setHeader('Set-Cookie', 'onb=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
     return res.status(200).json({ ready: true, tenantSlug: tenant.slug });
