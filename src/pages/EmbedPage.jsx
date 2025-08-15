@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
-import { useUser } from '../lib/useUser';
+import { useAuth } from '../contexts/AuthContext';
 
 const EmbedPage = () => {
-  const { user } = useUser();
+  const { userRole } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [embed, setEmbed] = useState(null);
@@ -14,19 +14,11 @@ const EmbedPage = () => {
   const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    // Fetch role from users table
-    const fetchRole = async () => {
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      setRole(userRow?.role || 'authenticated');
-      initializePage(userRow?.role || 'authenticated');
-    };
-    fetchRole();
-  }, [user]);
+    if (!userRole) return;
+    setRole(userRole);
+    initializePage(userRole);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole]);
 
   const initializePage = async (currentRole) => {
     try {
@@ -47,20 +39,11 @@ const EmbedPage = () => {
         return;
       }
 
-      // Fetch embed data
-      const { data: embedData, error: embedError } = await supabase
-        .from('embeds')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      console.log('Embed fetch result:', { data: embedData, error: embedError });
-
-      if (embedError) {
-        console.error('Error fetching embed:', embedError);
-        navigate('/');
-        return;
-      }
+      // Fetch embed data via server API (bypasses RLS) with tenant header
+      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const res = await fetch(`/api/embeds?id=${encodeURIComponent(id)}`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+      const json = await res.json();
+      const embedData = json?.embed || null;
 
       if (embedData) {
         let accessGranted = false;
@@ -76,8 +59,9 @@ const EmbedPage = () => {
           setEmbed(embedData);
           setHasAccess(true);
         } else {
-          console.log('No access to embed, redirecting to home');
-          navigate('/');
+          console.log('No access to embed for this user');
+          setEmbed(null);
+          setHasAccess(false);
         }
       }
     } catch (error) {
