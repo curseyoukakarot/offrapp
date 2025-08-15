@@ -76,9 +76,23 @@ export default function AdminSettings() {
     try {
       setLoadingDomains(true);
       const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      if (!tenantId) {
+        setDomains([]);
+        setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/tenants/${tenantId}/domains`, { headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
-      const json = await res.json();
+      const isJson = (res.headers.get('content-type') || '').includes('application/json');
+      if (!res.ok) {
+        const msg = isJson ? (await res.json())?.error || 'Failed to load domains' : 'Failed to load domains';
+        setToast({ type: 'error', message: msg });
+        setTimeout(() => setToast(null), 2500);
+        setDomains([]);
+        return;
+      }
+      const json = isJson ? await res.json() : { domains: [] };
       setDomains(json?.domains || []);
     } catch (_e) {
       setDomains([]);
@@ -97,13 +111,19 @@ export default function AdminSettings() {
     try {
       setCreating(true);
       const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      if (!tenantId) {
+        setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/tenants/${tenantId}/domains`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+        headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: newDomain })
       });
-      const json = await res.json();
+      const isJson = (res.headers.get('content-type') || '').includes('application/json');
+      const json = isJson ? await res.json() : null;
       if (!res.ok) throw new Error(json?.error || 'Failed');
       setCreatedTxt(json);
       setNewDomain('');
@@ -120,12 +140,18 @@ export default function AdminSettings() {
     try {
       setVerifying(domain);
       const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      if (!tenantId) {
+        setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/tenants/${tenantId}/domains/${encodeURIComponent(domain)}/verify`, {
         method: 'POST', headers: { Authorization: `Bearer ${session?.access_token || ''}` }
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || json?.reason || 'Verify failed');
+      const isJson = (res.headers.get('content-type') || '').includes('application/json');
+      const json = isJson ? await res.json() : null;
+      if (!res.ok) throw new Error(json?.reason || json?.error || 'Verify failed');
       await fetchDomains();
       setToast({ type: 'success', message: 'Domain verified' });
       setTimeout(() => setToast(null), 2000);
@@ -140,11 +166,17 @@ export default function AdminSettings() {
     try {
       setRemoving(domain);
       const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      if (!tenantId) {
+        setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/tenants/${tenantId}/domains/${encodeURIComponent(domain)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
       if (!res.ok && res.status !== 204) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || 'Remove failed');
+        let msg = 'Remove failed';
+        try { msg = (await res.json())?.error || msg; } catch(_e) {}
+        throw new Error(msg);
       }
       await fetchDomains();
     } catch (e2) {
