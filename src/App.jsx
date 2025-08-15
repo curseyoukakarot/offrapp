@@ -32,6 +32,8 @@ import AppHealthPage from './pages/super/AppHealthPage.tsx';
 import IntegrationsPage from './pages/super/IntegrationsPage.tsx';
 import NotificationsPage from './pages/super/NotificationsPage.tsx';
 import SettingsPage from './pages/super/SettingsPage.tsx';
+import Signup from './pages/Signup.jsx';
+import Onboarding from './pages/Onboarding.jsx';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -70,6 +72,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           
           {/* Admin Routes */}
           <Route path="/dashboard/admin" element={
