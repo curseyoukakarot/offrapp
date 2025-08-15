@@ -24,11 +24,42 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      let query = supabase.from('embeds').select('*').order('created_at', { ascending: false }).limit(200);
+      const id = req.query?.id ? String(req.query.id) : null;
+      let query = supabase.from('embeds').select('*');
+      if (id) query = query.eq('id', id).limit(1);
+      else query = query.order('created_at', { ascending: false }).limit(200);
       if (tenantId) query = query.eq('tenant_id', tenantId);
       const { data, error } = await query;
       if (error) throw error;
+      if (id) {
+        return res.status(200).json({ embed: Array.isArray(data) ? data[0] || null : data || null });
+      }
       return res.status(200).json({ embeds: data || [] });
+    }
+
+    if (req.method === 'PATCH') {
+      const id = req.query?.id ? String(req.query.id) : null;
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const { title, provider, url, embed_type, user_id, role, is_active } = req.body || {};
+      const payload = {};
+      if (typeof title === 'string') payload.title = title;
+      if (typeof provider === 'string') payload.provider = provider;
+      if (typeof url === 'string') payload.url = url;
+      if (typeof embed_type === 'string') payload.embed_type = embed_type;
+      if (embed_type === 'user') payload.user_id = user_id || null;
+      if (embed_type === 'role') payload.role = role || null;
+      if (typeof is_active === 'boolean') payload.is_active = is_active;
+      const { data, error } = await supabase.from('embeds').update(payload).eq('id', id).select('*').single();
+      if (error) throw error;
+      return res.status(200).json({ embed: data });
+    }
+
+    if (req.method === 'DELETE') {
+      const id = req.query?.id ? String(req.query.id) : null;
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const { error } = await supabase.from('embeds').delete().eq('id', id);
+      if (error) throw error;
+      return res.status(200).json({ ok: true });
     }
 
     return res.status(405).json({ error: 'method not allowed' });

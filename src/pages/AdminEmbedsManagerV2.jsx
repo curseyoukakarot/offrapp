@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 
 export default function AdminEmbedsManagerV2() {
   const [audience, setAudience] = useState('user-type');
+  const [embeds, setEmbeds] = useState([]);
+  const [loadingEmbeds, setLoadingEmbeds] = useState(true);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
@@ -12,12 +14,35 @@ export default function AdminEmbedsManagerV2() {
   const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
 
   useEffect(() => {
-    // Table row hover effects to show actions
-    const rows = document.querySelectorAll('#embed-table tbody tr:not(.bg-gray-50)');
-    rows.forEach((row) => {
-      row.classList.add('group');
-    });
+    const loadEmbeds = async () => {
+      try {
+        setLoadingEmbeds(true);
+        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const json = await res.json();
+        setEmbeds(Array.isArray(json.embeds) ? json.embeds : []);
+      } catch {
+        setEmbeds([]);
+      } finally {
+        setLoadingEmbeds(false);
+      }
+    };
+    loadEmbeds();
   }, []);
+
+  const updateEmbed = async (id, patch) => {
+    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+    await fetch(`/api/embeds?id=${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) }, body: JSON.stringify(patch) });
+    const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+    const json = await res.json();
+    setEmbeds(Array.isArray(json.embeds) ? json.embeds : []);
+  };
+
+  const deleteEmbed = async (id) => {
+    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+    await fetch(`/api/embeds?id=${id}`, { method: 'DELETE', headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+    setEmbeds((prev) => prev.filter((e) => e.id !== id));
+  };
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -281,126 +306,46 @@ export default function AdminEmbedsManagerV2() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {/* Notion Group */}
-                    <tr className="bg-gray-50">
-                      <td colSpan={5} className="px-6 py-3">
-                        <div className="flex items-center space-x-2">
-                          <i className="fa-solid fa-chevron-down text-gray-400"></i>
-                          <i className="fa-solid fa-cube text-gray-600"></i>
-                          <span className="font-medium text-gray-900">Notion (2)</span>
-                        </div>
-                      </td>
-                    </tr>
-
-                    <tr className="hover:bg-gray-50 transition-colors group align-top">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <i className="fa-solid fa-cube text-gray-600"></i>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">Project Tracker</div>
-                            <div className="text-sm text-gray-500">Notion</div>
+                    {loadingEmbeds && (
+                      <tr><td colSpan={5} className="px-6 py-6 text-sm text-gray-500">Loading embeds…</td></tr>
+                    )}
+                    {!loadingEmbeds && embeds.length === 0 && (
+                      <tr><td colSpan={5} className="px-6 py-6 text-sm text-gray-500">No embeds yet.</td></tr>
+                    )}
+                    {embeds.map((e) => (
+                      <tr key={e.id} className="hover:bg-gray-50 transition-colors group align-top">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-3">
+                            <i className={`fa-solid ${e.provider === 'calendly' ? 'fa-calendar' : 'fa-cube'} text-gray-600`}></i>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{e.title}</div>
+                              <div className="text-sm text-gray-500 capitalize">{e.provider}</div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">User Type</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Job Seeker</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Active</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="text-gray-400 hover:text-primary transition-colors">
-                            <i className="fa-solid fa-edit"></i>
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-500 transition-colors">
-                            <i className="fa-solid fa-toggle-on"></i>
-                          </button>
-                          <button className="text-gray-400 hover:text-red-500 transition-colors">
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    <tr className="hover:bg-gray-50 transition-colors group align-top">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <i className="fa-solid fa-cube text-gray-600"></i>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">Team Dashboard</div>
-                            <div className="text-sm text-gray-500">Notion</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{e.embed_type === 'role' ? 'User Type' : 'Individual'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {e.embed_type === 'role' ? (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{e.role || 'all'}</span>
+                          ) : (
+                            <span className="text-sm text-gray-900">{e.user_id || '—'}</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded-full text-xs ${e.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{e.is_active ? 'Active' : 'Inactive'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="text-gray-400 hover:text-primary transition-colors" onClick={() => updateEmbed(e.id, { is_active: !e.is_active })}>
+                              <i className={`fa-solid ${e.is_active ? 'fa-toggle-on' : 'fa-toggle-off'}`}></i>
+                            </button>
+                            <button className="text-gray-400 hover:text-red-500 transition-colors" onClick={() => deleteEmbed(e.id)}>
+                              <i className="fa-solid fa-trash"></i>
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">Individual</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" className="w-6 h-6 rounded-full" alt="User" />
-                          <span className="text-sm text-gray-900">john@example.com</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">Inactive</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <button className="text-gray-400 hover:text-primary transition-colors">
-                            <i className="fa-solid fa-edit"></i>
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-500 transition-colors">
-                            <i className="fa-solid fa-toggle-off"></i>
-                          </button>
-                          <button className="text-gray-400 hover:text-red-500 transition-colors">
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Calendly Group */}
-                    <tr className="bg-gray-50">
-                      <td colSpan={5} className="px-6 py-3">
-                        <div className="flex items-center space-x-2">
-                          <i className="fa-solid fa-chevron-down text-gray-400"></i>
-                          <i className="fa-solid fa-calendar text-gray-600"></i>
-                          <span className="font-medium text-gray-900">Calendly (1)</span>
-                        </div>
-                      </td>
-                    </tr>
-
-                    <tr className="hover:bg-gray-50 transition-colors group align-top">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <i className="fa-solid fa-calendar text-gray-600"></i>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">Booking Calendar</div>
-                            <div className="text-sm text-gray-500">Calendly</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">User Type</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Client</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Active</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <button className="text-gray-400 hover:text-primary transition-colors">
-                            <i className="fa-solid fa-edit"></i>
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-500 transition-colors">
-                            <i className="fa-solid fa-toggle-on"></i>
-                          </button>
-                          <button className="text-gray-400 hover:text-red-500 transition-colors">
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
