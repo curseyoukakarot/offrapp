@@ -328,7 +328,7 @@ export default function AdminEmbedsManagerV2() {
                           {e.embed_type === 'role' ? (
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{e.role || 'all'}</span>
                           ) : (
-                            <span className="text-sm text-gray-900">{e.user_id || '—'}</span>
+                            <span className="text-sm text-gray-900">{(users.find((u) => u.id === e.user_id)?.email) || e.user_id || '—'}</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
