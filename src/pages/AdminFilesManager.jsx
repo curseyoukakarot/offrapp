@@ -292,7 +292,7 @@ export default function AdminFilesManager() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{f.user_id || (Array.isArray(f.assigned_roles) && f.assigned_roles.map(roleLabel).join(', ')) || '—'}</div>
+                          <div className="text-sm text-gray-900">{(f.user_id && (users.find((u) => u.id === f.user_id)?.email)) || (Array.isArray(f.assigned_roles) && f.assigned_roles.map(roleLabel).join(', ')) || '—'}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">—</td>
                         <td className="px-6 py-4">
