@@ -140,7 +140,7 @@ const Sidebar = () => {
                 <i className="fa-solid fa-layer-group mr-3" />
                 <span>Admin Embeds</span>
               </NavLink>
-              <NavLink to="/admin/settings" className={({ isActive }) =>
+              <NavLink to="/dashboard/admin/settings" className={({ isActive }) =>
                 `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
                   isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
                 }`

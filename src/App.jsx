@@ -107,6 +107,13 @@ function App() {
               </AdminLayout>
             </ProtectedRoute>
           } />
+          <Route path="/dashboard/admin/settings" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
 
           {/* RecruitPro Routes */}
           <Route path="/dashboard/recruitpro" element={
