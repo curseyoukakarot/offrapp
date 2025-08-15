@@ -9,6 +9,15 @@ function defaults() {
       jobseeker: 'Job Seeker',
       client: 'Client',
     },
+    role_colors: {
+      admin: 'blue',
+      recruitpro: 'purple',
+      jobseeker: 'green',
+      client: 'gray',
+    },
+    support_email: '',
+    logo_url: '',
+    favicon_url: '',
   };
 }
 
@@ -25,6 +34,10 @@ export default async function handler(req, res) {
       return res.status(200).json({
         name: data?.name || defaults().name,
         role_labels: data?.role_labels || defaults().role_labels,
+        role_colors: data?.role_colors || defaults().role_colors,
+        support_email: data?.support_email || defaults().support_email,
+        logo_url: data?.logo_url || defaults().logo_url,
+        favicon_url: data?.favicon_url || defaults().favicon_url,
       });
     }
 
@@ -48,16 +61,24 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'unauthorized' });
       }
 
-      const { name, role_labels } = req.body || {};
+      const { name, role_labels, role_colors, support_email, logo_url, favicon_url } = req.body || {};
       const payload = {};
       if (typeof name === 'string' && name.trim()) payload.name = name.trim();
       if (role_labels && typeof role_labels === 'object') payload.role_labels = role_labels;
+      if (role_colors && typeof role_colors === 'object') payload.role_colors = role_colors;
+      if (typeof support_email === 'string') payload.support_email = support_email;
+      if (typeof logo_url === 'string') payload.logo_url = logo_url;
+      if (typeof favicon_url === 'string') payload.favicon_url = favicon_url;
       if (Object.keys(payload).length === 0) return res.status(400).json({ error: 'no fields' });
       const { data, error } = await supabase.from('tenants').update(payload).eq('id', tenantId).select('*').maybeSingle();
       if (error) throw error;
       return res.status(200).json({
         name: data?.name || defaults().name,
         role_labels: data?.role_labels || defaults().role_labels,
+        role_colors: data?.role_colors || defaults().role_colors,
+        support_email: data?.support_email || defaults().support_email,
+        logo_url: data?.logo_url || defaults().logo_url,
+        favicon_url: data?.favicon_url || defaults().favicon_url,
       });
     }
 

@@ -11,6 +11,12 @@ export default function AdminSettings() {
   const [toast, setToast] = useState(null); // {type,message}
 
   const [brand, setBrand] = useState({ name: '', support_email: '', logo_url: '', favicon_url: '' });
+  const [roles, setRoles] = useState({
+    admin: { label: 'Admin', color: 'blue' },
+    recruitpro: { label: 'RecruitPro', color: 'purple' },
+    jobseeker: { label: 'Job Seeker', color: 'green' },
+    client: { label: 'Client', color: 'gray' },
+  });
   const [savingBrand, setSavingBrand] = useState(false);
 
   useEffect(() => {
@@ -36,6 +42,14 @@ export default function AdminSettings() {
           logo_url: json?.logo_url || '',
           favicon_url: json?.favicon_url || ''
         });
+        if (json?.role_labels || json?.role_colors) {
+          setRoles({
+            admin: { label: json?.role_labels?.admin || 'Admin', color: json?.role_colors?.admin || 'blue' },
+            recruitpro: { label: json?.role_labels?.recruitpro || 'RecruitPro', color: json?.role_colors?.recruitpro || 'purple' },
+            jobseeker: { label: json?.role_labels?.jobseeker || 'Job Seeker', color: json?.role_colors?.jobseeker || 'green' },
+            client: { label: json?.role_labels?.client || 'Client', color: json?.role_colors?.client || 'gray' },
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -94,7 +108,24 @@ export default function AdminSettings() {
       await fetch('/api/tenant-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}`, ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
-        body: JSON.stringify({ name: brand.name, support_email: brand.support_email, logo_url: brand.logo_url, favicon_url: brand.favicon_url, role_labels: undefined })
+        body: JSON.stringify({
+          name: brand.name,
+          support_email: brand.support_email,
+          logo_url: brand.logo_url,
+          favicon_url: brand.favicon_url,
+          role_labels: {
+            admin: roles.admin.label,
+            recruitpro: roles.recruitpro.label,
+            jobseeker: roles.jobseeker.label,
+            client: roles.client.label,
+          },
+          role_colors: {
+            admin: roles.admin.color,
+            recruitpro: roles.recruitpro.color,
+            jobseeker: roles.jobseeker.color,
+            client: roles.client.color,
+          },
+        })
       });
       setToast({ type: 'success', message: 'Brand saved' });
       setTimeout(() => setToast(null), 2000);
@@ -145,6 +176,27 @@ export default function AdminSettings() {
           <input className="border rounded px-3 py-2" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <button className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Save Profile</button>
         </form>
+      </section>
+
+      {/* Role Types & Banner Colors */}
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Role Types &amp; Banner Colors</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.keys(roles).map((key) => (
+            <div key={key} className="border rounded p-4 space-y-2">
+              <div className="text-sm text-gray-500 uppercase">{key}</div>
+              <input className="border rounded px-3 py-2 w-full" value={roles[key].label} onChange={(e) => setRoles((r) => ({ ...r, [key]: { ...r[key], label: e.target.value } }))} />
+              <select className="border rounded px-3 py-2 w-full" value={roles[key].color} onChange={(e) => setRoles((r) => ({ ...r, [key]: { ...r[key], color: e.target.value } }))}>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="green">Green</option>
+                <option value="gray">Gray</option>
+                <option value="orange">Orange</option>
+                <option value="red">Red</option>
+              </select>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Change Password */}
