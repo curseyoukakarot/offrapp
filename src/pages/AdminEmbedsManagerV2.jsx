@@ -5,6 +5,11 @@ export default function AdminEmbedsManagerV2() {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
+  const [title, setTitle] = useState('');
+  const [provider, setProvider] = useState('');
+  const [url, setUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
 
   useEffect(() => {
     // Table row hover effects to show actions
@@ -67,9 +72,9 @@ export default function AdminEmbedsManagerV2() {
 
       {/* Main Content */}
       <main id="main-content" className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Left Column: Embed Creation Form */}
-          <div id="embed-form-section" className="space-y-6">
+          <div id="embed-form-section" className="space-y-6 lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Create New Embed</h2>
 
@@ -82,31 +87,35 @@ export default function AdminEmbedsManagerV2() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input type="text" placeholder="e.g., Project Tracker" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                  <input type="text" placeholder="e.g., Project Tracker" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option>Select Provider</option>
-                    <option>Notion</option>
-                    <option>Calendly</option>
-                    <option>Monday.com</option>
-                    <option>Custom</option>
+                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={provider} onChange={(e) => setProvider(e.target.value)}>
+                    <option value="">Select Provider</option>
+                    <option value="notion">Notion</option>
+                    <option value="calendly">Calendly</option>
+                    <option value="monday">Monday.com</option>
+                    <option value="custom">Custom</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Embed URL</label>
-                  <input type="url" placeholder="https://..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                  <input type="url" placeholder="https://..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={url} onChange={(e) => setUrl(e.target.value)} />
                 </div>
 
                 {/* Live Preview */}
                 <div id="live-preview" className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <p className="text-sm text-gray-500 mb-2">Live Preview</p>
-                  <div className="bg-white border border-gray-200 rounded h-32 flex items-center justify-center">
-                    <span className="text-gray-400">Enter URL to see preview</span>
-                  </div>
+                  {url ? (
+                    <iframe title="embed-preview" src={url} className="bg-white border border-gray-200 rounded w-full h-64" allow="clipboard-write; fullscreen;" />
+                  ) : (
+                    <div className="bg-white border border-gray-200 rounded h-32 flex items-center justify-center">
+                      <span className="text-gray-400">Enter URL to see preview</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -119,7 +128,7 @@ export default function AdminEmbedsManagerV2() {
 
                 <div className="space-y-3">
                   <label className="flex items-center space-x-3 cursor-pointer">
-                    <input type="radio" name="audience" value="user-type" className="text-primary" checked={audience === 'user-type'} onChange={() => setAudience('user-type')} />
+                    <input type="radio" name="audience" value="user-type" className="text-blue-600" checked={audience === 'user-type'} onChange={() => setAudience('user-type')} />
                     <span>Assign by User Type</span>
                   </label>
 
@@ -139,7 +148,7 @@ export default function AdminEmbedsManagerV2() {
                   </div>
 
                   <label className="flex items-center space-x-3 cursor-pointer">
-                    <input type="radio" name="audience" value="individual" className="text-primary" checked={audience === 'individual'} onChange={() => setAudience('individual')} />
+                    <input type="radio" name="audience" value="individual" className="text-blue-600" checked={audience === 'individual'} onChange={() => setAudience('individual')} />
                     <span>Assign to Individual Users</span>
                   </label>
 
@@ -166,7 +175,7 @@ export default function AdminEmbedsManagerV2() {
                   <span className="text-sm font-medium text-gray-700">Status</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
 
@@ -178,15 +187,59 @@ export default function AdminEmbedsManagerV2() {
 
               {/* Step 4: Actions */}
               <div id="step-4">
-                <button className="w-full bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors">
-                  Add Embed
+                {toast && (
+                  <div className={`mb-3 text-sm px-3 py-2 rounded ${toast.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{toast.message}</div>
+                )}
+                <button
+                  className={`w-full text-white py-3 px-6 rounded-lg font-medium transition-colors ${saving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  onClick={async () => {
+                    if (!title || !provider || !url) {
+                      setToast({ type: 'error', message: 'Please fill Title, Provider and URL' });
+                      setTimeout(() => setToast(null), 2500);
+                      return;
+                    }
+                    if (audience === 'individual' && !selectedUser) {
+                      setToast({ type: 'error', message: 'Please choose a user' });
+                      setTimeout(() => setToast(null), 2500);
+                      return;
+                    }
+                    try {
+                      setSaving(true);
+                      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+                      const resp = await fetch('/api/embeds', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
+                        body: JSON.stringify({
+                          title,
+                          provider,
+                          url,
+                          embed_type: audience === 'individual' ? 'user' : 'role',
+                          user_id: audience === 'individual' ? selectedUser : null,
+                          role: audience === 'user-type' ? 'all' : null
+                        })
+                      });
+                      const json = await resp.json();
+                      if (!resp.ok) throw new Error(json?.error || json?.message || 'Save failed');
+                      setToast({ type: 'success', message: 'Embed added' });
+                      setTimeout(() => setToast(null), 2000);
+                      setTitle(''); setProvider(''); setUrl(''); setSelectedUser('');
+                    } catch (e) {
+                      setToast({ type: 'error', message: String(e.message || e) });
+                      setTimeout(() => setToast(null), 3000);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving…' : 'Add Embed'}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Right Column: Embed List */}
-          <div id="embed-list-section" className="space-y-6">
+          <div id="embed-list-section" className="space-y-6 lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               {/* Header */}
               <div id="list-header" className="p-6 border-b border-gray-200">
@@ -217,14 +270,14 @@ export default function AdminEmbedsManagerV2() {
 
               {/* Table */}
               <div id="embed-table" className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 sticky top-0">
+                <table className="min-w-full table-fixed">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title &amp; Provider</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Title &amp; Provider</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Target</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -239,7 +292,7 @@ export default function AdminEmbedsManagerV2() {
                       </td>
                     </tr>
 
-                    <tr className="hover:bg-gray-50 transition-colors group">
+                    <tr className="hover:bg-gray-50 transition-colors group align-top">
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
                           <i className="fa-solid fa-cube text-gray-600"></i>
@@ -249,11 +302,11 @@ export default function AdminEmbedsManagerV2() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">User Type</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">User Type</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Job Seeker</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Active</span>
                       </td>
                       <td className="px-6 py-4">
@@ -271,7 +324,7 @@ export default function AdminEmbedsManagerV2() {
                       </td>
                     </tr>
 
-                    <tr className="hover:bg-gray-50 transition-colors group">
+                    <tr className="hover:bg-gray-50 transition-colors group align-top">
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
                           <i className="fa-solid fa-cube text-gray-600"></i>
@@ -281,14 +334,14 @@ export default function AdminEmbedsManagerV2() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">Individual</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">Individual</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
                           <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" className="w-6 h-6 rounded-full" alt="User" />
                           <span className="text-sm text-gray-900">john@example.com</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">Inactive</span>
                       </td>
                       <td className="px-6 py-4">
@@ -317,7 +370,7 @@ export default function AdminEmbedsManagerV2() {
                       </td>
                     </tr>
 
-                    <tr className="hover:bg-gray-50 transition-colors group">
+                    <tr className="hover:bg-gray-50 transition-colors group align-top">
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
                           <i className="fa-solid fa-calendar text-gray-600"></i>
@@ -327,11 +380,11 @@ export default function AdminEmbedsManagerV2() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">User Type</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">User Type</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Client</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Active</span>
                       </td>
                       <td className="px-6 py-4">
