@@ -291,7 +291,12 @@ export default function AdminSettings() {
             </div>
             <div className="text-xs text-gray-500 mt-2">DNS changes can take a few minutes to propagate.</div>
             <div className="mt-3">
-              <button type="button" className="px-3 py-1.5 rounded bg-green-600 text-white" onClick={() => verifyDomain(createdTxt.domain)}>Verify Now</button>
+              <button type="button" className="px-3 py-1.5 rounded bg-green-600 text-white" onClick={() => verifyDomain(createdTxt.domain)} disabled={!!verifying}>
+                {verifying ? 'Provisioning SSL (step 2/2)…' : 'Verify Now'}
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 mt-3">
+              Point this TXT record at your DNS provider, wait a few minutes, then click Verify. After verification, SSL may take up to a minute.
             </div>
           </div>
         )}

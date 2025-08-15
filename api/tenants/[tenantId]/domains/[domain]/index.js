@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     const isAdmin = await assertAdmin(tenantId, user.id);
     if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
 
+    // Attempt to remove from Vercel; tolerate 404 (already removed)
     await vercelRemoveDomain(domain).catch(() => {});
     await svc().from('tenant_domains').delete().eq('tenant_id', tenantId).eq('domain', domain);
     return res.status(204).end();

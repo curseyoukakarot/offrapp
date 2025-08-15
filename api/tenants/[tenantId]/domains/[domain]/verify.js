@@ -31,21 +31,31 @@ export default async function handler(req, res) {
 
     const txts = await resolveNestbaseTxt(domain);
     const ok = txts.includes(row.txt_token);
-    if (!ok) return res.status(409).json({ verified: false, reason: 'TXT not found' });
+    if (!ok) return res.status(409).json({ verified: false, reason: 'TXT_MISMATCH' });
 
-    await vercelAddDomain(domain);
+    const added = await vercelAddDomain(domain);
+    if (added && added.rateLimited) {
+      await svc().from('tenant_domains').update({ ssl_status: 'failed' }).eq('id', row.id);
+      return res.status(429).json({ verified: false, reason: 'RATE_LIMIT' });
+    }
+    if (added && added.ok === false) {
+      await svc().from('tenant_domains').update({ ssl_status: 'failed' }).eq('id', row.id);
+      return res.status(409).json({ verified: false, reason: 'VercelAddFailed' });
+    }
     // Poll up to ~25s
     let tries = 0; let ready = false; let last;
     while (tries < 12 && !ready) {
       await new Promise(r => setTimeout(r, 500 + tries * 150));
-      last = await vercelGetDomain(domain).catch(() => null);
+      const got = await vercelGetDomain(domain).catch(() => null);
+      if (got && got.rateLimited) { continue; }
+      if (got && got.ok === false) { last = got; } else { last = got?.json || {}; }
       ready = !!last && (last.apexName || last.verified) !== false; // tolerate shape
       tries++;
     }
 
     if (!ready) {
       await svc().from('tenant_domains').update({ ssl_status: 'failed' }).eq('id', row.id);
-      return res.status(409).json({ verified: false, reason: 'SSL pending/failed' });
+      return res.status(409).json({ verified: false, reason: 'RATE_LIMIT' });
     }
 
     await svc().from('tenant_domains').update({ verified_at: new Date().toISOString(), ssl_status: 'ready' }).eq('id', row.id);
