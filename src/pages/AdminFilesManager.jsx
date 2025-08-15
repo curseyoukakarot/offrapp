@@ -17,6 +17,10 @@ export default function AdminFilesManager() {
   const [toast, setToast] = useState(null); // { type: 'success'|'error', message: string }
   const { roleLabel } = useTenantConfig();
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewTab, setPreviewTab] = useState('preview');
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape' && drawerOpen) setDrawerOpen(false);
@@ -97,6 +101,31 @@ export default function AdminFilesManager() {
     setTimeout(() => setToast(null), 2500);
   };
 
+  const toggleSelectAll = (checked) => {
+    setSelectedIds(checked ? files.map((f) => f.id) : []);
+  };
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const bulkDownload = () => {
+    const items = files.filter((f) => selectedIds.includes(f.id));
+    items.forEach((f) => window.open(f.file_url, '_blank'));
+  };
+
+  const openPreview = (f) => {
+    setPreviewFile(f);
+    setPreviewTab('preview');
+    setDrawerOpen(true);
+  };
+
+  const fileType = (url) => {
+    const lower = (url || '').toLowerCase();
+    if (lower.endsWith('.pdf')) return 'pdf';
+    if (lower.match(/\.(png|jpg|jpeg|gif|webp)$/)) return 'image';
+    return 'file';
+  };
+
   return (
     <div className="bg-gray-50 font-sans">
       {/* Header */}
@@ -151,10 +180,10 @@ export default function AdminFilesManager() {
               </select>
             </div>
             <div className="ml-auto flex items-center space-x-2">
-              <button className="text-gray-600 hover:text-gray-900 px-3 py-1.5 text-sm font-medium transition-all">
+              <button className="text-gray-600 hover:text-gray-900 px-3 py-1.5 text-sm font-medium transition-all" onClick={bulkDownload} disabled={selectedIds.length === 0}>
                 <i className="fa-solid fa-download mr-1"></i>Download
               </button>
-              <button className="text-red-600 hover:text-red-700 px-3 py-1.5 text-sm font-medium transition-all">
+              <button className="text-red-600 hover:text-red-700 px-3 py-1.5 text-sm font-medium transition-all" disabled={selectedIds.length === 0}>
                 <i className="fa-solid fa-trash mr-1"></i>Delete
               </button>
             </div>
@@ -248,7 +277,7 @@ export default function AdminFilesManager() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Recent Files</h3>
                   <div className="flex items-center space-x-2">
-                    <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
+                    <input type="checkbox" className="rounded border-gray-300 text-blue-600" onChange={(e) => toggleSelectAll(e.target.checked)} checked={selectedIds.length > 0 && selectedIds.length === files.length} />
                     <span className="text-sm text-gray-600">Select all</span>
                   </div>
                 </div>
@@ -259,7 +288,7 @@ export default function AdminFilesManager() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
+                        <input type="checkbox" className="rounded border-gray-300 text-blue-600" onChange={(e) => toggleSelectAll(e.target.checked)} checked={selectedIds.length > 0 && selectedIds.length === files.length} />
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
@@ -281,9 +310,9 @@ export default function AdminFilesManager() {
                       </tr>
                     )}
                     {files.map((f) => (
-                      <tr key={f.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setDrawerOpen(true)}>
-                        <td className="px-6 py-4">
-                          <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
+                      <tr key={f.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => openPreview(f)}>
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600" checked={selectedIds.includes(f.id)} onChange={() => toggleSelect(f.id)} />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center">
@@ -300,7 +329,7 @@ export default function AdminFilesManager() {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{new Date(f.created_at).toLocaleString()}</td>
                         <td className="px-6 py-4">
-                          <button className="text-gray-400 hover:text-gray-600 transition-all">
+                          <button className="text-gray-400 hover:text-gray-600 transition-all" onClick={(e) => { e.stopPropagation(); openPreview(f); }}>
                             <i className="fa-solid fa-ellipsis-vertical"></i>
                           </button>
                         </td>
@@ -316,34 +345,11 @@ export default function AdminFilesManager() {
           <div id="recent-activity" className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
             <div className="space-y-4">
+              {/* Replace with actual activity later; keeping layout */}
               <div className="flex items-start space-x-3">
-                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" className="w-8 h-8 rounded-full" alt="A" />
+                <div className="w-8 h-8 bg-gray-100 rounded-full" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">
-                    <span className="font-medium">Alex Johnson</span> uploaded
-                  </p>
-                  <p className="text-sm text-gray-600">Contract_Draft.pdf</p>
-                  <p className="text-xs text-gray-500">for Maria Garcia • 30 min ago</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" className="w-8 h-8 rounded-full" alt="B" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">
-                    <span className="font-medium">Sarah Wilson</span> viewed
-                  </p>
-                  <p className="text-sm text-gray-600">Resume_Final.pdf</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" className="w-8 h-8 rounded-full" alt="C" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">
-                    <span className="font-medium">Mike Chen</span> uploaded
-                  </p>
-                  <p className="text-sm text-gray-600">Budget_2024.xlsx</p>
-                  <p className="text-xs text-gray-500">for David Park • 1 day ago</p>
+                  <p className="text-sm text-gray-900">No activity yet.</p>
                 </div>
               </div>
             </div>
@@ -356,10 +362,10 @@ export default function AdminFilesManager() {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <i className="fa-solid fa-file-pdf text-red-500 text-xl"></i>
+              <i className="fa-solid fa-file text-gray-500 text-xl"></i>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Resume_Final.pdf</h3>
-                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">PDF</span>
+                <h3 className="text-lg font-semibold text-gray-900">{previewFile?.title || (previewFile?.file_url || '').split('/').pop() || 'File'}</h3>
+                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 uppercase">{fileType(previewFile?.file_url)}</span>
               </div>
             </div>
             <button id="close-drawer" className="text-gray-400 hover:text-gray-600 transition-all" onClick={() => setDrawerOpen(false)}>
@@ -367,25 +373,48 @@ export default function AdminFilesManager() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8 px-6">
-                <button className="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm">Preview</button>
-                <button className="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">Details</button>
-                <button className="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">Activity</button>
+                {['preview','details','activity'].map((t) => (
+                  <button key={t} className={`py-4 px-1 border-b-2 ${previewTab === t ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'} font-medium text-sm`} onClick={() => setPreviewTab(t)}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
               </nav>
             </div>
 
             <div className="p-6">
-              <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
-                <div className="text-center">
-                  <i className="fa-solid fa-file-pdf text-6xl text-red-500 mb-4"></i>
-                  <p className="text-gray-600">PDF Preview</p>
-                  <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all">
-                    <i className="fa-solid fa-download mr-2"></i>Download
-                  </button>
+              {previewTab === 'preview' && (
+                <div className="bg-gray-100 rounded-lg min-h-[320px] flex items-center justify-center">
+                  {fileType(previewFile?.file_url) === 'image' ? (
+                    <img src={previewFile?.file_url} alt="preview" className="max-h-[480px] max-w-full" />
+                  ) : fileType(previewFile?.file_url) === 'pdf' ? (
+                    <iframe title="file-preview" src={previewFile?.file_url} className="w-full h-[480px] bg-white rounded" />
+                  ) : (
+                    <div className="text-center">
+                      <i className="fa-solid fa-file text-6xl text-gray-400 mb-4"></i>
+                      <p className="text-gray-600">No inline preview</p>
+                      <a href={previewFile?.file_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+                        <i className="fa-solid fa-download mr-2"></i>Download
+                      </a>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {previewTab === 'details' && (
+                <div className="text-sm text-gray-700 space-y-2">
+                  <div><span className="text-gray-500">File name:</span> {previewFile?.title || (previewFile?.file_url || '').split('/').pop()}</div>
+                  <div><span className="text-gray-500">Uploaded:</span> {previewFile?.created_at ? new Date(previewFile.created_at).toLocaleString() : '—'}</div>
+                  <div><span className="text-gray-500">Recipient:</span> {(previewFile?.user_id && (users.find((u) => u.id === previewFile.user_id)?.email)) || (Array.isArray(previewFile?.assigned_roles) && previewFile.assigned_roles.map(roleLabel).join(', ')) || '—'}</div>
+                  <div><span className="text-gray-500">URL:</span> <a href={previewFile?.file_url} className="text-blue-600" target="_blank" rel="noreferrer">Open</a></div>
+                </div>
+              )}
+
+              {previewTab === 'activity' && (
+                <div className="text-sm text-gray-700">No activity tracked yet.</div>
+              )}
             </div>
           </div>
         </div>
