@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function FormsList() {
@@ -7,17 +7,26 @@ export default function FormsList() {
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeId, setActiveId] = useState(null);
+  const [tab, setTab] = useState('roles'); // roles | preview | responses
+  const tenantId = useMemo(() => localStorage.getItem('offrapp-active-tenant-id') || '', []);
+
+  const activeForm = useMemo(() => forms.find((f) => f.id === activeId) || null, [forms, activeId]);
+  const [assignedRoles, setAssignedRoles] = useState([]);
+  useEffect(() => {
+    setAssignedRoles(Array.isArray(activeForm?.assigned_roles) ? activeForm.assigned_roles : []);
+  }, [activeForm?.id]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
         const res = await fetch('/api/forms?limit=200', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
         const isJson = (res.headers.get('content-type') || '').includes('application/json');
         const json = isJson ? await res.json() : { forms: [] };
         if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load forms');
         setForms(json.forms || []);
+        if ((json.forms || []).length > 0) setActiveId(json.forms[0].id);
       } catch (e) {
         setError(e.message || String(e));
       } finally {
@@ -25,7 +34,38 @@ export default function FormsList() {
       }
     };
     load();
-  }, []);
+  }, [tenantId]);
+
+  const saveAssignments = async () => {
+    if (!activeForm) return;
+    const res = await fetch('/api/forms', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
+      body: JSON.stringify({ id: activeForm.id, assigned_roles: assignedRoles })
+    });
+    const json = await res.json();
+    if (res.ok) {
+      setForms((prev) => prev.map((f) => f.id === activeForm.id ? { ...f, assigned_roles: assignedRoles, updated_at: new Date().toISOString() } : f));
+    } else {
+      alert(json?.error || 'Failed to save');
+    }
+  };
+
+  const toggleRole = (k) => {
+    const set = new Set(assignedRoles);
+    set.has(k) ? set.delete(k) : set.add(k);
+    setAssignedRoles(Array.from(set));
+  };
+
+  const RoleRow = ({ roleKey, label, desc, color }) => (
+    <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+      <input type="checkbox" className="mr-3 text-primary" checked={assignedRoles.includes(roleKey)} onChange={() => toggleRole(roleKey)} />
+      <div className="flex items-center">
+        <span className={`${color} px-3 py-1 rounded-full text-sm font-medium mr-3`}>{label}</span>
+        <span className="text-gray-700">{desc}</span>
+      </div>
+    </label>
+  );
 
   return (
     <div className="bg-gray-50">
@@ -51,6 +91,7 @@ export default function FormsList() {
       </div>
 
       <div id="main-layout" className="flex h-[calc(100vh-80px)]">
+        {/* Left side: forms list */}
         <div id="left-panel" className="w-1/2 border-r border-gray-200 bg-white">
           <div id="search-filter-bar" className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
             <div className="flex items-center space-x-4 mb-4">
@@ -105,7 +146,7 @@ export default function FormsList() {
               <div className="text-sm text-gray-500">No forms found.</div>
             )}
             {!loading && !error && forms.map((form) => (
-            <div key={form.id} className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group">
+            <div key={form.id} className={`bg-white border ${activeId === form.id ? 'border-primary' : 'border-gray-200'} rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group`} onClick={() => setActiveId(form.id)}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">{form.title || 'Untitled Form'}</h3>
@@ -121,7 +162,7 @@ export default function FormsList() {
                   </div>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
-                  <button title="Preview" className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg" onClick={(e) => { e.stopPropagation(); navigate(`/forms/${form.id}`); }}>
+                  <button title="Preview" className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg" onClick={(e) => { e.stopPropagation(); setActiveId(form.id); setTab('preview'); }}>
                     <i className="fa-solid fa-eye"></i>
                   </button>
                   <button title="Edit" className="p-2 text-gray-400 hover:text-accent hover:bg-gray-100 rounded-lg" onClick={(e) => { e.stopPropagation(); navigate(`/forms/new?edit=${form.id}`); }}>
@@ -129,7 +170,6 @@ export default function FormsList() {
                   </button>
                   <button title="Copy" className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg" onClick={async (e) => {
                     e.stopPropagation();
-                    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
                     const res = await fetch(`/api/forms/${form.id}/copy`, { method: 'POST', headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
                     const json = await res.json();
                     if (res.ok) setForms((prev) => [json.form, ...prev]);
@@ -155,99 +195,90 @@ export default function FormsList() {
           </div>
         </div>
 
+        {/* Right panel: active form */}
         <div id="right-panel" className="w-1/2 bg-gray-50 relative">
-          <div id="form-details-header" className="bg-white border-b border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Employee Feedback Form</h2>
-              <div className="flex space-x-2">
-                <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  <i className="fa-solid fa-eye mr-2"></i>View Live
-                </button>
-                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                  <i className="fa-solid fa-edit mr-2"></i>Edit
-                </button>
-              </div>
-            </div>
-            <p className="text-gray-600 mb-4">Quarterly employee satisfaction survey to gather feedback on workplace culture, management, and overall job satisfaction.</p>
-
-            <div id="tabs" className="flex space-x-6 border-b border-gray-200">
-              <button className="pb-3 border-b-2 border-primary text-primary font-medium">Role Assignment</button>
-              <button className="pb-3 text-gray-500 hover:text-gray-700">Preview</button>
-              <button className="pb-3 text-gray-500 hover:text-gray-700">Responses</button>
-            </div>
-          </div>
-
-          <div id="role-assignment-tab" className="p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Assign Roles</h3>
-              <p className="text-sm text-gray-600 mb-4">Select which user roles can access this form</p>
-
-              <div className="space-y-3">
-                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="mr-3 text-primary" />
-                  <div className="flex items-center">
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mr-3">Admin</span>
-                    <span className="text-gray-700">Full access to all forms and responses</span>
+          {activeForm ? (
+            <>
+              <div id="form-details-header" className="bg-white border-b border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">{activeForm.title || 'Untitled Form'}</h2>
+                  <div className="flex space-x-2">
+                    <button className={`px-4 py-2 ${tab === 'preview' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'} rounded-lg`} onClick={() => setTab('preview')}>
+                      <i className="fa-solid fa-eye mr-2"></i>Preview
+                    </button>
+                    <button className={`px-4 py-2 ${tab === 'roles' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'} rounded-lg`} onClick={() => setTab('roles')}>
+                      <i className="fa-solid fa-user-shield mr-2"></i>Role Assignment
+                    </button>
+                    <button className={`px-4 py-2 ${tab === 'responses' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'} rounded-lg`} onClick={() => setTab('responses')}>
+                      <i className="fa-solid fa-chart-line mr-2"></i>Responses
+                    </button>
                   </div>
-                </label>
-
-                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" className="mr-3 text-primary" />
-                  <div className="flex items-center">
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mr-3">Jobseeker</span>
-                    <span className="text-gray-700">Can view and submit assigned forms</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" className="mr-3 text-primary" />
-                  <div className="flex items-center">
-                    <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mr-3">Client</span>
-                    <span className="text-gray-700">Limited access to client-specific forms</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="mr-3 text-primary" />
-                  <div className="flex items-center">
-                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium mr-3">HR Manager</span>
-                    <span className="text-gray-700">Access to HR-related forms and analytics</span>
-                  </div>
-                </label>
+                </div>
+                <p className="text-gray-600 mb-2">{activeForm.description || ''}</p>
               </div>
-            </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl p-6">
-              <h4 className="font-semibold text-gray-900 mb-3">Current Assignments</h4>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium flex items-center">
-                  Admin
-                  <button className="ml-2 text-blue-600 hover:text-blue-800">
-                    <i className="fa-solid fa-times"></i>
-                  </button>
-                </span>
-                <span className="bg-purple-100 text-purple-800 px-3 py-2 rounded-full text-sm font-medium flex items-center">
-                  HR Manager
-                  <button className="ml-2 text-purple-600 hover:text-purple-800">
-                    <i className="fa-solid fa-times"></i>
-                  </button>
-                </span>
-              </div>
-              <div className="text-sm text-gray-500 mb-4">
-                <i className="fa-solid fa-users mr-2"></i>
-                2 roles assigned • Last updated by John Doe
-              </div>
-            </div>
-          </div>
+              {tab === 'roles' && (
+                <div id="role-assignment-tab" className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Assign Roles</h3>
+                    <p className="text-sm text-gray-600 mb-4">Select which user roles can access this form</p>
 
-          <div id="save-button-container" className="absolute bottom-6 right-6">
-            <button className="bg-secondary text-white px-8 py-3 rounded-xl hover:bg-green-600 transition-colors shadow-lg">
-              <i className="fa-solid fa-save mr-2"></i>Save Assignments
-            </button>
-          </div>
+                    <div className="space-y-3">
+                      <RoleRow roleKey="admin" label="Admin" desc="Full access to all forms and responses" color="bg-blue-100 text-blue-800" />
+                      <RoleRow roleKey="jobseeker" label="Jobseeker" desc="Can view and submit assigned forms" color="bg-green-100 text-green-800" />
+                      <RoleRow roleKey="client" label="Client" desc="Limited access to client-specific forms" color="bg-red-100 text-red-800" />
+                      <RoleRow roleKey="recruitpro" label="HR Manager" desc="Access to HR-related forms and analytics" color="bg-purple-100 text-purple-800" />
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6">
+                    <h4 className="font-semibold text-gray-900 mb-3">Current Assignments</h4>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {assignedRoles.map((r) => (
+                        <span key={r} className={`px-3 py-2 rounded-full text-sm font-medium flex items-center ${r === 'admin' ? 'bg-blue-100 text-blue-800' : r === 'jobseeker' ? 'bg-green-100 text-green-800' : r === 'client' ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'}`}>
+                          {r}
+                          <button className="ml-2" onClick={() => toggleRole(r)}>
+                            <i className="fa-solid fa-times"></i>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-sm text-gray-500 mb-4">
+                      <i className="fa-solid fa-users mr-2"></i>
+                      {assignedRoles.length} roles assigned
+                    </div>
+                    <div className="text-right">
+                      <button className="bg-secondary text-white px-6 py-2 rounded-lg hover:bg-green-600" onClick={saveAssignments}>
+                        <i className="fa-solid fa-save mr-2"></i>Save Assignments
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'preview' && (
+                <div className="p-6">
+                  <div className="bg-white border rounded-2xl p-6 min-h-[420px]">
+                    <h3 className="text-lg font-semibold mb-4">Live Preview</h3>
+                    <div className="text-sm text-gray-500">Use the Form Builder to edit questions and theme. Preview is placeholder until schema rendering is added.</div>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'responses' && (
+                <div className="p-6">
+                  <div className="bg-white border rounded-2xl p-6">
+                    <div className="text-sm text-gray-500">Responses dashboard coming soon.</div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-500">Select a form to view details</div>
+          )}
         </div>
       </div>
-      {/* Global CTA to create a new form */}
+      {/* Floating CTA */}
       <button
         onClick={() => navigate('/forms/new')}
         className="fixed bottom-24 right-6 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50 flex items-center gap-2 ring-1 ring-blue-700/20"
