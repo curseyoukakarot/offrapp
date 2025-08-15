@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { useTenantConfig } from '../lib/tenantConfig';
 
 export default function AdminFilesManager() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function AdminFilesManager() {
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', message: string }
+  const { roleLabel } = useTenantConfig();
 
   useEffect(() => {
     const onKey = (e) => {
@@ -211,18 +213,18 @@ export default function AdminFilesManager() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-                    <input type="text" placeholder="Add tags..." className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" />
+                    <input type="text" placeholder="Add tags..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
-                  <textarea placeholder="Add a note for the recipient..." rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
+                  <textarea placeholder="Add a note for the recipient..." rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2"></textarea>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600" />
                     <span className="ml-2 text-sm text-gray-700">Notify user</span>
                   </label>
                   <div className="flex items-center gap-2">
@@ -230,7 +232,7 @@ export default function AdminFilesManager() {
                     <div className="flex items-center gap-2">
                       {roles.map((r) => (
                         <label key={r} className="inline-flex items-center gap-1 text-xs">
-                          <input type="checkbox" checked={selectedRoles.includes(r)} onChange={(e) => setSelectedRoles((prev) => e.target.checked ? [...prev, r] : prev.filter((x) => x !== r))} /> {r}
+                          <input type="checkbox" checked={selectedRoles.includes(r)} onChange={(e) => setSelectedRoles((prev) => e.target.checked ? [...prev, r] : prev.filter((x) => x !== r))} /> {roleLabel(r)}
                         </label>
                       ))}
                     </div>
@@ -246,7 +248,7 @@ export default function AdminFilesManager() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Recent Files</h3>
                   <div className="flex items-center space-x-2">
-                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
                     <span className="text-sm text-gray-600">Select all</span>
                   </div>
                 </div>
@@ -257,7 +259,7 @@ export default function AdminFilesManager() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
@@ -281,7 +283,7 @@ export default function AdminFilesManager() {
                     {files.map((f) => (
                       <tr key={f.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setDrawerOpen(true)}>
                         <td className="px-6 py-4">
-                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center">
@@ -290,7 +292,7 @@ export default function AdminFilesManager() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{f.user_id || (Array.isArray(f.assigned_roles) && f.assigned_roles.join(', ')) || '—'}</div>
+                          <div className="text-sm text-gray-900">{f.user_id || (Array.isArray(f.assigned_roles) && f.assigned_roles.map(roleLabel).join(', ')) || '—'}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">—</td>
                         <td className="px-6 py-4">
