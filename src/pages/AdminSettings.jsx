@@ -55,15 +55,13 @@ export default function AdminSettings() {
         if (json?.role_labels || json?.role_colors) {
           setRoles({
             admin: { label: json?.role_labels?.admin || 'Admin', color: json?.role_colors?.admin || 'blue' },
-            recruitpro: { label: json?.role_labels?.recruitpro || 'RecruitPro', color: json?.role_colors?.recruitpro || 'purple' },
+            recruitpro: { label: json?.role_labels?.recruitpro || 'RecruitPro', color: json?.role_colors?.recruitpro || '紫' },
             jobseeker: { label: json?.role_labels?.jobseeker || 'Job Seeker', color: json?.role_colors?.jobseeker || 'green' },
             client: { label: json?.role_labels?.client || 'Client', color: json?.role_colors?.client || 'gray' },
           });
         }
-        // Feature guard
         const enabled = json?.features?.custom_domain !== false;
         setCustomDomainEnabled(!!enabled);
-        // Domains list
         await fetchDomains();
       } finally {
         setLoading(false);
@@ -83,7 +81,7 @@ export default function AdminSettings() {
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/tenants/${tenantId}/domains`, { headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
+      const res = await fetch(`/api/domains`, { headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'x-tenant-id': tenantId } });
       const isJson = (res.headers.get('content-type') || '').includes('application/json');
       if (!res.ok) {
         const msg = isJson ? (await res.json())?.error || 'Failed to load domains' : 'Failed to load domains';
@@ -117,9 +115,9 @@ export default function AdminSettings() {
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/tenants/${tenantId}/domains`, {
+      const res = await fetch(`/api/domains`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'x-tenant-id': tenantId, 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: newDomain })
       });
       const isJson = (res.headers.get('content-type') || '').includes('application/json');
@@ -146,8 +144,8 @@ export default function AdminSettings() {
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/tenants/${tenantId}/domains/${encodeURIComponent(domain)}/verify`, {
-        method: 'POST', headers: { Authorization: `Bearer ${session?.access_token || ''}` }
+      const res = await fetch(`/api/domains-verify`, {
+        method: 'POST', headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'x-tenant-id': tenantId, 'Content-Type': 'application/json' }, body: JSON.stringify({ domain })
       });
       const isJson = (res.headers.get('content-type') || '').includes('application/json');
       const json = isJson ? await res.json() : null;
@@ -172,7 +170,7 @@ export default function AdminSettings() {
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/tenants/${tenantId}/domains/${encodeURIComponent(domain)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session?.access_token || ''}` } });
+      const res = await fetch(`/api/domains?domain=${encodeURIComponent(domain)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'x-tenant-id': tenantId } });
       if (!res.ok && res.status !== 204) {
         let msg = 'Remove failed';
         try { msg = (await res.json())?.error || msg; } catch(_e) {}

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { hasFeature } from './_plans.js';
+import { vercelRemoveDomain } from './_vercelClient.js';
 
 function svc() { return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY); }
 
@@ -46,6 +47,17 @@ export default async function handler(req, res) {
       const { data, error } = await svc().from('tenant_domains').insert({ tenant_id: tenantId, domain: domainRaw, type, txt_token: txt, ssl_status: 'pending' }).select('*').single();
       if (error) return res.status(400).json({ error: error.message });
       return res.status(200).json({ domain: data.domain, type: data.type, txtRecord: { name: `_nestbase.${data.domain}`, type: 'TXT', value: txt } });
+    }
+
+    if (req.method === 'DELETE') {
+      const chunks = []; for await (const c of req) chunks.push(c);
+      let body = {};
+      try { body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch {}
+      const domain = String(body.domain || req.query.domain || '').toLowerCase();
+      if (!domain) return res.status(400).json({ error: 'domain required' });
+      await vercelRemoveDomain(domain).catch(() => {});
+      await svc().from('tenant_domains').delete().eq('tenant_id', tenantId).eq('domain', domain);
+      return res.status(204).end();
     }
 
     return res.status(405).json({ error: 'method not allowed' });
