@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Carousel from '../components/Carousel.jsx'
+import { ANNUAL_EQUIVALENT_MONTHLY, getPriceId } from '../lib/pricing.ts'
 
 export default function HomePage() {
   useEffect(() => {
@@ -215,9 +216,12 @@ export default function HomePage() {
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">File management</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Forms management</span></li>
               </ul>
-              <button className="w-full bg-gray-100 text-navy py-4 rounded-xl font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200">
-                Get Started
-              </button>
+              <form method="POST" action="/api/checkout" className="w-full">
+                <input type="hidden" name="price_id" value={getPriceId('starter', 'monthly') || ''} />
+                <button className="w-full bg-gray-100 text-navy py-4 rounded-xl font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200">
+                  Get Started
+                </button>
+              </form>
             </div>
             <div className="bg-gradient-to-br from-electric to-blue-600 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 fade-in relative transform scale-105">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-teal text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
@@ -234,9 +238,12 @@ export default function HomePage() {
                 <li className="flex items-start"><i className="fas fa-check text-white mr-3 mt-1" /><span className="text-blue-50">Integrations</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-white mr-3 mt-1" /><span className="text-blue-50">API / Zapier / Make</span></li>
               </ul>
-              <button className="w-full bg-white text-electric py-4 rounded-xl font-bold hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg">
-                Get Started
-              </button>
+              <form method="POST" action="/api/checkout" className="w-full">
+                <input type="hidden" name="price_id" value={getPriceId('pro', 'monthly') || ''} />
+                <button className="w-full bg-white text-electric py-4 rounded-xl font-bold hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg">
+                  Get Started
+                </button>
+              </form>
             </div>
             <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 fade-in">
               <h3 className="text-2xl font-bold text-navy mb-2">Advanced</h3>
@@ -250,9 +257,12 @@ export default function HomePage() {
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">3 team slots (scalable with add-ons)</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Priority support</span></li>
               </ul>
-              <button className="w-full bg-navy text-white py-4 rounded-xl font-semibold hover:bg-blue-900 hover:scale-105 transition-all duration-200">
-                Contact Sales
-              </button>
+              <form method="POST" action="/api/checkout" className="w-full">
+                <input type="hidden" name="price_id" value={getPriceId('advanced', 'monthly') || ''} />
+                <button className="w-full bg-navy text-white py-4 rounded-xl font-semibold hover:bg-blue-900 hover:scale-105 transition-all duration-200">
+                  Contact Sales
+                </button>
+              </form>
             </div>
           </div>
           <div className="text-center mt-12 fade-in">
