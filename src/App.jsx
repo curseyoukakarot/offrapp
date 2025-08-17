@@ -34,6 +34,7 @@ import NotificationsPage from './pages/super/NotificationsPage.tsx';
 import SettingsPage from './pages/super/SettingsPage.tsx';
 import Signup from './pages/Signup.jsx';
 import Onboarding from './pages/Onboarding.jsx';
+import HomePage from './pages/HomePage.jsx';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -305,8 +306,8 @@ function App() {
             }
           />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/login" />} />
+          {/* Public Home Page */}
+          <Route path="/" element={<HomePage />} />
           {/* Catch-all route for unknown paths */}
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>

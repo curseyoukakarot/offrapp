@@ -4,7 +4,19 @@ export default {
     "./src/**/*.{js,jsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        navy: '#0A192F',
+        electric: '#007BFF',
+        teal: '#20B2AA',
+      },
+      fontFamily: {
+        sans: [
+          'Inter',
+          'sans-serif',
+        ],
+      },
+    },
   },
   plugins: [],
 }

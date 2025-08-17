@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Landing page helpers */
+::-webkit-scrollbar { display: none; }
+html, body { -ms-overflow-style:none; scrollbar-width:none; }
+.fade-in { opacity: 0; transform: translateY(20px); transition: all 0.8s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
