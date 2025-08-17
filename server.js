@@ -73,6 +73,10 @@ app.use('/api/super', superRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/forms', formsRouter);
 
+// Simple health endpoints
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/ping', (_req, res) => res.json({ ok: true }));
+
 // ✅ Supabase invite helper function
 async function inviteUser(email, role) {
   const { data, error } = await supabase.auth.admin.createUser({

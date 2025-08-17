@@ -16,7 +16,11 @@ async function ensureSuper(req, res, next) {
     const supabase = getSupabase();
     const { data } = await supabase.from('user_global_roles').select('role').eq('user_id', user.id);
     const isSuper = (data || []).some((r) => ['super_admin', 'superadmin', 'super-admin'].includes(String(r.role || '').toLowerCase()));
-    if (!isSuper) return res.status(403).json({ error: 'forbidden' });
+    if (!isSuper) {
+      console.warn(`[super.guard] deny user=${user.id}`);
+      return res.status(403).json({ error: 'forbidden' });
+    }
+    console.log(`[super.guard] allow user=${user.id}`);
     next();
   } catch (e) {
     res.status(500).json({ error: e.message });
