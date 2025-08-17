@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -9,13 +9,20 @@ export default function Signup() {
   const [sourceOther, setSourceOther] = useState('');
   const [title, setTitle] = useState('Owner/Founder');
   const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState('starter');
   const valid = name && companyName && /.+@.+\..+/.test(email) && password.length >= 8;
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const p = url.searchParams.get('plan');
+    if (p) setPlan(p);
+  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!valid) return;
     setLoading(true);
-    const res = await fetch('/api/onboarding-start', { method: 'POST', body: JSON.stringify({ name, email, password, companyName, source, sourceOther, title }) });
+    const res = await fetch('/api/onboarding-start', { method: 'POST', body: JSON.stringify({ name, email, password, companyName, source, sourceOther, title, plan }) });
     setLoading(false);
     if (res.ok) window.location.href = '/onboarding';
     else alert('Sign up failed');
@@ -25,6 +32,7 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <h1 className="text-2xl font-bold mb-2">Step 0: Create Account</h1>
+        <div className="mb-4 text-sm text-gray-700">Selected plan: <span className="font-semibold capitalize">{plan}</span></div>
         <p className="text-sm text-gray-600 mb-6">Create your admin account and workspace to get started.</p>
         <form className="space-y-4" onSubmit={onSubmit}>
           <div>

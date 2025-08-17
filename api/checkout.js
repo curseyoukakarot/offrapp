@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { price_id } = req.body || {}
+  const { price_id, plan } = req.body || {}
   if (!price_id) {
     return res.status(400).json({ error: 'Missing price_id' })
   }
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
     const baseUrl = process.env.APP_BASE_URL || process.env.VERCEL_URL || 'http://localhost:5173'
-    const successUrl = `${baseUrl}/?checkout=success`
+    const successUrl = `${baseUrl}/signup?plan=${encodeURIComponent(plan || '')}`
     const cancelUrl = `${baseUrl}/#pricing`
 
     const session = await stripe.checkout.sessions.create({
@@ -21,6 +21,7 @@ export default async function handler(req, res) {
       line_items: [{ price: price_id, quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
+      metadata: plan ? { plan } : undefined,
     })
 
     return res.status(200).json({ id: session.id, url: session.url })
