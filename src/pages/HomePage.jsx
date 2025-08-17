@@ -42,7 +42,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img src="/images/nestbase-logo.png" alt="NestBase" className="h-8 w-auto" />
+              <img src="/images/nestbase-logo.png?v=1" alt="NestBase" className="h-8 w-auto" />
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-navy transition-colors cursor-pointer">Features</a>
@@ -65,7 +65,7 @@ export default function HomePage() {
         {/* Background image + gradient overlay */}
         <div className="absolute inset-0">
           <img
-            src="/images/NestbaseHeroImage3.png"
+            src="/images/NestbaseHeroImage3.png?v=1"
             alt="Nestbase hero background"
             className="w-full h-full object-cover"
           />
@@ -323,7 +323,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <img src="/images/nestbase-logo.png" alt="NestBase" className="h-8 w-auto" />
+              <img src="/images/nestbase-logo.png?v=1" alt="NestBase" className="h-8 w-auto" />
             </div>
             <div className="flex space-x-8 text-gray-600">
               <span className="hover:text-navy transition-colors cursor-pointer">Privacy</span>
