@@ -222,11 +222,11 @@ export default function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50">
+      <section id="pricing" className="py-20 bg-black">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16 fade-in">
-            <h2 className="text-5xl font-bold text-navy mb-6">Simple Pricing</h2>
-            <p className="text-xl text-gray-600 mb-8">Choose the plan that fits your business needs.</p>
+            <h2 className="text-5xl font-bold text-white mb-6">Simple Pricing</h2>
+            <p className="text-xl text-gray-300 mb-8">Choose the plan that fits your business needs.</p>
             <div className="inline-flex items-center bg-white rounded-lg p-1 shadow-sm">
               <button
                 type="button"
