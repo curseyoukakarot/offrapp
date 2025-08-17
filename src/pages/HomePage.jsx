@@ -269,34 +269,13 @@ export default function HomePage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-xl shadow-sm fade-in">
-              <p className="text-gray-600 mb-6">"Nestbase transformed how we deliver projects to clients. Everything is organized and branded beautifully."</p>
-              <div className="flex items-center">
-                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Sarah" className="w-12 h-12 rounded-full mr-4" />
-                <div>
-                  <div className="font-semibold text-navy">Sarah Johnson</div>
-                  <div className="text-sm text-gray-600">Creative Director</div>
-                </div>
-              </div>
+              <p className="text-gray-600">"Nestbase transformed how we deliver projects to clients. Everything is organized and branded beautifully."</p>
             </div>
             <div className="bg-white p-8 rounded-xl shadow-sm fade-in">
-              <p className="text-gray-600 mb-6">"Our clients love having one place to access everything. It's professional and saves us hours every week."</p>
-              <div className="flex items-center">
-                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Mike" className="w-12 h-12 rounded-full mr-4" />
-                <div>
-                  <div className="font-semibold text-navy">Mike Chen</div>
-                  <div className="text-sm text-gray-600">Agency Owner</div>
-                </div>
-              </div>
+              <p className="text-gray-600">"Our clients love having one place to access everything. It's professional and saves us hours every week."</p>
             </div>
             <div className="bg-white p-8 rounded-xl shadow-sm fade-in">
-              <p className="text-gray-600 mb-6">"The white-label feature is perfect. Our clients think we built this custom portal just for them."</p>
-              <div className="flex items-center">
-                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Lisa" className="w-12 h-12 rounded-full mr-4" />
-                <div>
-                  <div className="font-semibold text-navy">Lisa Rodriguez</div>
-                  <div className="text-sm text-gray-600">Business Coach</div>
-                </div>
-              </div>
+              <p className="text-gray-600">"The white-label feature is perfect. Our clients think we built this custom portal just for them."</p>
             </div>
           </div>
         </div>
