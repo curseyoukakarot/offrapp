@@ -123,7 +123,7 @@ export default function HomePage() {
               <img src="https://cdn.simpleicons.org/google/4285F4" alt="Google logo" className="h-10" />
             </div>
             <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
-              <img src="https://cdn.simpleicons.org/mondaydotcom/ff3d3d" alt="monday.com logo" className="h-10" />
+              <img src="https://cdn.simpleicons.org/mondaydotcom" alt="monday.com logo" className="h-10" onError={(e) => { e.currentTarget.src = '/images/integrations/monday.svg' }} />
             </div>
             <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
               <img src="https://cdn.simpleicons.org/calendly/006BFF" alt="Calendly logo" className="h-10" />
