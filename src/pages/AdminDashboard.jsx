@@ -78,69 +78,69 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="bg-bg">
+    <div className="bg-gray-50 min-h-screen">
       {/* Content only; header/sidebar provided by AdminLayout */}
       <main id="main-content" className="flex-1 p-6">
           {/* Stats Overview */}
           <section id="stats-section" className="mb-8 fade-in">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-card rounded-xl p-6 shadow-sm hover-lift">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray text-sm font-medium">Total Clients</p>
-                    <p className="text-3xl font-bold text-text">{stats.totalClients.toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm font-medium">Total Clients</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.totalClients.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i className="fa-solid fa-users text-primary"></i>
+                    <i className="fa-solid fa-users text-blue-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-gray ml-2">Current tenant members</span>
+                  <span className="text-gray-500 ml-2">Current tenant members</span>
                 </div>
               </div>
 
-              <div className="bg-card rounded-xl p-6 shadow-sm hover-lift">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray text-sm font-medium">Active Clients</p>
-                    <p className="text-3xl font-bold text-text">{stats.activeClients.toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm font-medium">Active Clients</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.activeClients.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-user-check text-green-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-gray ml-2">Active = all members (placeholder)</span>
+                  <span className="text-gray-500 ml-2">Active = all members (placeholder)</span>
                 </div>
               </div>
 
-              <div className="bg-card rounded-xl p-6 shadow-sm hover-lift">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray text-sm font-medium">Total Forms</p>
-                    <p className="text-3xl font-bold text-text">{stats.totalForms.toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm font-medium">Total Forms</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.totalForms.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-clipboard-list text-purple-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-gray ml-2">Forms available to this tenant</span>
+                  <span className="text-gray-500 ml-2">Forms available to this tenant</span>
                 </div>
               </div>
 
-              <div className="bg-card rounded-xl p-6 shadow-sm hover-lift">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray text-sm font-medium">Files Uploaded</p>
-                    <p className="text-3xl font-bold text-text">{stats.filesUploaded.toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm font-medium">Files Uploaded</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.filesUploaded.toLocaleString()}</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <i className="fa-solid fa-cloud-upload text-orange-600"></i>
                   </div>
                 </div>
                 <div className="flex items-center mt-4 text-sm">
-                  <span className="text-gray ml-2">All files for this tenant</span>
+                  <span className="text-gray-500 ml-2">All files for this tenant</span>
                 </div>
               </div>
             </div>
@@ -148,11 +148,11 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* File Upload Section */}
-            <section id="file-upload-section" className="bg-card rounded-xl p-6 shadow-sm hover-lift fade-in">
-              <h3 className="text-lg font-semibold text-text mb-4">Upload Files</h3>
+            <section id="file-upload-section" className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition fade-in">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h3>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray mb-2">Assign to User</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assign to User</label>
                 <select className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary">
                   <option value="">Select a user...</option>
                   {tenantUsers.map((u) => (
@@ -162,16 +162,16 @@ export default function AdminDashboard() {
               </div>
 
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors">
-                <i className="fa-solid fa-cloud-upload text-4xl text-gray mb-4"></i>
-                <p className="text-text font-medium mb-2">Drop files here or click to upload</p>
-                <p className="text-gray text-sm">Supports: PDF, DOC, XLS, JPG, PNG (Max 10MB)</p>
-                <button className="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <i className="fa-solid fa-cloud-upload text-4xl text-gray-500 mb-4"></i>
+                <p className="text-gray-900 font-medium mb-2">Drop files here or click to upload</p>
+                <p className="text-gray-500 text-sm">Supports: PDF, DOC, XLS, JPG, PNG (Max 10MB)</p>
+                <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                   Choose Files
                 </button>
               </div>
 
               <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray mb-3">Recent Uploads</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Uploads</h4>
                 <div className="space-y-2">
                   {recentFiles.length === 0 && (
                     <div className="text-sm text-gray">No uploads yet.</div>
@@ -180,9 +180,9 @@ export default function AdminDashboard() {
                     <div key={f.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <i className="fa-solid fa-file text-gray-500"></i>
-                        <span className="text-sm text-text">{f.title || (f.file_url || '').split('/').pop()}</span>
+                        <span className="text-sm text-gray-900">{f.title || (f.file_url || '').split('/').pop()}</span>
                       </div>
-                      <span className="text-xs text-gray">{timeAgo(f.created_at)}</span>
+                      <span className="text-xs text-gray-500">{timeAgo(f.created_at)}</span>
                     </div>
                   ))}
                 </div>
@@ -190,20 +190,20 @@ export default function AdminDashboard() {
             </section>
 
             {/* User Management Preview */}
-            <section id="user-management-preview" className="bg-card rounded-xl p-6 shadow-sm hover-lift fade-in">
+            <section id="user-management-preview" className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition fade-in">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-text">Recent Users</h3>
-                <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                <h3 className="text-lg font-semibold text-gray-900">Recent Users</h3>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
                   <i className="fa-solid fa-plus mr-2"></i>Add User
                 </button>
               </div>
 
               <div className="space-y-3">
                 {usersLoading && (
-                  <div className="text-sm text-gray">Loading…</div>
+                  <div className="text-sm text-gray-500">Loading…</div>
                 )}
                 {!usersLoading && recentUsers.length === 0 && (
-                  <div className="text-sm text-gray">No recent users.</div>
+                  <div className="text-sm text-gray-500">No recent users.</div>
                 )}
                 {recentUsers.map((u) => {
                   const name = u.email?.split('@')[0] || 'User';
@@ -214,8 +214,8 @@ export default function AdminDashboard() {
                       <div className="flex items-center space-x-3">
                         <img src={avatar} className="w-10 h-10 rounded-full" alt={name} />
                         <div>
-                          <p className="text-sm font-medium text-text">{name}</p>
-                          <p className="text-xs text-gray">{u.email}</p>
+                          <p className="text-sm font-medium text-gray-900">{name}</p>
+                          <p className="text-xs text-gray-500">{u.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
