@@ -12,7 +12,7 @@ function getSupabase() {
 router.get('/', async (req, res) => {
   try {
     const supabase = getSupabase();
-    const limit = Math.min(parseInt(req.query.limit as string) || 200, 1000);
+    const limit = Math.min(parseInt(String(req.query.limit || '')) || 200, 1000);
     const { data, error } = await supabase
       .from('audit_logs')
       .select('id, actor_user_id, action, entity_type, entity_id, tenant_id, reason, created_at')
