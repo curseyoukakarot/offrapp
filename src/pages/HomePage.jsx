@@ -61,12 +61,18 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section
-        id="hero"
-        className="pt-24 pb-20 text-white bg-cover bg-center"
-        style={{ backgroundImage: 'url(/images/NestbaseHeroImage3.png)' }}
-      >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <section id="hero" className="relative pt-24 pb-20 text-white">
+        {/* Background image + gradient overlay */}
+        <div className="absolute inset-0">
+          <img
+            src="/images/NestbaseHeroImage3.png"
+            alt="Nestbase hero background"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-navy/90 to-blue-900/70" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="fade-in">
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-6">
