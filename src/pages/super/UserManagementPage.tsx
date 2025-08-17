@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { supabase } from '../../supabaseClient.js';
 
 type Tenant = {
   id: string;
@@ -64,11 +65,16 @@ export default function UserManagementPage() {
       setTenantsLoading(true);
       setTenantsError(null);
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
         const params = new URLSearchParams();
         if (query) params.set('q', query);
         if (tierFilter) params.set('tier', tierFilter);
         if (statusFilter) params.set('status', statusFilter);
-        const res = await fetch(`/api/super/tenants?${params.toString()}`, { credentials: 'include' });
+        const res = await fetch(`/api/super/tenants?${params.toString()}`, {
+          credentials: 'include',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) throw new Error(`Failed to load tenants (${res.status})`);
         const json = await res.json();
         setTenants(json.items || []);
@@ -87,7 +93,11 @@ export default function UserManagementPage() {
     setUsers(null);
     setUsersLoading(true);
     try {
-      const res = await fetch(`/api/super/tenants/${tenant.id}/users`);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch(`/api/super/tenants/${tenant.id}/users`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!res.ok) throw new Error('Failed to load users');
       const json = await res.json();
       setUsers(json.items || []);
@@ -424,9 +434,11 @@ function ExistingInviteForm({ defaultTenantId, onDone }: { defaultTenantId?: str
     if (!email || !role || !tenantId) return;
     setSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const res = await fetch('/api/super/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ email, role, tenant_id: tenantId }),
       });
       if (!res.ok) throw new Error('Failed');
@@ -474,9 +486,11 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
     if (!name || !tier || !email) return;
     setSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const res = await fetch('/api/super/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ tenant: { name, slug, tier, seats_total: seats }, admin: { email }, bypass_billing: bypass }),
       });
       if (!res.ok) throw new Error('Failed');
