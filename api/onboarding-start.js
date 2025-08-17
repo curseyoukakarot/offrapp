@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { PLANS } from './_plans.js';
 
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -7,15 +8,26 @@ export default async function handler(req, res) {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-    const { name, email, password, companyName, source, sourceOther, title } = body;
+    const { name, email, password, companyName, source, sourceOther, title, plan: planFromClient } = body;
     if (!name || !email || !password || !companyName) return res.status(400).json({ error: 'Missing fields' });
 
     const anon = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
     const { data: sign, error: signErr } = await anon.auth.signUp({ email, password, options: { data: { full_name: name, title } } });
     if (signErr) return res.status(400).json({ error: signErr.message });
 
+    // Merge any pre-existing onboarding cookie (which may contain a verified plan from Stripe)
+    const cookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('onb='));
+    const existing = cookie ? JSON.parse(Buffer.from(cookie.split('=')[1], 'base64').toString('utf8')) : {};
+
+    // Determine effective plan: prefer existing verified plan, then client-provided (fallback), then starter
+    const effectivePlan = (existing.plan || planFromClient || 'starter').toLowerCase();
+
+    // Decide next step based on plan features
+    const hasCustomDomain = !!(PLANS[effectivePlan]?.features?.custom_domain);
+    const nextStep = hasCustomDomain ? 'branding' : 'capabilities';
+
     // Stash onboarding session in a cookie (opaque, minimal). In real app use DB/cache.
-    const session = { email, companyName, source, sourceOther, step: 'plan' };
+    const session = { email, companyName, source, sourceOther, plan: effectivePlan, step: nextStep };
     res.setHeader('Set-Cookie', `onb=${Buffer.from(JSON.stringify(session)).toString('base64')}; Path=/; HttpOnly; SameSite=Lax`);
     return res.status(200).json({ ok: true });
   } catch (e) {

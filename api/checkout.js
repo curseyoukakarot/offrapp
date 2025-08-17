@@ -14,7 +14,8 @@ export default async function handler(req, res) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
     const vercelHost = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
     const baseUrl = process.env.APP_BASE_URL || vercelHost || 'http://localhost:5173'
-    const successUrl = `${baseUrl}/signup?plan=${encodeURIComponent(plan || '')}`
+    // Redirect back with a verifiable Checkout Session ID instead of a spoofable plan param
+    const successUrl = `${baseUrl}/signup?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl = `${baseUrl}/#pricing`
 
     const session = await stripe.checkout.sessions.create({

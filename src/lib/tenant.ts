@@ -25,8 +25,8 @@ export async function getTenantIdByHost(host: string): Promise<string | null> {
   const cached = cacheGet(normalized);
   if (cached !== undefined) return cached;
 
-  // subdomain under nestbase.app or nestbase.io
-  if (/\.nestbase\.(app|io)$/.test(normalized)) {
+  // subdomain under nestbase.io (legacy .app still supported for backwards compat)
+  if (/\.nestbase\.(io|app)$/.test(normalized)) {
     const left = normalized.split('.')[0];
     if (!['www', 'offr', 'nestbase'].includes(left)) {
       const t = await findTenantIdBySubdomain(left);

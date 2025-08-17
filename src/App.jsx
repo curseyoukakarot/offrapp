@@ -32,6 +32,7 @@ import AppHealthPage from './pages/super/AppHealthPage.tsx';
 import IntegrationsPage from './pages/super/IntegrationsPage.tsx';
 import NotificationsPage from './pages/super/NotificationsPage.tsx';
 import SettingsPage from './pages/super/SettingsPage.tsx';
+import UserManagementPage from './pages/super/UserManagementPage.tsx';
 import Signup from './pages/Signup.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -215,6 +216,17 @@ function App() {
           <Route path="/complete-profile" element={<CompleteProfile />} />
 
           {/* Super Admin */}
+          <Route
+            path="/superadmin/user-management"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <UserManagementPage />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+
           <Route
             path="/super"
             element={

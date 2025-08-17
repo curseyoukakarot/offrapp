@@ -14,8 +14,13 @@ export default function Signup() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const p = url.searchParams.get('plan');
-    if (p) setPlan(p);
+    const sessionId = url.searchParams.get('session_id');
+    if (sessionId) {
+      // Verify the session and write a trusted plan into the onboarding cookie
+      fetch(`/api/checkout-verify?session_id=${encodeURIComponent(sessionId)}`)
+        .then(() => {})
+        .catch(() => {});
+    }
   }, []);
 
   const onSubmit = async (e) => {

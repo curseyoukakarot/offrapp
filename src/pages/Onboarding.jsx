@@ -18,7 +18,7 @@ export default function Onboarding() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-600">Loading…</div>;
   if (state.ready) {
-    const url = `https://${state.tenantSlug}.nestbase.app`;
+    const url = `https://${state.tenantSlug}.nestbase.io`;
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white border rounded-2xl p-8 text-center">
@@ -129,7 +129,7 @@ function StepBranding({ onNext }) {
           <label className="block text-sm text-gray-700 mb-1">Subdomain</label>
           <div className="flex items-center gap-2">
             <input value={subdomain} onChange={(e) => setSubdomain(e.target.value)} placeholder="yourcompany" className="flex-1 border rounded px-3 py-2" />
-            <span className="text-sm text-gray-600">.nestbase.app</span>
+            <span className="text-sm text-gray-600">.nestbase.io</span>
           </div>
           {status === 'invalid' && subdomain && <div className="text-xs text-red-600 mt-1">Invalid subdomain format.</div>}
           {status === 'taken' && <div className="text-xs text-red-600 mt-1">This subdomain is already taken.</div>}
@@ -194,7 +194,7 @@ function StepReview({ onProvision, state }) {
       <div className="bg-gray-50 border rounded-xl p-4 text-sm">
         <div><span className="text-gray-600">Company:</span> {state.companyName}</div>
         <div><span className="text-gray-600">Plan:</span> {state.plan}</div>
-        <div><span className="text-gray-600">Subdomain:</span> {state.branding?.subdomain}.nestbase.app</div>
+        <div><span className="text-gray-600">Subdomain:</span> {state.branding?.subdomain}.nestbase.io</div>
       </div>
       <div className="mt-6 text-right">
         <button className="px-4 py-2 bg-green-600 text-white rounded-lg" onClick={onProvision}>Create Workspace</button>

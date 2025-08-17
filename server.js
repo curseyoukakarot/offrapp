@@ -11,6 +11,7 @@ import jobsRouter from './src/server/routes/jobs.js';
 import notificationsRouter from './src/server/routes/notifications.js';
 import auditRouter from './src/server/routes/audit.js';
 import usersRouter from './src/server/routes/users.js';
+import superRouter from './src/server/routes/super.js';
 import filesRouter from './src/server/routes/files.js';
 import formsRouter from './src/server/routes/forms.js';
 import { impersonationMiddleware } from './src/server/middleware/impersonation.js';
@@ -68,6 +69,7 @@ app.use('/api/jobs', jobsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/super', superRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/forms', formsRouter);
 
@@ -224,6 +226,28 @@ app.post('/api/send-welcome-email', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in send-welcome-email:', error.response?.body || error.message);
     res.status(500).json({ error: error.response?.body || error.message });
+  }
+});
+
+// Public invitation accept (no auth)
+app.post('/api/public/invitations/accept', async (req, res) => {
+  try {
+    const { token } = req.body || {};
+    if (!token) return res.status(400).json({ error: 'missing_token' });
+    const { data: inv, error } = await supabase.from('invitations').select('*').eq('token', token).single();
+    if (error || !inv) return res.status(400).json({ error: 'invalid_token' });
+    if (inv.status !== 'pending') return res.status(400).json({ error: 'not_pending' });
+    if (new Date(inv.expires_at).getTime() < Date.now()) return res.status(400).json({ error: 'expired' });
+    const { data: u } = await supabase.from('users').select('id').eq('email', inv.email).maybeSingle();
+    const userId = u?.id || null;
+    if (inv.tenant_id && userId) {
+      await supabase.from('memberships').upsert({ tenant_id: inv.tenant_id, user_id: userId, role: inv.role }, { onConflict: 'tenant_id,user_id' });
+    }
+    await supabase.from('invitations').update({ status: 'accepted' }).eq('id', inv.id);
+    const redirect = inv.bypass_billing ? `/onboarding?tenant=${inv.tenant_id}&bypass_billing=1` : '/login';
+    res.json({ ok: true, redirect });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

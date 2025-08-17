@@ -11,7 +11,10 @@ export default async function handler(req, res) {
 
     const cookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('onb='));
     const current = cookie ? JSON.parse(Buffer.from(cookie.split('=')[1], 'base64').toString('utf8')) : {};
-    const next = { ...current, plan, adminSeats: adminSeats || 1, step: 'branding' };
+    // Step should depend on plan features: starter skips branding (no custom domain)
+    const hasCustom = ['pro','advanced','custom'].includes(String(plan).toLowerCase());
+    const nextStep = hasCustom ? 'branding' : 'capabilities';
+    const next = { ...current, plan, adminSeats: adminSeats || 1, step: nextStep };
     res.setHeader('Set-Cookie', `onb=${Buffer.from(JSON.stringify(next)).toString('base64')}; Path=/; HttpOnly; SameSite=Lax`);
     return res.status(200).json({ ok: true });
   } catch (e) {

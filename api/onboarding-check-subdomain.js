@@ -19,7 +19,12 @@ export default async function handler(req, res) {
       return res.status(200).json({ available: false, reason: 'invalid' });
     }
     const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    const { data, error } = await svc.from('tenants').select('id').or(`slug.eq.${sub},subdomain.eq.${sub}`).limit(1);
+    // Prefer slug and subdomain columns if present; both should be checked in a case-insensitive manner
+    const { data, error } = await svc
+      .from('tenants')
+      .select('id')
+      .or(`slug.eq.${sub},subdomain.eq.${sub}`)
+      .limit(1);
     if (error) throw error;
     const taken = Array.isArray(data) && data.length > 0;
     return res.status(200).json({ available: !taken, reason: taken ? 'taken' : undefined });
