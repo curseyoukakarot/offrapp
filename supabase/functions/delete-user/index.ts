@@ -23,7 +23,7 @@ serve(async (req: Request) => {
     });
   }
 
-  const { id } = body;
+  const { id, deleteFiles } = body;
 
   if (!id) {
     return new Response(JSON.stringify({ success: false, error: 'Missing user ID' }), {
@@ -53,16 +53,50 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 
-  // 1b) Null out file ownership to avoid FK violation (files.user_id -> users.id)
-  const filesPatch = await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { ...headers, Prefer: 'return=minimal' },
-    body: JSON.stringify({ user_id: null }),
-  });
-  if (!filesPatch.ok) {
-    const error = await filesPatch.text();
-    console.error('❌ files patch error:', error);
-    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+  // 1b) Handle files that reference this user
+  try {
+    const listRes = await fetch(`${SUPABASE_URL}/rest/v1/files?select=file_url&id=not.is.null&user_id=eq.${id}`, { headers });
+    const list = listRes.ok ? await listRes.json() : [];
+    const keys: string[] = [];
+    for (const row of list) {
+      const url: string = row.file_url || '';
+      const match = url.match(/\/storage\/v1\/object\/public\/user-files\/(.*)$/);
+      if (match && match[1]) keys.push(match[1]);
+    }
+
+    if (deleteFiles && keys.length > 0) {
+      // Attempt to delete each object from storage (best-effort)
+      for (const key of keys) {
+        const delObj = await fetch(`${SUPABASE_URL}/storage/v1/object/user-files/${encodeURIComponent(key)}`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (!delObj.ok) {
+          console.warn('⚠️ storage delete failed for', key, await delObj.text());
+        }
+      }
+      // Remove file rows for this user
+      const delFiles = await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, { method: 'DELETE', headers });
+      if (!delFiles.ok) {
+        const error = await delFiles.text();
+        console.error('❌ files delete error:', error);
+        return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+      }
+    } else {
+      // Fallback: null out ownership so FK doesn't block user deletion
+      const filesPatch = await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { ...headers, Prefer: 'return=minimal' },
+        body: JSON.stringify({ user_id: null }),
+      });
+      if (!filesPatch.ok) {
+        const error = await filesPatch.text();
+        console.error('❌ files patch error:', error);
+        return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ file cleanup step encountered an error:', e);
   }
 
   // 1c) Remove profile row (if your schema has profiles.id referencing auth.users.id)

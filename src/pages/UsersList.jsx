@@ -56,13 +56,15 @@ const UsersList = () => {
   };
 
   const handleDeleteUser = async (id) => {
-    const confirmed = window.confirm('Are you sure you want to delete this user?');
-    if (!confirmed) return;
+    // Double-confirm dialog with option to delete files
+    const msg = 'Delete this user? You can choose to also delete their files.\n\nClick OK to continue and choose whether to remove files, or Cancel to abort.';
+    if (!window.confirm(msg)) return;
+    const alsoDeleteFiles = window.confirm('Also delete files owned by this user? This cannot be undone.');
 
     const res = await fetch('https://tywemactebkksgdsleha.supabase.co/functions/v1/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id, deleteFiles: alsoDeleteFiles }),
     });
 
     const result = await res.json();
