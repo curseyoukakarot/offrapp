@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Carousel from '../components/Carousel.jsx'
 import { ANNUAL_EQUIVALENT_MONTHLY, getPriceId } from '../lib/pricing.ts'
 
 export default function HomePage() {
+  const [billingCycle, setBillingCycle] = useState('monthly')
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     const observer = new IntersectionObserver((entries) => {
@@ -198,8 +199,22 @@ export default function HomePage() {
             <h2 className="text-5xl font-bold text-navy mb-6">Simple Pricing</h2>
             <p className="text-xl text-gray-600 mb-8">Choose the plan that fits your business needs.</p>
             <div className="inline-flex items-center bg-white rounded-lg p-1 shadow-sm">
-              <button className="px-6 py-2 text-sm font-medium text-white bg-electric rounded-md">Monthly</button>
-              <button className="px-6 py-2 text-sm font-medium text-gray-600 hover:text-navy">
+              <button
+                type="button"
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-6 py-2 text-sm font-medium rounded-md ${
+                  billingCycle === 'monthly' ? 'text-white bg-electric' : 'text-gray-600 hover:text-navy'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingCycle('annual')}
+                className={`px-6 py-2 text-sm font-medium rounded-md ${
+                  billingCycle === 'annual' ? 'text-white bg-electric' : 'text-gray-600 hover:text-navy'
+                }`}
+              >
                 Yearly <span className="text-teal text-xs ml-1">2 months free</span>
               </button>
             </div>
@@ -207,9 +222,12 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 fade-in">
               <h3 className="text-2xl font-bold text-navy mb-2">Starter</h3>
-              <div className="text-5xl font-bold text-navy mb-6">
-                $39<span className="text-lg text-gray-600 font-normal">/month</span>
+              <div className="text-5xl font-bold text-navy mb-2">
+                {billingCycle === 'monthly' ? '$39' : `$${ANNUAL_EQUIVALENT_MONTHLY.starter}`}<span className="text-lg text-gray-600 font-normal">/month</span>
               </div>
+              {billingCycle === 'annual' && (
+                <div className="text-sm text-gray-600 mb-4">Billed annually</div>
+              )}
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Up to 30 clients (tenant members)</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Embedded screens from Notion, Monday, Google, Calendly &amp; more</span></li>
@@ -217,7 +235,7 @@ export default function HomePage() {
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Forms management</span></li>
               </ul>
               <form method="POST" action="/api/checkout" className="w-full">
-                <input type="hidden" name="price_id" value={getPriceId('starter', 'monthly') || ''} />
+                <input type="hidden" name="price_id" value={getPriceId('starter', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="starter" />
                 <button className="w-full bg-gray-100 text-navy py-4 rounded-xl font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200">
                   Get Started
@@ -229,9 +247,12 @@ export default function HomePage() {
                 MOST POPULAR
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
-              <div className="text-5xl font-bold text-white mb-2">
-                $99<span className="text-lg text-blue-100 font-normal">/month</span>
+              <div className="text-5xl font-bold text-white mb-1">
+                {billingCycle === 'monthly' ? '$99' : `$${ANNUAL_EQUIVALENT_MONTHLY.pro}`}<span className="text-lg text-blue-100 font-normal">/month</span>
               </div>
+              {billingCycle === 'annual' && (
+                <div className="text-xs text-blue-100 mb-5">Billed annually</div>
+              )}
               <p className="text-blue-100 text-sm mb-6">Additional admin team member $39/month (up to 3)</p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start"><i className="fas fa-check text-white mr-3 mt-1" /><span className="text-blue-50">Up to 500 clients</span></li>
@@ -240,7 +261,7 @@ export default function HomePage() {
                 <li className="flex items-start"><i className="fas fa-check text-white mr-3 mt-1" /><span className="text-blue-50">API / Zapier / Make</span></li>
               </ul>
               <form method="POST" action="/api/checkout" className="w-full">
-                <input type="hidden" name="price_id" value={getPriceId('pro', 'monthly') || ''} />
+                <input type="hidden" name="price_id" value={getPriceId('pro', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="pro" />
                 <button className="w-full bg-white text-electric py-4 rounded-xl font-bold hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg">
                   Get Started
@@ -249,9 +270,12 @@ export default function HomePage() {
             </div>
             <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 fade-in">
               <h3 className="text-2xl font-bold text-navy mb-2">Advanced</h3>
-              <div className="text-5xl font-bold text-navy mb-2">
-                $199<span className="text-lg text-gray-600 font-normal">/month</span>
+              <div className="text-5xl font-bold text-navy mb-1">
+                {billingCycle === 'monthly' ? '$199' : `$${ANNUAL_EQUIVALENT_MONTHLY.advanced}`}<span className="text-lg text-gray-600 font-normal">/month</span>
               </div>
+              {billingCycle === 'annual' && (
+                <div className="text-sm text-gray-600 mb-5">Billed annually</div>
+              )}
               <p className="text-gray-600 text-sm mb-6">3 team slots included, $29/month per extra admin</p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Everything in Starter &amp; Pro</span></li>
@@ -260,7 +284,7 @@ export default function HomePage() {
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Priority support</span></li>
               </ul>
               <form method="POST" action="/api/checkout" className="w-full">
-                <input type="hidden" name="price_id" value={getPriceId('advanced', 'monthly') || ''} />
+                <input type="hidden" name="price_id" value={getPriceId('advanced', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="advanced" />
                 <button className="w-full bg-navy text-white py-4 rounded-xl font-semibold hover:bg-blue-900 hover:scale-105 transition-all duration-200">
                   Contact Sales
