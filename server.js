@@ -35,15 +35,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Supabase setup (must be initialized BEFORE middleware/routes use it)
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// ✅ Supabase setup (lazy if envs missing to allow server health to run)
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+} else {
+  console.warn('Supabase env not set; running in limited mode. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+}
 const SENDGRID_FROM = process.env.SENDGRID_FROM || 'noreply@nestbase.io';
 // Attach user to req if Authorization token present
 app.use(async (req, _res, next) => {
   try {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.substring(7) : null;
-    if (!token) return next();
+    if (!token || !supabase) return next();
     const { data } = await supabase.auth.getUser(token);
     req.authedUser = data.user || null;
   } catch (_e) {
@@ -79,6 +84,7 @@ app.get('/api/ping', (_req, res) => res.json({ ok: true }));
 
 // ✅ Supabase invite helper function
 async function inviteUser(email, role) {
+  if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase.auth.admin.createUser({
     email,
     user_metadata: { role },
