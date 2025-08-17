@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 function defaults() {
   return {
-    name: 'Offr.app',
+    name: 'NestBase',
     role_labels: {
       admin: 'Admin',
       recruitpro: 'RecruitPro',

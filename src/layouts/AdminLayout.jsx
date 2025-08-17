@@ -14,7 +14,7 @@ export default function AdminLayout({ children }) {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">O</span>
               </div>
-              <span className="text-xl font-semibold text-text">Offr Admin</span>
+              <span className="text-xl font-semibold text-text">NestBase Admin</span>
             </div>
             <div className="text-gray text-sm">Dashboard • December 15, 2024</div>
           </div>

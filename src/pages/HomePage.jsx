@@ -237,7 +237,7 @@ export default function HomePage() {
               <form method="POST" action="/api/checkout" className="w-full">
                 <input type="hidden" name="price_id" value={getPriceId('starter', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="starter" />
-                <button className="w-full bg-gray-100 text-navy py-4 rounded-xl font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200">
+                <button className="w-full bg-gray-100 text-navy py-4 rounded-xl font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200" aria-label={`Start ${billingCycle === 'annual' ? 'Annual' : 'Monthly'} Starter plan`}>
                   Get Started
                 </button>
               </form>
@@ -263,7 +263,7 @@ export default function HomePage() {
               <form method="POST" action="/api/checkout" className="w-full">
                 <input type="hidden" name="price_id" value={getPriceId('pro', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="pro" />
-                <button className="w-full bg-white text-electric py-4 rounded-xl font-bold hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg">
+                <button className="w-full bg-white text-electric py-4 rounded-xl font-bold hover:bg-gray-50 hover:scale-105 transition-all duration-200 shadow-lg" aria-label={`Start ${billingCycle === 'annual' ? 'Annual' : 'Monthly'} Pro plan`}>
                   Get Started
                 </button>
               </form>
@@ -286,7 +286,7 @@ export default function HomePage() {
               <form method="POST" action="/api/checkout" className="w-full">
                 <input type="hidden" name="price_id" value={getPriceId('advanced', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="advanced" />
-                <button className="w-full bg-navy text-white py-4 rounded-xl font-semibold hover:bg-blue-900 hover:scale-105 transition-all duration-200">
+                <button className="w-full bg-navy text-white py-4 rounded-xl font-semibold hover:bg-blue-900 hover:scale-105 transition-all duration-200" aria-label={`Start ${billingCycle === 'annual' ? 'Annual' : 'Monthly'} Advanced plan`}>
                   Get Started
                 </button>
               </form>
