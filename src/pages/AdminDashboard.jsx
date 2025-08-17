@@ -80,9 +80,9 @@ export default function AdminDashboard() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Content only; header/sidebar provided by AdminLayout */}
-      <main id="main-content" className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6 block">
           {/* Stats Overview */}
-          <section id="stats-section" className="mb-8 fade-in">
+          <section id="stats-section" className="mb-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
                 <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* File Upload Section */}
-            <section id="file-upload-section" className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition fade-in">
+            <section id="file-upload-section" className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h3>
 
               <div className="mb-4">
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
             </section>
 
             {/* User Management Preview */}
-            <section id="user-management-preview" className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition fade-in">
+            <section id="user-management-preview" className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Users</h3>
                 <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
