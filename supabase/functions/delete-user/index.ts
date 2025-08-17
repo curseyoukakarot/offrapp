@@ -41,82 +41,23 @@ serve(async (req: Request) => {
     'Content-Type': 'application/json',
   };
 
-  // ✅ Step 1: Clean up dependent rows that reference the user
-  // 1a) Remove memberships for this user
-  const memDel = await fetch(`${SUPABASE_URL}/rest/v1/memberships?user_id=eq.${id}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!memDel.ok) {
-    const error = await memDel.text();
-    console.error('❌ memberships delete error:', error);
-    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
-  }
-
-  // 1b) Handle files that reference this user
-  try {
-    const listRes = await fetch(`${SUPABASE_URL}/rest/v1/files?select=file_url&id=not.is.null&user_id=eq.${id}`, { headers });
-    const list = listRes.ok ? await listRes.json() : [];
-    const keys: string[] = [];
-    for (const row of list) {
-      const url: string = row.file_url || '';
-      const match = url.match(/\/storage\/v1\/object\/public\/user-files\/(.*)$/);
-      if (match && match[1]) keys.push(match[1]);
+  // ✅ Step 0: (optional) gather file keys before deleting the auth user (for storage cleanup)
+  let fileKeys: string[] = [];
+  if (deleteFiles) {
+    try {
+      const listRes = await fetch(`${SUPABASE_URL}/rest/v1/files?select=file_url&user_id=eq.${id}`, { headers });
+      const list = listRes.ok ? await listRes.json() : [];
+      for (const row of list) {
+        const url: string = row.file_url || '';
+        const match = url.match(/\/storage\/v1\/object\/public\/user-files\/(.*)$/);
+        if (match && match[1]) fileKeys.push(match[1]);
+      }
+    } catch (e) {
+      console.warn('⚠️ could not list files before delete:', e);
     }
-
-    if (deleteFiles && keys.length > 0) {
-      // Attempt to delete each object from storage (best-effort)
-      for (const key of keys) {
-        const delObj = await fetch(`${SUPABASE_URL}/storage/v1/object/user-files/${encodeURIComponent(key)}`, {
-          method: 'DELETE',
-          headers,
-        });
-        if (!delObj.ok) {
-          console.warn('⚠️ storage delete failed for', key, await delObj.text());
-        }
-      }
-      // Remove file rows for this user
-      const delFiles = await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, { method: 'DELETE', headers });
-      if (!delFiles.ok) {
-        const error = await delFiles.text();
-        console.error('❌ files delete error:', error);
-        return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
-      }
-    } else {
-      // Fallback: null out ownership so FK doesn't block user deletion
-      const filesPatch = await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, {
-        method: 'PATCH',
-        headers: { ...headers, Prefer: 'return=minimal' },
-        body: JSON.stringify({ user_id: null }),
-      });
-      if (!filesPatch.ok) {
-        const error = await filesPatch.text();
-        console.error('❌ files patch error:', error);
-        return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
-      }
-    }
-  } catch (e) {
-    console.warn('⚠️ file cleanup step encountered an error:', e);
   }
 
-  // 1c) Remove profile row (if your schema has profiles.id referencing auth.users.id)
-  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
-    method: 'DELETE',
-    headers,
-  });
-
-  // ✅ Step 2: Delete from application users table
-  const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${id}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!dbRes.ok) {
-    const error = await dbRes.text();
-    console.error('❌ DB delete error:', error);
-    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
-  }
-
-  // ✅ Step 3: Delete from Supabase Auth
+  // ✅ Step 1: Delete from Supabase Auth FIRST (DB cascades will clean public.*)
   const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
     method: 'DELETE',
     headers,
@@ -129,6 +70,21 @@ serve(async (req: Request) => {
       status: 400,
       headers: { 'Access-Control-Allow-Origin': '*' },
     });
+  }
+
+  // ✅ Step 2: If requested, remove storage objects and any lingering file rows
+  if (deleteFiles && fileKeys.length > 0) {
+    for (const key of fileKeys) {
+      const delObj = await fetch(`${SUPABASE_URL}/storage/v1/object/user-files/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!delObj.ok) {
+        console.warn('⚠️ storage delete failed for', key, await delObj.text());
+      }
+    }
+    // Best-effort: remove file rows that still reference this user (in case cascade set null earlier, this is harmless)
+    await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, { method: 'DELETE', headers });
   }
 
   console.log('✅ User deleted:', id);
