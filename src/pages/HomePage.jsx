@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import Carousel from '../components/Carousel.jsx'
 
 export default function HomePage() {
   useEffect(() => {
@@ -89,6 +90,18 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Screens Carousel */}
+      <Carousel
+        images={[
+          '/images/admin-dashboard.png',
+          '/images/client-dashboard.png',
+          '/images/embed-manager.png',
+          '/images/file-manager.png',
+          '/images/form-manager.png',
+          '/images/nestbase-CRM.png',
+        ]}
+      />
 
       {/* Features Grid */}
       <section id="features" className="py-20 bg-white">
