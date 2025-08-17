@@ -287,7 +287,7 @@ export default function HomePage() {
                 <input type="hidden" name="price_id" value={getPriceId('advanced', billingCycle) || ''} />
                 <input type="hidden" name="plan" value="advanced" />
                 <button className="w-full bg-navy text-white py-4 rounded-xl font-semibold hover:bg-blue-900 hover:scale-105 transition-all duration-200">
-                  Contact Sales
+                  Get Started
                 </button>
               </form>
             </div>
