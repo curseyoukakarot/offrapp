@@ -12,7 +12,8 @@ export default async function handler(req, res) {
 
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
-    const baseUrl = process.env.APP_BASE_URL || process.env.VERCEL_URL || 'http://localhost:5173'
+    const vercelHost = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+    const baseUrl = process.env.APP_BASE_URL || vercelHost || 'http://localhost:5173'
     const successUrl = `${baseUrl}/signup?plan=${encodeURIComponent(plan || '')}`
     const cancelUrl = `${baseUrl}/#pricing`
 
@@ -24,6 +25,14 @@ export default async function handler(req, res) {
       metadata: plan ? { plan } : undefined,
     })
 
+    const accepts = String(req.headers.accept || '')
+    const ctype = String(req.headers['content-type'] || '')
+    const isBrowserPost = accepts.includes('text/html') || ctype.includes('application/x-www-form-urlencoded')
+    if (isBrowserPost) {
+      res.statusCode = 303
+      res.setHeader('Location', session.url)
+      return res.end()
+    }
     return res.status(200).json({ id: session.id, url: session.url })
   } catch (err) {
     console.error('checkout error:', err)
