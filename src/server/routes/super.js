@@ -74,12 +74,12 @@ router.get('/tenants/:id/users', ensureSuper, async (req, res) => {
     if (userIds.length === 0) return res.json({ items: [] });
     const { data: users, error: uErr } = await supabase
       .from('users')
-      .select('id, email, name, last_login_at')
+      .select('id, email')
       .in('id', userIds);
     if (uErr) throw uErr;
     const items = (mems || []).map((m) => {
-      const u = (users || []).find((x) => x.id === m.user_id) || { id: m.user_id, email: '', name: null, last_login_at: null };
-      return { id: u.id, email: u.email, name: u.name, last_login_at: u.last_login_at, role: m.role, status: m.status || 'active' };
+      const u = (users || []).find((x) => x.id === m.user_id) || { id: m.user_id, email: '' };
+      return { id: u.id, email: u.email, name: null, last_login_at: null, role: m.role, status: m.status || 'active' };
     });
     res.json({ items, page: 1, pageSize: items.length, total: items.length });
   } catch (e) {
