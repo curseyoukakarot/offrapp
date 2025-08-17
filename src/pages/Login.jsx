@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../lib/useUser';
-import offrAppLogo from '../assets/images/offrapp-logo.png';
+const logoUrl = '/images/nestbase-logo.png?v=1';
 
 const Login = () => {
   const { user } = useUser();
@@ -11,6 +11,10 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -104,13 +108,33 @@ const Login = () => {
     }
   };
 
+  const submitForgot = async (e) => {
+    e?.preventDefault();
+    setForgotMsg('');
+    setForgotSending(true);
+    try {
+      const resp = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Failed to send reset');
+      setForgotMsg('A temporary password has been emailed to you.');
+    } catch (err) {
+      setForgotMsg(err.message || 'Failed to send reset');
+    } finally {
+      setForgotSending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <img
           className="mx-auto h-12 w-auto"
-          src={offrAppLogo}
-          alt="Career Kitchen"
+          src={logoUrl}
+          alt="NestBase"
         />
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
@@ -172,8 +196,56 @@ const Login = () => {
               </button>
             </div>
           </form>
+          <div className="mt-6 flex items-center justify-between text-sm">
+            <button
+              type="button"
+              className="text-blue-600 hover:text-blue-700"
+              onClick={() => setForgotOpen(true)}
+            >
+              Forgot Password?
+            </button>
+            <a href="/#pricing" className="text-gray-600 hover:text-navy">
+              No Account? Click here to sign up
+            </a>
+          </div>
         </div>
       </div>
+      {forgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-navy">Reset your password</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setForgotOpen(false)}>
+                <i className="fas fa-times" />
+              </button>
+            </div>
+            <form onSubmit={submitForgot} className="space-y-4">
+              <div>
+                <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700">Email address</label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              {forgotMsg && <div className="text-sm text-gray-600">{forgotMsg}</div>}
+              <div className="flex gap-3 justify-end">
+                <button type="button" className="px-4 py-2 rounded-md border" onClick={() => setForgotOpen(false)}>Cancel</button>
+                <button
+                  type="submit"
+                  disabled={forgotSending}
+                  className={`px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 ${forgotSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {forgotSending ? 'Sending...' : 'Send Reset'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
