@@ -41,7 +41,7 @@ router.get('/tenants', ensureSuper, async (req, res) => {
       .from('memberships')
       .select('tenant_id, count:count(*)')
       .in('tenant_id', (data || []).map((t) => t.id));
-    const usedByTenant = new Map((memAgg || []).map((m) => [m.tenant_id, (m as any).count as number]));
+    const usedByTenant = new Map((memAgg || []).map((m) => [m.tenant_id, Number(m.count || 0)]));
     const items = (data || []).map((t) => ({
       ...t,
       tier: t.tier || 'starter',
@@ -94,7 +94,7 @@ router.patch('/tenants/:id', ensureSuper, async (req, res) => {
       const { data: t } = await supabase.from('tenants').select('seats_used').eq('id', tenantId).single();
       if (t && seats_total < (t.seats_used || 0)) return res.status(400).json({ error: 'seats_total cannot be less than seats_used' });
     }
-    const updates: any = {};
+    const updates = {};
     if (name) updates.name = name;
     if (tier) updates.tier = tier;
     if (status) updates.status = status;
