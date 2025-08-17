@@ -42,7 +42,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <span className="text-2xl font-bold text-navy">NestBase</span>
+              <img src="/images/nestbase-logo.png" alt="NestBase" className="h-8 w-auto" />
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-navy transition-colors cursor-pointer">Features</a>
@@ -61,7 +61,11 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section id="hero" className="pt-24 pb-20 bg-gradient-to-br from-navy to-blue-900 text-white">
+      <section
+        id="hero"
+        className="pt-24 pb-20 text-white bg-cover bg-center"
+        style={{ backgroundImage: 'url(/images/NestbaseHeroImage3.png)' }}
+      >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="fade-in">
@@ -80,13 +84,7 @@ export default function HomePage() {
                 </a>
               </div>
             </div>
-            <div className="fade-in">
-              <img
-                className="w-full rounded-xl shadow-2xl"
-                src="https://storage.googleapis.com/uxpilot-auth.appspot.com/99be3f3342-c7908f67a9e91ec7965d.png"
-                alt="modern macbook mockup showing branded client portal dashboard with white interface and blue accents"
-              />
-            </div>
+            <div className="fade-in" />
           </div>
         </div>
       </section>
@@ -153,7 +151,7 @@ export default function HomePage() {
                 <i className="fas fa-paint-brush text-electric text-xl" />
               </div>
               <h3 className="text-xl font-semibold text-navy mb-4">White-Label Ready</h3>
-              <p className="text-gray-600">Remove Offr.app branding completely for a fully custom experience.</p>
+              <p className="text-gray-600">Remove homebase.io branding completely for a fully custom experience.</p>
             </div>
           </div>
         </div>
@@ -265,7 +263,7 @@ export default function HomePage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-xl shadow-sm fade-in">
-              <p className="text-gray-600 mb-6">"Offr.app transformed how we deliver projects to clients. Everything is organized and branded beautifully."</p>
+              <p className="text-gray-600 mb-6">"Nestbase transformed how we deliver projects to clients. Everything is organized and branded beautifully."</p>
               <div className="flex items-center">
                 <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Sarah" className="w-12 h-12 rounded-full mr-4" />
                 <div>
@@ -319,7 +317,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <span className="text-2xl font-bold text-navy">NestBase</span>
+              <img src="/images/nestbase-logo.png" alt="NestBase" className="h-8 w-auto" />
             </div>
             <div className="flex space-x-8 text-gray-600">
               <span className="hover:text-navy transition-colors cursor-pointer">Privacy</span>
