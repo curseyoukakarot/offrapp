@@ -51,9 +51,9 @@ export default function HomePage() {
               <a href="#pricing" className="text-gray-600 hover:text-navy transition-colors cursor-pointer">Pricing</a>
               <a href="#demo" className="text-gray-600 hover:text-navy transition-colors cursor-pointer">Demo</a>
               <a href="/login" className="text-gray-600 hover:text-navy transition-colors cursor-pointer">Login</a>
-              <button className="bg-electric text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium">
-                Start Free Beta
-              </button>
+              <a href="/#pricing" className="bg-electric text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                Get Started
+              </a>
             </div>
             <div className="md:hidden">
               <i className="fas fa-bars text-navy text-xl" />
@@ -84,9 +84,9 @@ export default function HomePage() {
                 Deliver projects, share updates, and embed the tools you already use — all under your brand.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-electric text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors">
-                  Start Free Beta
-                </button>
+                <a href="/#pricing" className="bg-electric text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors text-center">
+                  Get Started
+                </a>
                 <a href="#demo" className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-navy transition-colors text-center">
                   See How It Works
                 </a>
@@ -108,6 +108,35 @@ export default function HomePage() {
           '/images/nestbase-CRM.png',
         ]}
       />
+
+      {/* Integrations Logos */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-10 fade-in">
+            <h3 className="text-2xl md:text-3xl font-bold text-navy">Embed the screens you share with your clients</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 items-center">
+            <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
+              <img src="https://cdn.simpleicons.org/notion/000000" alt="Notion logo" className="h-10" />
+            </div>
+            <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
+              <img src="https://cdn.simpleicons.org/google/4285F4" alt="Google logo" className="h-10" />
+            </div>
+            <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
+              <img src="https://cdn.simpleicons.org/mondaydotcom/ff3d3d" alt="monday.com logo" className="h-10" />
+            </div>
+            <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
+              <img src="https://cdn.simpleicons.org/calendly/006BFF" alt="Calendly logo" className="h-10" />
+            </div>
+            <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
+              <img src="https://cdn.simpleicons.org/asana/f06a6a" alt="Asana logo" className="h-10" />
+            </div>
+            <div className="flex items-center justify-center opacity-80 hover:opacity-100 transition">
+              <img src="https://cdn.simpleicons.org/airtable/18BFFF" alt="Airtable logo" className="h-10" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Features Grid */}
       <section id="features" className="py-20 bg-white">
@@ -229,7 +258,7 @@ export default function HomePage() {
                 <div className="text-sm text-gray-600 mb-4">Billed annually</div>
               )}
               <ul className="space-y-4 mb-8">
-                <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Up to 30 clients (tenant members)</span></li>
+                <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Up to 30 clients</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Embedded screens from Notion, Monday, Google, Calendly &amp; more</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">File management</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Forms management</span></li>
@@ -279,6 +308,7 @@ export default function HomePage() {
               <p className="text-gray-600 text-sm mb-6">3 team slots included, $29/month per extra admin</p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Everything in Starter &amp; Pro</span></li>
+                <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Unlimited clients</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Stripe billing &amp; invoicing</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">3 team slots (scalable with add-ons)</span></li>
                 <li className="flex items-start"><i className="fas fa-check text-teal mr-3 mt-1" /><span className="text-gray-700">Priority support</span></li>
@@ -324,9 +354,9 @@ export default function HomePage() {
           <h2 className="text-5xl font-bold mb-6">Deliver a World-Class Client Experience</h2>
           <p className="text-xl text-gray-300 mb-8">Without the dev team. Start your free beta today.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-electric text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors">
-              Start Free Beta
-            </button>
+            <a href="/#pricing" className="bg-electric text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors text-center">
+              Get Started
+            </a>
             <button className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-navy transition-colors">
               Book a Demo
             </button>
