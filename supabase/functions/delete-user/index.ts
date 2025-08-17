@@ -41,22 +41,48 @@ serve(async (req: Request) => {
     'Content-Type': 'application/json',
   };
 
-  // ✅ Step 1: Delete from users table FIRST
-  const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${id}`, {
+  // ✅ Step 1: Clean up dependent rows that reference the user
+  // 1a) Remove memberships for this user
+  const memDel = await fetch(`${SUPABASE_URL}/rest/v1/memberships?user_id=eq.${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!memDel.ok) {
+    const error = await memDel.text();
+    console.error('❌ memberships delete error:', error);
+    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  // 1b) Null out file ownership to avoid FK violation (files.user_id -> users.id)
+  const filesPatch = await fetch(`${SUPABASE_URL}/rest/v1/files?user_id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { ...headers, Prefer: 'return=minimal' },
+    body: JSON.stringify({ user_id: null }),
+  });
+  if (!filesPatch.ok) {
+    const error = await filesPatch.text();
+    console.error('❌ files patch error:', error);
+    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  // 1c) Remove profile row (if your schema has profiles.id referencing auth.users.id)
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
     method: 'DELETE',
     headers,
   });
 
+  // ✅ Step 2: Delete from application users table
+  const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${id}`, {
+    method: 'DELETE',
+    headers,
+  });
   if (!dbRes.ok) {
     const error = await dbRes.text();
     console.error('❌ DB delete error:', error);
-    return new Response(JSON.stringify({ success: false, error }), {
-      status: 400,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-    });
+    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 
-  // ✅ Step 2: Delete from Supabase Auth
+  // ✅ Step 3: Delete from Supabase Auth
   const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
     method: 'DELETE',
     headers,
