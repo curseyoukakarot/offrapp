@@ -214,7 +214,7 @@ export default function UserManagementPage() {
                           <i className="fas fa-folder text-blue-500 mr-3" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">{t.name}</div>
-                            <div className="text-sm text-gray-500">{t.slug}.example.com</div>
+                            <div className="text-sm text-gray-500">{t.domain ? t.domain : `${t.slug}.example.com`}</div>
                           </div>
                         </div>
                       </td>
