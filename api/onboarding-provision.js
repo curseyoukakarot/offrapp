@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-import { PLANS } from '../src/lib/plans.ts';
+
+// Inline plan definitions to avoid importing TS modules in serverless env
+const PLANS = {
+  starter: { maxClients: 30, features: { embeds: true, forms: true, files: true, custom_domain: false, custom_email: false, slack: false } },
+  pro: { maxClients: 150, features: { embeds: true, forms: true, files: true, custom_domain: true, custom_email: true, slack: true, embedded_payments: false } },
+  advanced: { maxClients: 1000, features: { embeds: true, forms: true, files: true, custom_domain: true, custom_email: true, slack: true, zapier: true, make: true, embedded_payments: true } },
+  custom: { maxClients: null, features: { embeds: true, forms: true, files: true, custom_domain: true, custom_email: true, slack: true, zapier: true, make: true, embedded_payments: true } },
+};
 
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -61,8 +68,9 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', 'onb=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
     return res.status(200).json({ ready: true, tenantSlug: tenant.slug });
   } catch (e) {
-    console.error('onboarding/provision error', e?.message || e);
-    return res.status(500).json({ error: e.message });
+    const msg = e?.message || String(e);
+    console.error('onboarding/provision error', msg);
+    return res.status(500).send(`Provision failed: ${msg}`);
   }
 }
 
