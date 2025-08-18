@@ -26,7 +26,16 @@ export default async function handler(req, res) {
         user_metadata: { full_name: name, title }
       });
       if (createErr && !String(createErr.message || '').toLowerCase().includes('already')) {
-        signErr = createErr;
+        // If creation failed with a generic DB error, check if the user already exists
+        try {
+          const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const exists = (list?.users || []).some((u) => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+          if (!exists) {
+            signErr = createErr;
+          }
+        } catch (_) {
+          signErr = createErr;
+        }
       }
     } else {
       const { error } = await anon.auth.signUp({
@@ -50,7 +59,14 @@ export default async function handler(req, res) {
           user_metadata: { full_name: name, title }
         });
         if (createErr && !String(createErr.message || '').toLowerCase().includes('already')) {
-          return res.status(400).json({ error: signErr.message });
+          // Last resort: if admin create failed, check if user exists and proceed if so
+          try {
+            const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 1000 });
+            const exists = (list?.users || []).some((u) => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+            if (!exists) return res.status(400).json({ error: signErr.message });
+          } catch (_) {
+            return res.status(400).json({ error: signErr.message });
+          }
         }
         // proceed even if user already exists
       } else {
