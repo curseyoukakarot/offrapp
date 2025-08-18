@@ -40,7 +40,7 @@ const Login = () => {
         .eq('user_id', userId)
         .limit(1)
         .maybeSingle();
-      const role = mem?.role || 'client';
+      const role = mem?.role === 'owner' ? 'admin' : (mem?.role || 'client');
 
       // 3. Redirect based on role (no forced profile completion)
       switch (role) {

@@ -39,7 +39,8 @@ export const AuthProvider = ({ children }) => {
         .eq('user_id', currentSession.user.id)
         .limit(1)
         .maybeSingle();
-      const effective = mem?.role || 'client';
+      const rawRole = mem?.role || 'client';
+      const effective = rawRole === 'owner' ? 'admin' : rawRole;
       console.log('✅ Effective role from memberships:', effective);
       setUserRole(effective);
     } catch (e) {
