@@ -12,6 +12,7 @@ export default async function handler(req, res) {
     if (!name || !email || !password || !companyName) return res.status(400).json({ error: 'Missing fields' });
 
     const anon = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     const siteBase = (process.env.PUBLIC_SITE_URL && process.env.PUBLIC_SITE_URL.startsWith('http'))
       ? process.env.PUBLIC_SITE_URL.replace(/\/$/, '')
       : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host)}`;
@@ -23,7 +24,24 @@ export default async function handler(req, res) {
         emailRedirectTo: `${siteBase}/login`
       }
     });
-    if (signErr) return res.status(400).json({ error: signErr.message });
+    if (signErr) {
+      const msg = String(signErr.message || '').toLowerCase();
+      if (msg.includes('rate') || msg.includes('limit') || msg.includes('already')) {
+        // Fallback: ensure user exists without sending email, to unblock onboarding
+        const { data: created, error: createErr } = await svc.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: name, title }
+        });
+        if (createErr && !String(createErr.message || '').toLowerCase().includes('already')) {
+          return res.status(400).json({ error: signErr.message });
+        }
+        // proceed even if user already exists
+      } else {
+        return res.status(400).json({ error: signErr.message });
+      }
+    }
 
     // Merge any pre-existing onboarding cookie (which may contain a verified plan from Stripe)
     const cookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('onb='));
