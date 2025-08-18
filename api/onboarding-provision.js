@@ -43,7 +43,6 @@ export default async function handler(req, res) {
       name: onb.companyName,
       slug: branding.subdomain,
       tier: plan,
-      created_by: user.id,
     }).select('*').single();
     if (tenantErr) throw tenantErr;
 
