@@ -57,7 +57,10 @@ export default async function handler(req, res) {
         .select('id, token')
         .single();
       if (ierr) throw ierr;
-      const signupUrl = `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}${body.bypass_billing ? '&bypass_billing=1' : ''}`;
+      const siteBase = (process.env.PUBLIC_SITE_URL && process.env.PUBLIC_SITE_URL.startsWith('http'))
+        ? process.env.PUBLIC_SITE_URL.replace(/\/$/, '')
+        : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host)}`;
+      const signupUrl = `${siteBase}/signup?invite=${encodeURIComponent(invite.token)}${body.bypass_billing ? '&bypass_billing=1' : ''}`;
       let emailSent = false, emailError = null;
       try {
         if (process.env.SENDGRID_API_KEY) {
@@ -81,7 +84,10 @@ export default async function handler(req, res) {
       .select('id, token')
       .single();
     if (error) throw error;
-    const signupUrl = `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}`;
+    const siteBase = (process.env.PUBLIC_SITE_URL && process.env.PUBLIC_SITE_URL.startsWith('http'))
+      ? process.env.PUBLIC_SITE_URL.replace(/\/$/, '')
+      : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host)}`;
+    const signupUrl = `${siteBase}/signup?invite=${encodeURIComponent(invite.token)}`;
     let emailSent = false, emailError = null;
     try {
       if (process.env.SENDGRID_API_KEY) {
