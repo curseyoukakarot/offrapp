@@ -18,12 +18,11 @@ export default function Onboarding() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-600">Loading…</div>;
   if (state.ready) {
-    const url = `https://${state.tenantSlug}.nestbase.io`;
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white border rounded-2xl p-8 text-center">
           <div className="text-xl font-semibold mb-3">Workspace Ready</div>
-          <a className="text-blue-600 underline" href={url}>Go to your workspace</a>
+          <a className="text-blue-600 underline" href="/login">Continue to login</a>
         </div>
       </div>
     );

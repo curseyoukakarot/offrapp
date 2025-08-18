@@ -12,7 +12,17 @@ export default async function handler(req, res) {
     if (!name || !email || !password || !companyName) return res.status(400).json({ error: 'Missing fields' });
 
     const anon = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-    const { data: sign, error: signErr } = await anon.auth.signUp({ email, password, options: { data: { full_name: name, title } } });
+    const siteBase = (process.env.PUBLIC_SITE_URL && process.env.PUBLIC_SITE_URL.startsWith('http'))
+      ? process.env.PUBLIC_SITE_URL.replace(/\/$/, '')
+      : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host)}`;
+    const { data: sign, error: signErr } = await anon.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, title },
+        emailRedirectTo: `${siteBase}/login`
+      }
+    });
     if (signErr) return res.status(400).json({ error: signErr.message });
 
     // Merge any pre-existing onboarding cookie (which may contain a verified plan from Stripe)
