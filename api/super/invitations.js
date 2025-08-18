@@ -1,0 +1,78 @@
+import { createClient } from '@supabase/supabase-js';
+
+function getSupabase() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function getAuthedUser(req) {
+  const supabase = getSupabase();
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.substring(7) : null;
+  if (!token) return null;
+  const { data } = await supabase.auth.getUser(token);
+  return data?.user || null;
+}
+
+async function ensureSuper(req, res) {
+  const supabase = getSupabase();
+  const user = await getAuthedUser(req);
+  if (!user) {
+    res.status(401).json({ error: 'unauthorized' });
+    return null;
+  }
+  const { data: roles } = await supabase.from('user_global_roles').select('role').eq('user_id', user.id);
+  const isSuper = (roles || []).some((r) => ['super_admin', 'superadmin', 'super-admin'].includes(String(r.role || '').toLowerCase()));
+  if (!isSuper) {
+    res.status(403).json({ error: 'forbidden' });
+    return null;
+  }
+  return { supabase, user };
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const ctx = await ensureSuper(req, res);
+    if (!ctx) return;
+    const { supabase, user } = ctx;
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
+    const body = req.body || {};
+    const inviter = user.id;
+    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
+
+    if (body.tenant) {
+      const { name, slug, tier, seats_total } = body.tenant || {};
+      const { data: tenant, error: terr } = await supabase
+        .from('tenants')
+        .insert([{ name, slug, tier, seats_total, status: 'active' }])
+        .select('*')
+        .single();
+      if (terr) throw terr;
+      const { data: invite, error: ierr } = await supabase
+        .from('invitations')
+        .insert([{ email: body.admin.email, tenant_id: tenant.id, role: 'owner', token, expires_at: expires, invited_by: inviter, bypass_billing: !!body.bypass_billing }])
+        .select('id, token')
+        .single();
+      if (ierr) throw ierr;
+      return res.status(200).json({ invitationId: invite.id, token: invite.token });
+    }
+
+    const { email, role, tenant_id } = body;
+    const { data: invite, error } = await supabase
+      .from('invitations')
+      .insert([{ email, tenant_id, role, token, expires_at: expires, invited_by: inviter }])
+      .select('id, token')
+      .single();
+    if (error) throw error;
+    return res.status(200).json({ invitationId: invite.id, token: invite.token });
+  } catch (e) {
+    console.error('api/super/invitations error', e);
+    return res.status(500).json({ error: e.message });
+  }
+}
+
+export const config = { api: { bodyParser: true } };
+
+

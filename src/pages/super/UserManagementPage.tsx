@@ -427,9 +427,19 @@ function ExistingInviteForm({ defaultTenantId, onDone }: { defaultTenantId?: str
 
   useEffect(() => {
     (async () => {
-      const res = await fetch('/api/super/tenants');
-      const json = await res.json();
-      setTenants(json.items || []);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const API_BASE = (import.meta as any).env?.DEV ? 'http://localhost:3001' : ((import.meta as any).env?.VITE_API_BASE || '');
+        const res = await fetch(`${API_BASE}/api/super/tenants`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!res.ok) throw new Error('failed');
+        const json = await res.json();
+        setTenants(json.items || []);
+      } catch (_e) {
+        setTenants([]);
+      }
     })();
   }, []);
 
