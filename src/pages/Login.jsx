@@ -34,13 +34,12 @@ const Login = () => {
   const checkProfileAndRedirect = async (userId) => {
     try {
       // 1. Determine role from memberships
-      const { data: mem } = await supabase
+      const { data: mems } = await supabase
         .from('memberships')
         .select('role, tenant_id')
-        .eq('user_id', userId)
-        .limit(1)
-        .maybeSingle();
-      const role = mem?.role === 'owner' ? 'admin' : (mem?.role || 'client');
+        .eq('user_id', userId);
+      const roles = (mems || []).map(r => String(r.role || '').toLowerCase());
+      const role = (roles.includes('owner') || roles.includes('admin')) ? 'admin' : 'client';
 
       // 3. Redirect based on role (no forced profile completion)
       switch (role) {

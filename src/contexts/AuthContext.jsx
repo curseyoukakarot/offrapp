@@ -33,15 +33,15 @@ export const AuthProvider = ({ children }) => {
     // Fetch role from users table
     // Resolve effective role from memberships rather than public users row
     try {
-      const { data: mem } = await supabase
+      const { data: mems } = await supabase
         .from('memberships')
         .select('role')
-        .eq('user_id', currentSession.user.id)
-        .limit(1)
-        .maybeSingle();
-      const rawRole = mem?.role || 'client';
-      const effective = rawRole === 'owner' ? 'admin' : rawRole;
-      console.log('✅ Effective role from memberships:', effective);
+        .eq('user_id', currentSession.user.id);
+      const roles = (mems || []).map(r => String(r.role || '').toLowerCase());
+      const effective = roles.includes('owner') || roles.includes('admin')
+        ? 'admin'
+        : 'client';
+      console.log('✅ Effective role from memberships:', effective, roles);
       setUserRole(effective);
     } catch (e) {
       console.warn('⚠️ memberships lookup failed; defaulting to client');
