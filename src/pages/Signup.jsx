@@ -10,11 +10,14 @@ export default function Signup() {
   const [title, setTitle] = useState('Owner/Founder');
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState('starter');
+  const [invite, setInvite] = useState('');
   const valid = name && companyName && /.+@.+\..+/.test(email) && password.length >= 8;
 
   useEffect(() => {
     const url = new URL(window.location.href);
     const sessionId = url.searchParams.get('session_id');
+    const inviteToken = url.searchParams.get('invite');
+    if (inviteToken) setInvite(inviteToken);
     if (sessionId) {
       // Verify the session and write a trusted plan into the onboarding cookie
       fetch(`/api/checkout-verify?session_id=${encodeURIComponent(sessionId)}`)
@@ -27,7 +30,7 @@ export default function Signup() {
     e.preventDefault();
     if (!valid) return;
     setLoading(true);
-    const res = await fetch('/api/onboarding-start', { method: 'POST', body: JSON.stringify({ name, email, password, companyName, source, sourceOther, title, plan }) });
+    const res = await fetch('/api/onboarding-start', { method: 'POST', body: JSON.stringify({ name, email, password, companyName, source, sourceOther, title, plan, invite }) });
     setLoading(false);
     if (res.ok) window.location.href = '/onboarding';
     else alert('Sign up failed');

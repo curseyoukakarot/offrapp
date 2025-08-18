@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const cookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('onb='));
     if (!cookie) return res.status(400).json({ error: 'Missing onboarding session' });
     const onb = JSON.parse(Buffer.from(cookie.split('=')[1], 'base64').toString('utf8'));
-    const { plan: onbPlan = 'starter', adminSeats = 1, branding = {}, email } = onb || {};
+    const { plan: onbPlan = 'starter', adminSeats = 1, branding = {}, email, tenant_id: invitedTenantId, invited_role } = onb || {};
     const PLAN_ALIASES = { basic: 'starter', professional: 'pro', enterprise: 'advanced', adv: 'advanced' };
     const planRaw = String(onbPlan || '').toLowerCase();
     const plan = (['starter','pro','advanced','custom'].includes(planRaw) ? planRaw : (PLAN_ALIASES[planRaw] || 'starter'));
@@ -38,16 +38,25 @@ export default async function handler(req, res) {
     }
     if (!user) return res.status(400).json({ error: 'User not found from onboarding email' });
 
-    // Create tenant
-    const { data: tenant, error: tenantErr } = await svc.from('tenants').insert({
-      name: onb.companyName,
-      slug: branding.subdomain,
-      tier: plan,
-    }).select('*').single();
-    if (tenantErr) throw tenantErr;
+    // Use existing invited tenant if present; otherwise create a new one
+    let tenant = null;
+    if (invitedTenantId) {
+      const { data: trow, error: terr } = await svc.from('tenants').select('*').eq('id', invitedTenantId).maybeSingle();
+      if (terr) throw terr;
+      if (!trow) throw new Error('Invited tenant not found');
+      tenant = trow;
+    } else {
+      const { data: trow, error: terr } = await svc.from('tenants').insert({
+        name: onb.companyName,
+        slug: branding.subdomain,
+        tier: plan,
+      }).select('*').single();
+      if (terr) throw terr;
+      tenant = trow;
+    }
 
-    // Membership admin
-    await svc.from('memberships').insert({ tenant_id: tenant.id, user_id: user.id, role: 'admin' });
+    // Membership: use invited role if provided
+    await svc.from('memberships').upsert({ tenant_id: tenant.id, user_id: user.id, role: invited_role || 'admin' }, { onConflict: 'tenant_id,user_id' });
 
     // Limits
     const planDef = PLANS[plan] || PLANS.starter;
@@ -63,7 +72,7 @@ export default async function handler(req, res) {
     // auth cookie is set for that host. Here we simply return slug and let the
     // client perform a navigation; the app should establish a session on the
     // destination host via Supabase auth (token exchange or regular login).
-    // Clear onboarding cookie
+    // Clear onboarding cookie and mark invitation accepted if any
     res.setHeader('Set-Cookie', 'onb=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
     return res.status(200).json({ ready: true, tenantSlug: tenant.slug });
   } catch (e) {

@@ -39,6 +39,10 @@ export const AuthProvider = ({ children }) => {
         .eq('id', currentSession.user.id)
         .maybeSingle();
       dbRole = userRow?.role || 'authenticated';
+      // If no public user row exists, create a minimal record so the rest of the app resolves
+      if (!userRow) {
+        await supabase.from('users').upsert({ id: currentSession.user.id, email: currentSession.user.email, role: 'authenticated' });
+      }
     } catch (e) {
       console.warn('⚠️ users role lookup failed; defaulting to authenticated');
     }
