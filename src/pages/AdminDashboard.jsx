@@ -21,8 +21,8 @@ export default function AdminDashboard() {
       try {
         const [usersRes, formsRes, filesRes] = await Promise.all([
           fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ users: [] })),
-          fetch('/api/forms?limit=1000', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ forms: [] })),
-          fetch('/api/files?limit=1000', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ files: [] })),
+          fetch('/api/forms?limit=1000', { headers: { 'x-tenant-id': tenantId } }).then((r) => r.json()).catch(() => ({ forms: [] })),
+          fetch('/api/files?limit=1000', { headers: { 'x-tenant-id': tenantId } }).then((r) => r.json()).catch(() => ({ files: [] })),
         ]);
         const users = Array.isArray(usersRes?.users) ? usersRes.users : [];
         const forms = Array.isArray(formsRes?.forms) ? formsRes.forms : [];

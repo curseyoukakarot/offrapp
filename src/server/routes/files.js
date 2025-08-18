@@ -15,8 +15,10 @@ router.get('/', async (req, res) => {
     const supabase = getSupabase();
     const tenantId = String(req.headers['x-tenant-id'] || '').trim();
     const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 500);
-    let query = supabase.from('files').select('*').order('created_at', { ascending: false }).limit(limit);
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    if (!tenantId) {
+      return res.json({ files: [] });
+    }
+    let query = supabase.from('files').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(limit);
     const { data, error } = await query;
     if (error) throw error;
     res.json({ files: data || [] });

@@ -16,9 +16,16 @@ router.get('/', async (req, res) => {
     const tenantId = String(req.headers['x-tenant-id'] || '').trim();
     const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 500);
 
-    let query = supabase.from('forms').select('*').order('updated_at', { ascending: false }).limit(limit);
-    // Include global (tenant_id IS NULL) plus active tenant
-    if (tenantId) query = query.or(`tenant_id.eq.${tenantId},tenant_id.is.null`);
+    if (!tenantId) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(JSON.stringify({ forms: [] }));
+    }
+    let query = supabase
+      .from('forms')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('updated_at', { ascending: false })
+      .limit(limit);
 
     const { data, error, status } = await query;
     if (error) {

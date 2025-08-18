@@ -39,7 +39,7 @@ import HomePage from './pages/HomePage.jsx';
 
 // Protected Route component that checks for both authentication and role
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { session, userRole, loading } = useAuth();
+  const { session, userRole, loading, isSuperAdmin } = useAuth();
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen text-gray-600">Loading...</div>;
@@ -49,6 +49,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" />;
   }
 
+  if (isSuperAdmin) {
+    return typeof children === 'function' ? children(userRole) : children;
+  }
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     // Redirect to appropriate dashboard based on role
     switch (userRole) {
