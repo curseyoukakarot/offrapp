@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import sgMail from '@sendgrid/mail';
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -56,7 +57,21 @@ export default async function handler(req, res) {
         .select('id, token')
         .single();
       if (ierr) throw ierr;
-      return res.status(200).json({ invitationId: invite.id, token: invite.token, tenant_id: tenant.id, bypass_billing: !!body.bypass_billing, signup_url: `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}${body.bypass_billing ? '&bypass_billing=1' : ''}` });
+      const signupUrl = `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}${body.bypass_billing ? '&bypass_billing=1' : ''}`;
+      let emailSent = false, emailError = null;
+      try {
+        if (process.env.SENDGRID_API_KEY) {
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+          await sgMail.send({
+            to: body.admin.email,
+            from: process.env.SENDGRID_FROM || 'noreply@nestbase.io',
+            subject: `You're invited to ${name} on NestBase`,
+            html: `<p>You have been invited as <b>Owner</b> of ${name}.</p><p><a href="${signupUrl}">Click here to get started</a></p>`
+          });
+          emailSent = true;
+        }
+      } catch (e) { emailError = e?.message || String(e); }
+      return res.status(200).json({ invitationId: invite.id, token: invite.token, tenant_id: tenant.id, bypass_billing: !!body.bypass_billing, signup_url: signupUrl, emailSent, emailError });
     }
 
     const { email, role, tenant_id } = body;
@@ -66,7 +81,21 @@ export default async function handler(req, res) {
       .select('id, token')
       .single();
     if (error) throw error;
-    return res.status(200).json({ invitationId: invite.id, token: invite.token, signup_url: `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}` });
+    const signupUrl = `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}`;
+    let emailSent = false, emailError = null;
+    try {
+      if (process.env.SENDGRID_API_KEY) {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        await sgMail.send({
+          to: email,
+          from: process.env.SENDGRID_FROM || 'noreply@nestbase.io',
+          subject: `You're invited to join a workspace on NestBase`,
+          html: `<p>You have been invited as <b>${role}</b>.</p><p><a href="${signupUrl}">Accept your invite</a></p>`
+        });
+        emailSent = true;
+      }
+    } catch (e) { emailError = e?.message || String(e); }
+    return res.status(200).json({ invitationId: invite.id, token: invite.token, signup_url: signupUrl, emailSent, emailError });
   } catch (e) {
     console.error('api/super/invitations error', e);
     return res.status(500).json({ error: e.message });

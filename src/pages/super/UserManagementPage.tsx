@@ -24,6 +24,11 @@ function classNames(...items: Array<string | false | null | undefined>) {
   return items.filter(Boolean).join(' ');
 }
 
+function getApiBase() {
+  const env: any = (import.meta as any).env || {};
+  return env?.DEV ? 'http://localhost:3001' : (env?.VITE_API_BASE || '');
+}
+
 function TierBadge({ tier }: { tier: Tenant['tier'] }) {
   const map = {
     starter: 'bg-blue-100 text-blue-800',
@@ -98,7 +103,7 @@ export default function UserManagementPage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const res = await fetch(`${API_BASE}/api/super/tenant-users?id=${encodeURIComponent(tenant.id)}`, {
+      const res = await fetch(`${getApiBase()}/api/super/tenant-users?id=${encodeURIComponent(tenant.id)}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error('Failed to load users');
@@ -430,8 +435,7 @@ function ExistingInviteForm({ defaultTenantId, onDone }: { defaultTenantId?: str
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
-        const API_BASE = (import.meta as any).env?.DEV ? 'http://localhost:3001' : ((import.meta as any).env?.VITE_API_BASE || '');
-        const res = await fetch(`${API_BASE}/api/super/tenants`, {
+        const res = await fetch(`${getApiBase()}/api/super/tenants`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) throw new Error('failed');
@@ -501,7 +505,7 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const res = await fetch(`${API_BASE}/api/super/invitations`, {
+      const res = await fetch(`${getApiBase()}/api/super/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ tenant: { name, slug, tier, seats_total: seats }, admin: { email }, bypass_billing: bypass }),
@@ -509,6 +513,16 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
       if (!res.ok) throw new Error('Failed');
       // optionally read signup_url for quick copy or toast
       const json = await res.json();
+      try {
+        // naive toast using alert for now; can replace with shadcn/toast later
+        if (json.emailSent) {
+          alert('Invite sent successfully');
+        } else if (json.emailError) {
+          alert(`Invite created, but email failed: ${json.emailError}. Share this link: ${json.signup_url}`);
+        } else {
+          alert(`Invite created. Share this link: ${json.signup_url}`);
+        }
+      } catch (_e) {}
       onDone();
     } finally {
       setSubmitting(false);
