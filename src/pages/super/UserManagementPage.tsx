@@ -98,7 +98,7 @@ export default function UserManagementPage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const res = await fetch(`${API_BASE}/api/super/tenants/${tenant.id}/users`, {
+      const res = await fetch(`${API_BASE}/api/super/tenant-users?id=${encodeURIComponent(tenant.id)}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error('Failed to load users');
