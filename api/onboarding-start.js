@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host || req.headers['host'])}`;
     let signErr = null;
     if (invite) {
-      // For invited users, avoid Supabase confirmation email flow; create as confirmed
+      // For invited users, avoid email confirmation; attempt admin create → fallback to anon signup → fallback to existence check
       const { error: createErr } = await svc.auth.admin.createUser({
         email,
         password,
@@ -26,15 +26,21 @@ export default async function handler(req, res) {
         user_metadata: { full_name: name, title }
       });
       if (createErr && !String(createErr.message || '').toLowerCase().includes('already')) {
-        // If creation failed with a generic DB error, check if the user already exists
-        try {
-          const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          const exists = (list?.users || []).some((u) => String(u.email || '').toLowerCase() === String(email).toLowerCase());
-          if (!exists) {
+        // Fallback 1: try anon sign up (may return already registered)
+        const { error: signErrAnon } = await anon.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name, title }, emailRedirectTo: `${siteBase}/login` }
+        });
+        if (signErrAnon && !String(signErrAnon.message || '').toLowerCase().includes('already')) {
+          // Fallback 2: check if account already exists via admin list
+          try {
+            const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 1000 });
+            const exists = (list?.users || []).some((u) => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+            if (!exists) signErr = createErr;
+          } catch (_) {
             signErr = createErr;
           }
-        } catch (_) {
-          signErr = createErr;
         }
       }
     } else {
