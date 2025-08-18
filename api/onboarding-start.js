@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     const siteBase = (process.env.PUBLIC_SITE_URL && process.env.PUBLIC_SITE_URL.startsWith('http'))
       ? process.env.PUBLIC_SITE_URL.replace(/\/$/, '')
-      : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host)}`;
+      : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host || req.headers['host'])}`;
     const { data: sign, error: signErr } = await anon.auth.signUp({
       email,
       password,
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     try {
       const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
       const { data: u } = await svc.from('users').select('id').eq('email', email).maybeSingle();
-      if (!u) await svc.from('users').upsert({ email });
+      if (!u) await svc.from('users').upsert({ email, role: 'client' });
     } catch (_) {}
 
     // Merge any pre-existing onboarding cookie (which may contain a verified plan from Stripe)
