@@ -41,8 +41,6 @@ export default async function handler(req, res) {
       name: onb.companyName,
       slug: branding.subdomain,
       plan,
-      brand_color: branding.brandColor || null,
-      logo_url: branding.logoUrl || null,
       created_by: user.id,
     }).select('*').single();
     if (tenantErr) throw tenantErr;
@@ -70,7 +68,7 @@ export default async function handler(req, res) {
   } catch (e) {
     const msg = e?.message || String(e);
     console.error('onboarding/provision error', msg);
-    return res.status(500).send(`Provision failed: ${msg}`);
+    return res.status(500).json({ error: msg });
   }
 }
 
