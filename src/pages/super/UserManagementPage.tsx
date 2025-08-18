@@ -45,7 +45,9 @@ function StatusPill({ status }: { status: Tenant['status'] }) {
 }
 
 export default function UserManagementPage() {
-  const API_BASE = (import.meta as any).env && (import.meta as any).env.DEV ? 'http://localhost:3001' : '';
+  const API_BASE = (import.meta as any).env?.DEV
+    ? 'http://localhost:3001'
+    : ((import.meta as any).env?.VITE_API_BASE || '');
   const [tenants, setTenants] = useState<Tenant[] | null>(null);
   const [tenantsLoading, setTenantsLoading] = useState(false);
   const [tenantsError, setTenantsError] = useState<string | null>(null);
