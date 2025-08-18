@@ -50,21 +50,43 @@ export default async function handler(req, res) {
 
     const ids = (data || []).map((t) => t.id);
     let usedByTenant = new Map();
+    let domainByTenant = new Map();
     if (ids.length > 0) {
       const { data: memAgg } = await supabase
         .from('memberships')
         .select('tenant_id, count:count(*)')
         .in('tenant_id', ids);
       usedByTenant = new Map((memAgg || []).map((m) => [m.tenant_id, Number(m.count || 0)]));
+
+      const { data: domains } = await supabase
+        .from('tenant_domains')
+        .select('tenant_id, domain, is_primary')
+        .in('tenant_id', ids);
+      // choose primary first otherwise first seen
+      (domains || []).forEach((d) => {
+        const current = domainByTenant.get(d.tenant_id);
+        if (!current || d.is_primary) domainByTenant.set(d.tenant_id, d.domain);
+      });
     }
-    const items = (data || []).map((t) => ({
-      ...t,
-      tier: t.tier || 'starter',
-      status: t.status || 'active',
-      seats_total: typeof t.seats_total === 'number' ? t.seats_total : 3,
-      seats_used: typeof t.seats_used === 'number' ? t.seats_used : (usedByTenant.get(t.id) || 0),
-      slug: t.slug || (t.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-    }));
+
+    const items = (data || []).map((t) => {
+      const computedUsed = usedByTenant.get(t.id) || 0;
+      const seatsTotal = typeof t.seats_total === 'number' ? t.seats_total : 3;
+      const seatsUsed = Math.max(Number(t.seats_used || 0), computedUsed);
+      const planRaw = (t.tier || t.plan || 'starter').toString().toLowerCase();
+      const tierNorm = planRaw.includes('adv') ? 'advanced' : planRaw.includes('pro') ? 'pro' : 'starter';
+      const slug = t.slug || (t.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const domain = domainByTenant.get(t.id) || null;
+      return {
+        ...t,
+        tier: tierNorm,
+        status: t.status || 'active',
+        seats_total: seatsTotal,
+        seats_used: seatsUsed,
+        slug,
+        domain,
+      };
+    });
     return res.status(200).json({ items, page: 1, pageSize: items.length, total: count || items.length });
   } catch (e) {
     console.error('api/super/tenants error', e);
