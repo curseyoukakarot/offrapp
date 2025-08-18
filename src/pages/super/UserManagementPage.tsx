@@ -453,12 +453,28 @@ function ExistingInviteForm({ defaultTenantId, onDone }: { defaultTenantId?: str
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const res = await fetch(`${API_BASE}/api/super/invitations`, {
+      console.log('[Invite] existing tenant submit', { email, role, tenantId });
+      const res = await fetch(`${getApiBase()}/api/super/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ email, role, tenant_id: tenantId }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Failed (${res.status}): ${txt}`);
+      }
+      const json = await res.json().catch(() => ({}));
+      try {
+        if (json.emailSent) {
+          alert('Invite sent successfully');
+        } else if (json.emailError) {
+          alert(`Invite created, but email failed: ${json.emailError}. Share this link: ${json.signup_url}`);
+        } else if (json.signup_url) {
+          alert(`Invite created. Share this link: ${json.signup_url}`);
+        } else {
+          alert('Invite created.');
+        }
+      } catch (_e) {}
       onDone();
     } finally {
       setSubmitting(false);
@@ -505,12 +521,16 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
+      console.log('[Invite] new tenant submit', { name, slug, tier, seats, email, bypass });
       const res = await fetch(`${getApiBase()}/api/super/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ tenant: { name, slug, tier, seats_total: seats }, admin: { email }, bypass_billing: bypass }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Failed (${res.status}): ${txt}`);
+      }
       // optionally read signup_url for quick copy or toast
       const json = await res.json();
       try {
@@ -524,6 +544,9 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
         }
       } catch (_e) {}
       onDone();
+    } catch (e: any) {
+      console.error('[Invite] new tenant error', e);
+      alert(`Invite failed: ${e?.message || e}`);
     } finally {
       setSubmitting(false);
     }
