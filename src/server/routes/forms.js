@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { withAuth, withSuperOrTenant } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ function getSupabase() {
 }
 
 // GET /api/forms -> list forms for a tenant (or all if no header)
-router.get('/', async (req, res) => {
+router.get('/', withAuth(withSuperOrTenant(async (req, res) => {
   try {
     const supabase = getSupabase();
     const tenantId = String(req.headers['x-tenant-id'] || '').trim();
@@ -58,7 +59,7 @@ router.get('/', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     return res.status(200).send(JSON.stringify({ forms: [] }));
   }
-});
+})));
 
 // DELETE /api/forms/:id -> delete a form
 router.delete('/:id', async (req, res) => {

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { withAuth, withSuperOrTenant } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ function getSupabase() {
 }
 
 // List files for a tenant (or all if no tenant header)
-router.get('/', async (req, res) => {
+router.get('/', withAuth(withSuperOrTenant(async (req, res) => {
   try {
     const supabase = getSupabase();
     const tenantId = String(req.headers['x-tenant-id'] || '').trim();
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
     console.error('GET /api/files error:', e);
     res.status(500).json({ error: e.message });
   }
-});
+})));
 
 // Insert a file row (expects title, file_url, user_id, assigned_roles)
 router.post('/', async (req, res) => {

@@ -52,7 +52,29 @@ const Login = () => {
       }
       if (!role) role = 'client';
 
-      // 3. Redirect based on role (no forced profile completion)
+      // 3. Check if user is super admin first
+      const { data: globalRoles } = await supabase
+        .from('user_global_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      const isSuper = (globalRoles || []).some(r => 
+        ['super_admin', 'superadmin', 'super-admin'].includes(String(r.role || '').toLowerCase())
+      );
+      
+      if (isSuper) {
+        navigate('/super');
+        return;
+      }
+      
+      // 4. For tenant users, redirect to admin dashboard with tenant context
+      if (mems && mems.length > 0) {
+        const firstTenant = mems[0].tenant_id;
+        navigate(`/dashboard/admin?tenant_id=${firstTenant}`);
+        return;
+      }
+      
+      // 5. Fallback based on role
       switch (role) {
         case 'admin':
           navigate('/dashboard/admin');

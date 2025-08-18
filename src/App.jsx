@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ActiveTenantProvider } from './contexts/ActiveTenantContext';
 import SuperAdminPage from './pages/super/SuperAdminPage';
 import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
 import JobsPage from './pages/super/JobsPage.tsx';
@@ -74,8 +75,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
+      <ActiveTenantProvider>
+        <Router>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
@@ -325,8 +327,9 @@ function App() {
           <Route path="/" element={<HomePage />} />
           {/* Catch-all route for unknown paths */}
           <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </ActiveTenantProvider>
     </AuthProvider>
   );
 }
