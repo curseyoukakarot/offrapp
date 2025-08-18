@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
     setUser(currentSession?.user ?? null);
 
     if (!currentSession || !currentSession.user) {
-      setUserRole(null);
+      setUserRole('anonymous');
       setLoading(false);
       return;
     }

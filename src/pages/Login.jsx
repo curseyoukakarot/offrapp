@@ -64,7 +64,7 @@ const Login = () => {
           navigate('/dashboard/client');
           break;
         default:
-          navigate('/dashboard');
+          navigate('/dashboard/client');
       }
     } catch (error) {
       console.error('Error in profile or role check:', error);
