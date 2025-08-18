@@ -16,14 +16,29 @@ export default async function handler(req, res) {
     const siteBase = (process.env.PUBLIC_SITE_URL && process.env.PUBLIC_SITE_URL.startsWith('http'))
       ? process.env.PUBLIC_SITE_URL.replace(/\/$/, '')
       : `${(req.headers['x-forwarded-proto'] || 'https')}://${(req.headers['x-forwarded-host'] || req.headers.host || req.headers['host'])}`;
-    const { data: sign, error: signErr } = await anon.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name, title },
-        emailRedirectTo: `${siteBase}/login`
+    let signErr = null;
+    if (invite) {
+      // For invited users, avoid Supabase confirmation email flow; create as confirmed
+      const { error: createErr } = await svc.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: name, title }
+      });
+      if (createErr && !String(createErr.message || '').toLowerCase().includes('already')) {
+        signErr = createErr;
       }
-    });
+    } else {
+      const { error } = await anon.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name, title },
+          emailRedirectTo: `${siteBase}/login`
+        }
+      });
+      signErr = error || null;
+    }
     if (signErr) {
       const msg = String(signErr.message || '').toLowerCase();
       if (msg.includes('rate') || msg.includes('limit') || msg.includes('already')) {
@@ -43,12 +58,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Ensure public users mirror exists for UI
-    try {
-      const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-      const { data: u } = await svc.from('users').select('id').eq('email', email).maybeSingle();
-      if (!u) await svc.from('users').upsert({ email, role: 'client' });
-    } catch (_) {}
+    // We no longer force-create a public users row here to avoid CHECK constraint mismatches.
 
     // Merge any pre-existing onboarding cookie (which may contain a verified plan from Stripe)
     const cookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('onb='));

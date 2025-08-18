@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     }
 
     // Membership: use invited role if provided
-    await svc.from('memberships').upsert({ tenant_id: tenant.id, user_id: user.id, role: invited_role || 'admin' }, { onConflict: 'tenant_id,user_id' });
+    await svc.from('memberships').upsert({ tenant_id: tenant.id, user_id: user.id, role: invited_role || 'owner' }, { onConflict: 'tenant_id,user_id' });
 
     // Limits
     const planDef = PLANS[plan] || PLANS.starter;
