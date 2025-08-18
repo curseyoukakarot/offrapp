@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         .select('id, token')
         .single();
       if (ierr) throw ierr;
-      return res.status(200).json({ invitationId: invite.id, token: invite.token });
+      return res.status(200).json({ invitationId: invite.id, token: invite.token, tenant_id: tenant.id, bypass_billing: !!body.bypass_billing, signup_url: `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}${body.bypass_billing ? '&bypass_billing=1' : ''}` });
     }
 
     const { email, role, tenant_id } = body;
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       .select('id, token')
       .single();
     if (error) throw error;
-    return res.status(200).json({ invitationId: invite.id, token: invite.token });
+    return res.status(200).json({ invitationId: invite.id, token: invite.token, signup_url: `${process.env.PUBLIC_SITE_URL || ''}/signup?invite=${encodeURIComponent(invite.token)}` });
   } catch (e) {
     console.error('api/super/invitations error', e);
     return res.status(500).json({ error: e.message });

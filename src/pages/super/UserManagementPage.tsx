@@ -507,6 +507,8 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
         body: JSON.stringify({ tenant: { name, slug, tier, seats_total: seats }, admin: { email }, bypass_billing: bypass }),
       });
       if (!res.ok) throw new Error('Failed');
+      // optionally read signup_url for quick copy or toast
+      const json = await res.json();
       onDone();
     } finally {
       setSubmitting(false);
