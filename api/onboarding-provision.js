@@ -13,11 +13,21 @@ export default async function handler(req, res) {
 
     const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-    // Find user by email
-    const { data: userData, error: userErr } = await svc.auth.admin.listUsers({ page: 1, perPage: 1, email });
-    if (userErr) throw userErr;
-    const user = userData?.users?.[0];
-    if (!user) return res.status(400).json({ error: 'User not found from onboarding' });
+    // Find user by email (prefer public users view, fallback to admin list)
+    let user = null;
+    try {
+      const { data: urow } = await svc.from('users').select('id').eq('email', email).maybeSingle();
+      if (urow?.id) user = { id: urow.id };
+    } catch (_) { /* ignore */ }
+    if (!user) {
+      try {
+        const { data: userData, error: userErr } = await svc.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (userErr) throw userErr;
+        const found = (userData?.users || []).find((u) => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+        if (found) user = { id: found.id };
+      } catch (_) { /* ignore */ }
+    }
+    if (!user) return res.status(400).json({ error: 'User not found from onboarding email' });
 
     // Create tenant
     const { data: tenant, error: tenantErr } = await svc.from('tenants').insert({
@@ -35,8 +45,8 @@ export default async function handler(req, res) {
 
     // Limits
     const planDef = PLANS[plan] || PLANS.starter;
-    await svc.from('tenant_limits').upsert({ tenant_id: tenant.id, max_clients: planDef.maxClients, features: planDef.features });
-    await svc.from('tenant_stats').upsert({ tenant_id: tenant.id, admin_seats: adminSeats, clients_count: 0 });
+    try { await svc.from('tenant_limits').upsert({ tenant_id: tenant.id, max_clients: planDef.maxClients, features: planDef.features }); } catch (_) {}
+    try { await svc.from('tenant_stats').upsert({ tenant_id: tenant.id, admin_seats: adminSeats, clients_count: 0 }); } catch (_) {}
 
     // Seed sample content
     await svc.from('embeds').insert({ tenant_id: tenant.id, title: 'Welcome to Nestbase', url: 'https://nestbase.io', active: true });
