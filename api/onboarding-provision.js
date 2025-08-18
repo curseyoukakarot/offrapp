@@ -22,7 +22,6 @@ export default async function handler(req, res) {
     const { data: tenant, error: tenantErr } = await svc.from('tenants').insert({
       name: onb.companyName,
       slug: branding.subdomain,
-      subdomain: branding.subdomain,
       plan,
       brand_color: branding.brandColor || null,
       logo_url: branding.logoUrl || null,

@@ -19,11 +19,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ available: false, reason: 'invalid' });
     }
     const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    // Prefer slug and subdomain columns if present; both should be checked in a case-insensitive manner
+    // Check uniqueness against slug column (acts as subdomain) – subdomain column may not exist in all schemas
     const { data, error } = await svc
       .from('tenants')
       .select('id')
-      .or(`slug.eq.${sub},subdomain.eq.${sub}`)
+      .eq('slug', sub)
       .limit(1);
     if (error) throw error;
     const taken = Array.isArray(data) && data.length > 0;
