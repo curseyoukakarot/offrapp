@@ -16,7 +16,9 @@ export default async function handler(req, res) {
     if (!cookie) return res.status(400).json({ error: 'Missing onboarding session' });
     const onb = JSON.parse(Buffer.from(cookie.split('=')[1], 'base64').toString('utf8'));
     const { plan: onbPlan = 'starter', adminSeats = 1, branding = {}, email } = onb || {};
-    const plan = (['starter','pro','advanced','custom'].includes(onbPlan) ? onbPlan : 'starter');
+    const PLAN_ALIASES = { basic: 'starter', professional: 'pro', enterprise: 'advanced', adv: 'advanced' };
+    const planRaw = String(onbPlan || '').toLowerCase();
+    const plan = (['starter','pro','advanced','custom'].includes(planRaw) ? planRaw : (PLAN_ALIASES[planRaw] || 'starter'));
 
     const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -40,7 +42,7 @@ export default async function handler(req, res) {
     const { data: tenant, error: tenantErr } = await svc.from('tenants').insert({
       name: onb.companyName,
       slug: branding.subdomain,
-      plan,
+      tier: plan,
       created_by: user.id,
     }).select('*').single();
     if (tenantErr) throw tenantErr;
