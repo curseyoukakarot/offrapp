@@ -31,16 +31,25 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Fetch role from users table
-    // Resolve effective role from memberships rather than public users row
+    // Resolve effective role from memberships, fallback to app_users.role
     try {
       const { data: mems } = await supabase
         .from('memberships')
         .select('role')
         .eq('user_id', currentSession.user.id);
       const roles = (mems || []).map(r => String(r.role || '').toLowerCase());
-      const effective = roles.includes('owner') || roles.includes('admin')
-        ? 'admin'
-        : 'client';
+      let effective = roles.includes('owner') || roles.includes('admin') ? 'admin' : '';
+      if (!effective) {
+        const { data: appUser } = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('id', currentSession.user.id)
+          .maybeSingle();
+        const appRole = String(appUser?.role || '').toLowerCase();
+        if (appRole === 'owner' || appRole === 'admin') effective = 'admin';
+        else if (appRole) effective = appRole;
+      }
+      if (!effective) effective = 'client';
       console.log('✅ Effective role from memberships:', effective, roles);
       setUserRole(effective);
     } catch (e) {

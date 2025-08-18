@@ -39,7 +39,18 @@ const Login = () => {
         .select('role, tenant_id')
         .eq('user_id', userId);
       const roles = (mems || []).map(r => String(r.role || '').toLowerCase());
-      const role = (roles.includes('owner') || roles.includes('admin')) ? 'admin' : 'client';
+      let role = (roles.includes('owner') || roles.includes('admin')) ? 'admin' : '';
+      if (!role) {
+        const { data: appUser } = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+        const appRole = String(appUser?.role || '').toLowerCase();
+        if (appRole === 'owner' || appRole === 'admin') role = 'admin';
+        else if (appRole) role = appRole;
+      }
+      if (!role) role = 'client';
 
       // 3. Redirect based on role (no forced profile completion)
       switch (role) {
