@@ -20,6 +20,22 @@ router.get('/', async (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       return res.status(200).send(JSON.stringify({ forms: [] }));
     }
+    
+    // Verify user belongs to this tenant (unless super admin)
+    const userId = req.authedUser?.id;
+    if (userId) {
+      const { data: isSuperData } = await supabase.from('user_global_roles').select('role').eq('user_id', userId);
+      const isSuper = (isSuperData || []).some(r => ['super_admin', 'superadmin', 'super-admin'].includes(String(r.role || '').toLowerCase()));
+      
+      if (!isSuper) {
+        const { data: membership } = await supabase.from('memberships').select('tenant_id').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+        if (!membership) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(403).send(JSON.stringify({ error: 'not a member of this tenant' }));
+        }
+      }
+    }
+    
     let query = supabase
       .from('forms')
       .select('*')
