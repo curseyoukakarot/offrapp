@@ -483,7 +483,7 @@ function ExistingInviteForm({ defaultTenantId, onDone }: { defaultTenantId?: str
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); submit(); }}>
-      <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3" />
+      <input required type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3" />
       <select value={role} onChange={(e) => setRole(e.target.value as any)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-3">
         <option value="">Select Role</option>
         <option value="owner">Owner</option>
@@ -495,7 +495,19 @@ function ExistingInviteForm({ defaultTenantId, onDone }: { defaultTenantId?: str
         {tenants.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
       </select>
       <div className="flex justify-end space-x-3 mt-6">
-        <button type="submit" disabled={submitting || !email || !role || !tenantId} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Sending…' : 'Send Invite'}</button>
+        <button
+          type="submit"
+          aria-disabled={submitting || !email || !role || !tenantId}
+          disabled={submitting || !email || !role || !tenantId}
+          className={classNames(
+            'px-4 py-2 rounded-lg',
+            (submitting || !email || !role || !tenantId)
+              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          )}
+        >
+          {submitting ? 'Sending…' : 'Send Invite'}
+        </button>
       </div>
     </form>
   );
@@ -554,7 +566,7 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="space-y-3">
-      <input type="text" placeholder="Tenant Name" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+      <input required type="text" placeholder="Tenant Name" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
       <input type="text" placeholder="Slug (auto-generated)" value={slug} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" />
       <select value={tier} onChange={(e) => setTier(e.target.value as any)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
         <option value="">Select Tier</option>
@@ -563,10 +575,22 @@ function NewTenantInviteForm({ onDone }: { onDone: () => void }) {
         <option value="advanced">Advanced</option>
       </select>
       <input type="number" placeholder="Seats" value={seats} onChange={(e) => setSeats(parseInt(e.target.value || '0', 10))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-      <input type="email" placeholder="First Admin Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+      <input required type="email" placeholder="First Admin Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
       <label className="flex items-center"><input type="checkbox" checked={bypass} onChange={(e) => setBypass(e.target.checked)} className="mr-2" /><span className="text-sm text-gray-700">Bypass Billing</span></label>
       <div className="flex justify-end space-x-3 mt-6">
-        <button type="submit" disabled={submitting || !name || !tier || !email} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Creating…' : 'Create & Invite'}</button>
+        <button
+          type="submit"
+          aria-disabled={submitting || !name || !tier || !email}
+          disabled={submitting || !name || !tier || !email}
+          className={classNames(
+            'px-4 py-2 rounded-lg',
+            (submitting || !name || !tier || !email)
+              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          )}
+        >
+          {submitting ? 'Creating…' : 'Create & Invite'}
+        </button>
       </div>
     </form>
   );
