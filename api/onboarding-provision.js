@@ -8,7 +8,8 @@ export default async function handler(req, res) {
     const cookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('onb='));
     if (!cookie) return res.status(400).json({ error: 'Missing onboarding session' });
     const onb = JSON.parse(Buffer.from(cookie.split('=')[1], 'base64').toString('utf8'));
-    const { plan = 'starter', adminSeats = 1, branding = {}, email } = onb || {};
+    const { plan: onbPlan = 'starter', adminSeats = 1, branding = {}, email } = onb || {};
+    const plan = (['starter','pro','advanced','custom'].includes(onbPlan) ? onbPlan : 'starter');
 
     const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', 'onb=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
     return res.status(200).json({ ready: true, tenantSlug: tenant.slug });
   } catch (e) {
-    console.error('onboarding/provision error', e);
+    console.error('onboarding/provision error', e?.message || e);
     return res.status(500).json({ error: e.message });
   }
 }
