@@ -31,20 +31,21 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Fetch role from users table
-    let dbRole = 'authenticated';
+    // Resolve effective role from memberships rather than public users row
     try {
-      const { data: userRow } = await supabase
-        .from('users')
+      const { data: mem } = await supabase
+        .from('memberships')
         .select('role')
-        .eq('id', currentSession.user.id)
+        .eq('user_id', currentSession.user.id)
+        .limit(1)
         .maybeSingle();
-      dbRole = userRow?.role || 'authenticated';
-      // Do not upsert into public users here; some environments enforce strict CHECK constraints
+      const effective = mem?.role || 'client';
+      console.log('✅ Effective role from memberships:', effective);
+      setUserRole(effective);
     } catch (e) {
-      console.warn('⚠️ users role lookup failed; defaulting to authenticated');
+      console.warn('⚠️ memberships lookup failed; defaulting to client');
+      setUserRole('client');
     }
-    console.log('✅ User role from users table:', dbRole);
-    setUserRole(dbRole);
 
     // Fetch global roles for super admin awareness
     try {

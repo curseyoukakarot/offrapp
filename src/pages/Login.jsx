@@ -33,21 +33,14 @@ const Login = () => {
 
   const checkProfileAndRedirect = async (userId) => {
     try {
-      // 1. Check if user has a profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .eq('id', userId)
+      // 1. Determine role from memberships
+      const { data: mem } = await supabase
+        .from('memberships')
+        .select('role, tenant_id')
+        .eq('user_id', userId)
+        .limit(1)
         .maybeSingle();
-
-      // 2. Get the user's role from the users table
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .maybeSingle();
-
-      const role = userRow?.role || 'authenticated';
+      const role = mem?.role || 'client';
 
       // 3. Redirect based on role (no forced profile completion)
       switch (role) {
