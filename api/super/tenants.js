@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       const computedUsed = usedByTenant.get(t.id) || 0;
       const seatsTotal = typeof t.seats_total === 'number' ? t.seats_total : 3;
       const seatsUsed = Math.max(Number(t.seats_used || 0), computedUsed);
-      const planRaw = (t.tier || t.plan || 'starter').toString().toLowerCase();
+      const planRaw = (t.plan || t.tier || 'starter').toString().toLowerCase();
       const tierNorm = planRaw.includes('adv') ? 'advanced' : planRaw.includes('pro') ? 'pro' : 'starter';
       const slug = t.slug || (t.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const domain = domainByTenant.get(t.id) || null;
