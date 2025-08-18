@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../lib/useUser';
 const logoUrl = '/images/nestbase-logo.png?v=1';
 
 const Login = () => {
-  const { user } = useUser();
   const navigate = useNavigate();
+  const redirectedRef = useRef(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -17,10 +16,20 @@ const Login = () => {
   const [forgotMsg, setForgotMsg] = useState('');
 
   useEffect(() => {
-    if (user) {
-      checkProfileAndRedirect(user.id);
-    }
-  }, [user, navigate]);
+    let alive = true;
+    // If already logged in, redirect once
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessUserId = data?.session?.user?.id;
+        if (alive && sessUserId && !redirectedRef.current) {
+          redirectedRef.current = true;
+          await checkProfileAndRedirect(sessUserId);
+        }
+      } catch (_) {}
+    })();
+    return () => { alive = false; };
+  }, [navigate]);
 
   const checkProfileAndRedirect = async (userId) => {
     try {
@@ -98,8 +107,11 @@ const Login = () => {
 
       console.log('Sign in successful for user:', signInData.user.id);
 
-      // Check profile and redirect accordingly
-      await checkProfileAndRedirect(signInData.user.id);
+      // Check profile and redirect accordingly (once)
+      if (!redirectedRef.current) {
+        redirectedRef.current = true;
+        await checkProfileAndRedirect(signInData.user.id);
+      }
     } catch (error) {
       console.error('Unexpected error during login:', error);
       setErrorMsg(error.message || 'An unexpected error occurred during login');

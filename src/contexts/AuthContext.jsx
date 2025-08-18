@@ -31,12 +31,17 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Fetch role from users table
-    const { data: userRow } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', currentSession.user.id)
-      .maybeSingle();
-    const dbRole = userRow?.role || 'authenticated';
+    let dbRole = 'authenticated';
+    try {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', currentSession.user.id)
+        .maybeSingle();
+      dbRole = userRow?.role || 'authenticated';
+    } catch (e) {
+      console.warn('⚠️ users role lookup failed; defaulting to authenticated');
+    }
     console.log('✅ User role from users table:', dbRole);
     setUserRole(dbRole);
 
