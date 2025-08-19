@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
 
 export default function AdminSettings() {
+  const { activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,6 +32,8 @@ export default function AdminSettings() {
   const [customDomainEnabled, setCustomDomainEnabled] = useState(true);
 
   useEffect(() => {
+    if (tenantLoading || !activeTenantId) return; // Wait for tenant context
+    
     const load = async () => {
       try {
         setLoading(true);
@@ -43,7 +47,7 @@ export default function AdminSettings() {
         setLinkedin(profile?.linkedin || '');
         setEmail(session?.user?.email || '');
         // Tenant branding + features
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        const tenantId = activeTenantId;
         const res = await fetch('/api/tenant-config', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
         const json = await res.json();
         setBrand({
@@ -85,12 +89,12 @@ export default function AdminSettings() {
       }
     };
     load();
-  }, []);
+  }, [activeTenantId, tenantLoading]);
 
   const fetchDomains = async () => {
     try {
       setLoadingDomains(true);
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const tenantId = activeTenantId;
       if (!tenantId) {
         setDomains([]);
         setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
@@ -125,7 +129,7 @@ export default function AdminSettings() {
     if (!newDomain) return;
     try {
       setCreating(true);
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const tenantId = activeTenantId;
       if (!tenantId) {
         setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
         setTimeout(() => setToast(null), 3000);
@@ -154,7 +158,7 @@ export default function AdminSettings() {
   const verifyDomain = async (domain) => {
     try {
       setVerifying(domain);
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const tenantId = activeTenantId;
       if (!tenantId) {
         setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
         setTimeout(() => setToast(null), 3000);
@@ -180,7 +184,7 @@ export default function AdminSettings() {
     if (!window.confirm(`Remove ${domain}?`)) return;
     try {
       setRemoving(domain);
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const tenantId = activeTenantId;
       if (!tenantId) {
         setToast({ type: 'error', message: 'No active tenant selected. Please switch a workspace first.' });
         setTimeout(() => setToast(null), 3000);
@@ -246,7 +250,7 @@ export default function AdminSettings() {
   const saveBrand = async () => {
     try {
       setSavingBrand(true);
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+      const tenantId = activeTenantId;
       const { data: { session } } = await supabase.auth.getSession();
       
       // Save brand settings
@@ -421,7 +425,29 @@ export default function AdminSettings() {
 
       {/* Role Types & Banner Colors */}
       <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Role Types &amp; Banner Colors</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Role Types &amp; Banner Colors</h2>
+          <div className="space-x-2">
+            <button 
+              className="px-3 py-1.5 text-sm rounded bg-gray-100" 
+              onClick={() => setRoles({
+                admin: { label: 'Admin', color: 'blue' },
+                role1: { label: 'Team Member', color: 'purple' },
+                role2: { label: 'Client', color: 'green' },
+                role3: { label: 'Guest', color: 'gray' },
+              })}
+            >
+              Reset
+            </button>
+            <button 
+              className={`px-3 py-1.5 text-sm rounded text-white ${savingBrand ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} 
+              onClick={saveBrand} 
+              disabled={savingBrand}
+            >
+              {savingBrand ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.keys(roles).map((key, idx) => (
             <div key={key} className="border rounded p-4 space-y-2">
