@@ -35,9 +35,12 @@ export async function tenantFetch(
   
   // Add auth header if available
   try {
-    const { data } = await import('../supabaseClient').then(m => m.supabase.auth.getSession());
+    const { supabase } = await import('../supabaseClient');
+    const { data } = await supabase.auth.getSession();
     if (data.session?.access_token) {
       headers.set('Authorization', `Bearer ${data.session.access_token}`);
+    } else {
+      console.warn('No auth session found for tenantFetch request');
     }
   } catch (error) {
     console.warn('Could not get auth token for request:', error);
