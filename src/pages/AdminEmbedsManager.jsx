@@ -219,43 +219,52 @@ const AdminEmbedsManager = () => {
           </button>
         </div>
 
-        <table className="w-full text-left">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Type</th>
-              <th>Target</th>
-              <th>Provider</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {embeds.map(embed => (
-              <tr key={embed.id}>
-                <td>{embed.title}</td>
-                <td>{embed.embed_type === 'role' ? 'User Type' : 'Individual User'}</td>
-                <td>
-                  {embed.embed_type === 'role' ? (
-                    embed.role
-                  ) : (
-                    profiles[embed.user_id]?.first_name && profiles[embed.user_id]?.last_name
-                      ? `${profiles[embed.user_id].first_name} ${profiles[embed.user_id].last_name}`
-                      : users.find(u => u.id === embed.user_id)?.email || 'Unknown User'
-                  )}
-                </td>
-                <td>{embed.provider}</td>
-                <td>{embed.is_active ? 'Active' : 'Inactive'}</td>
-                <td>
-                  <button className="mr-2 text-green-600" onClick={() => toggleEmbed(embed.id, !embed.is_active)}>
-                    {embed.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button className="text-red-600" onClick={() => deleteEmbed(embed.id)}>Delete</button>
-                </td>
+        {embeds.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <i className="fa-solid fa-desktop text-4xl mb-4 text-gray-400"></i>
+            <p className="text-lg font-medium text-gray-600">No embeds yet</p>
+            <p className="text-sm text-gray-500 mb-4">Create your first embed to display external content</p>
+            <p className="text-xs text-gray-400">Fill out the form above and click "Add Embed"</p>
+          </div>
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Target</th>
+                <th>Provider</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {embeds.map(embed => (
+                <tr key={embed.id}>
+                  <td>{embed.title}</td>
+                  <td>{embed.embed_type === 'role' ? 'User Type' : 'Individual User'}</td>
+                  <td>
+                    {embed.embed_type === 'role' ? (
+                      embed.role
+                    ) : (
+                      profiles[embed.user_id]?.first_name && profiles[embed.user_id]?.last_name
+                        ? `${profiles[embed.user_id].first_name} ${profiles[embed.user_id].last_name}`
+                        : users.find(u => u.id === embed.user_id)?.email || 'Unknown User'
+                    )}
+                  </td>
+                  <td>{embed.provider}</td>
+                  <td>{embed.is_active ? 'Active' : 'Inactive'}</td>
+                  <td>
+                    <button className="mr-2 text-green-600" onClick={() => toggleEmbed(embed.id, !embed.is_active)}>
+                      {embed.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button className="text-red-600" onClick={() => deleteEmbed(embed.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

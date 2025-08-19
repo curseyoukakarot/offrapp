@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../lib/useUser';
 import { useTenantConfig } from '../lib/tenantConfig';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 const UsersList = () => {
   const { user } = useUser();
   const { roleLabel } = useTenantConfig();
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [users, setUsers] = useState([]);
   const [profiles, setProfiles] = useState({});
   const [search, setSearch] = useState('');
@@ -25,16 +28,26 @@ const UsersList = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || tenantLoading) return;
     fetchUsers();
-  }, [user]);
+  }, [user, activeTenantId, scope, tenantLoading]);
 
   const fetchUsers = async () => {
     try {
-      const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error fetching users:', error.message);
+      if (!activeTenantId && scope === 'tenant') {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      const res = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching users:', data);
+        setUsers([]);
       } else {
+        const usersData = data.users || [];
         setUsers(usersData);
         // Fetch all profiles for these users
         const userIds = usersData.map(u => u.id);
@@ -239,7 +252,16 @@ const UsersList = () => {
               </tr>
             </thead>
             <tbody className="text-sm text-gray-800 divide-y divide-gray-100">
-              {paginatedUsers.map((u) => (
+              {paginatedUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-12 text-center text-gray-500">
+                    <i className="fa-solid fa-users text-4xl mb-4 text-gray-400"></i>
+                    <p className="text-lg font-medium text-gray-600">No users yet</p>
+                    <p className="text-sm text-gray-500">Invite teammates to get started</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="p-3"><input type="checkbox" checked={selectedIds.includes(u.id)} onChange={() => toggleSelect(u.id)} /></td>
                   <td className="p-3">
@@ -275,7 +297,8 @@ const UsersList = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -170,18 +170,23 @@ export default function AdminDashboard() {
               <div className="mt-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Uploads</h4>
                 <div className="space-y-2">
-                  {recentFiles.length === 0 && (
-                    <div className="text-sm text-gray">No uploads yet.</div>
-                  )}
-                  {recentFiles.map((f) => (
-                    <div key={f.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <i className="fa-solid fa-file text-gray-500"></i>
-                        <span className="text-sm text-gray-900">{f.title || (f.file_url || '').split('/').pop()}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">{timeAgo(f.created_at)}</span>
+                  {recentFiles.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <i className="fa-solid fa-cloud-upload text-2xl mb-2 text-gray-400"></i>
+                      <p className="text-sm font-medium text-gray-600">No files yet</p>
+                      <p className="text-xs text-gray-500">Upload files to get started</p>
                     </div>
-                  ))}
+                  ) : (
+                    recentFiles.map((f) => (
+                      <div key={f.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <i className="fa-solid fa-file text-gray-500"></i>
+                          <span className="text-sm text-gray-900">{f.title || (f.file_url || '').split('/').pop()}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">{timeAgo(f.created_at)}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </section>
@@ -200,7 +205,11 @@ export default function AdminDashboard() {
                   <div className="text-sm text-gray-500">Loading…</div>
                 )}
                 {!usersLoading && recentUsers.length === 0 && (
-                  <div className="text-sm text-gray-500">No recent users.</div>
+                  <div className="text-center py-8 text-gray-500">
+                    <i className="fa-solid fa-user-plus text-2xl mb-2 text-gray-400"></i>
+                    <p className="text-sm font-medium text-gray-600">No users yet</p>
+                    <p className="text-xs text-gray-500">Invite teammates to get started</p>
+                  </div>
                 )}
                 {recentUsers.map((u) => {
                   const name = u.email?.split('@')[0] || 'User';

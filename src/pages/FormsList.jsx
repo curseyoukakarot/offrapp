@@ -170,7 +170,18 @@ export default function FormsList() {
               <div className="text-sm text-red-600">{error}</div>
             )}
             {!loading && !error && forms.length === 0 && (
-              <div className="text-sm text-gray-500">No forms found.</div>
+              <div className="text-center py-12 text-gray-500">
+                <i className="fa-solid fa-clipboard-list text-4xl mb-4 text-gray-400"></i>
+                <p className="text-lg font-medium text-gray-600">No forms yet</p>
+                <p className="text-sm text-gray-500 mb-4">Create your first form to collect responses</p>
+                <button
+                  onClick={() => navigate('/forms/new')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <i className="fa-solid fa-plus mr-2"></i>
+                  Create Form
+                </button>
+              </div>
             )}
             {!loading && !error && forms.map((form) => (
             <div key={form.id} className={`bg-white border ${activeId === form.id ? 'border-primary' : 'border-gray-200'} rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group`} onClick={() => setActiveId(form.id)}>
