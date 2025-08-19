@@ -78,20 +78,19 @@ const UsersList = () => {
           const userIds = usersData.map(u => u.id);
           const { data: usersWithRoles, error: rolesError } = await supabase
             .from('users')
-            .select('id, role, last_sign_in_at')
+            .select('id, role')
             .in('id', userIds);
             
           if (!rolesError && usersWithRoles) {
             // Merge role data with user data
             const rolesMap = {};
             usersWithRoles.forEach(user => {
-              rolesMap[user.id] = { role: user.role, last_sign_in_at: user.last_sign_in_at };
+              rolesMap[user.id] = { role: user.role };
             });
             
             const enrichedUsers = usersData.map(user => ({
               ...user,
-              role: rolesMap[user.id]?.role || null,
-              last_sign_in_at: rolesMap[user.id]?.last_sign_in_at || null
+              role: rolesMap[user.id]?.role || null
             }));
             
             setUsers(enrichedUsers);

@@ -20,7 +20,12 @@ export default async function handler(req, res) {
       try {
         const { data, error } = await supabase.auth.admin.getUserById(uid);
         if (!error && data?.user) {
-          users.push({ id: uid, email: data.user.email || '', created_at: data.user.created_at });
+          users.push({ 
+            id: uid, 
+            email: data.user.email || '', 
+            created_at: data.user.created_at,
+            last_sign_in_at: data.user.last_sign_in_at || null
+          });
         }
       } catch (_e) {
         // ignore individual failures
