@@ -68,9 +68,7 @@ export default function Integrations() {
   const { userRole, session } = useAuth();
   const { activeTenantId } = useActiveTenant();
   const isAdmin = userRole === 'admin';
-  const { plan: billingPlan, tenant, loading, error, refetch } = useBilling();
-  // TEMPORARY FIX: Hardcode advanced plan for IgniteGTM tenant until API server is fixed  
-  const plan = activeTenantId === '7b7af77b-17c3-4522-9d9a-11581e3f9568' ? 'advanced' : billingPlan;
+  const { plan, tenant, loading, error, refetch } = useBilling();
   const { checkout } = useStripeActions();
 
   const planHelper = useMemo(() => {

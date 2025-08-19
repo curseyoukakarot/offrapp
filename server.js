@@ -88,6 +88,18 @@ app.use('/api/invite', inviteRouter);
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/ping', (_req, res) => res.json({ ok: true }));
 
+// Diagnostic endpoint for production debugging
+app.get('/api/debug/env', (_req, res) => {
+  res.json({
+    nodeVersion: process.version,
+    hasSupabase: !!process.env.SUPABASE_URL,
+    hasStripe: !!process.env.STRIPE_SECRET_KEY,
+    hasSendgrid: !!process.env.SENDGRID_API_KEY,
+    timestamp: new Date().toISOString(),
+    routes: ['billing', 'tenants', 'users', 'super', 'files', 'forms']
+  });
+});
+
 // ✅ Supabase invite helper function
 async function inviteUser(email, role) {
   if (!supabase) throw new Error('Supabase not configured');
