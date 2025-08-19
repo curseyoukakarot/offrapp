@@ -48,8 +48,11 @@ const Sidebar = () => {
 
   const isAdmin = userRole === 'admin';
   
+  console.log('🔍 Sidebar render:', { userRole, isAdmin, activeTenantId });
+  
   // Don't render admin navigation until userRole is loaded
   if (!userRole) {
+    console.log('🔍 Sidebar: Showing loading skeleton because userRole is null');
     return (
       <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
         <div className="p-6">
@@ -191,7 +194,6 @@ const Sidebar = () => {
           </NavLink>
 
           {/* Menu Items */}
-          {console.log('🔍 Sidebar render:', { userRole, isAdmin, activeTenantId })}
           {isAdmin ? (
             <>
               <NavLink to="/crm/users" className={({ isActive }) =>
