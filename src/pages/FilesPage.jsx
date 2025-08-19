@@ -15,6 +15,9 @@ const FilesPage = () => {
   const [selectedUser, setSelectedUser] = useState('');
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
+  const [tenantRoles, setTenantRoles] = useState([]); // Dynamic tenant roles
+  const [assignmentType, setAssignmentType] = useState('user'); // 'user' or 'role'
+  const [selectedRole, setSelectedRole] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -41,6 +44,7 @@ const FilesPage = () => {
         setRole(userRow?.role || 'authenticated');
         await fetchFiles();
         await fetchUsers();
+        await fetchTenantRoles();
       } catch (err) {
         console.error('Error in fetchRole:', err);
         setError('An error occurred while fetching user data');
@@ -53,6 +57,27 @@ const FilesPage = () => {
       fetchRole();
     }
   }, [user, activeTenantId, scope, tenantLoading]);
+
+  const fetchTenantRoles = async () => {
+    try {
+      if (!activeTenantId && scope === 'tenant') {
+        setTenantRoles([]);
+        return;
+      }
+
+      const res = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching tenant roles:', data);
+        return;
+      }
+
+      setTenantRoles(data.roles || []);
+    } catch (error) {
+      console.error('Error fetching tenant roles:', error);
+    }
+  };
 
   const fetchFiles = async () => {
     try {
@@ -109,31 +134,74 @@ const FilesPage = () => {
   const handleAdminUpload = async (e) => {
     e.preventDefault();
 
-    if (!file || !selectedUser) return alert('Please select user and file');
-
-    const filePath = `${selectedUser}/${file.name}`;
-    const { data: uploadData, error } = await supabase.storage
-      .from('user-files')
-      .upload(filePath, file);
-
-    if (error) return alert('Upload failed');
+    if (!file) return alert('Please select a file');
+    
+    if (assignmentType === 'user' && !selectedUser) {
+      return alert('Please select a user');
+    }
+    
+    if (assignmentType === 'role' && !selectedRole) {
+      return alert('Please select a role');
+    }
 
     const { data: { session } } = await supabase.auth.getSession();
 
-    await supabase.from('files').insert([
-      {
-        user_id: selectedUser,
+    if (assignmentType === 'user') {
+      // Upload for specific user
+      const filePath = `${selectedUser}/${file.name}`;
+      const { error } = await supabase.storage
+        .from('user-files')
+        .upload(filePath, file);
+
+      if (error) return alert('Upload failed');
+
+      await supabase.from('files').insert([
+        {
+          user_id: selectedUser,
+          file_url: `https://tywemactebkksgdsleha.supabase.co/storage/v1/object/public/user-files/${filePath}`,
+          title: file.name,
+          uploaded_by: session.user.id,
+          tenant_id: activeTenantId,
+        },
+      ]);
+
+      setFile(null);
+      setSelectedUser('');
+      fetchFiles();
+      alert('File uploaded for user');
+    } else {
+      // Upload for entire role - create multiple file records
+      const roleUsers = users.filter(u => u.role === selectedRole);
+      
+      if (roleUsers.length === 0) {
+        return alert('No users found with the selected role');
+      }
+
+      const filePath = `shared/${selectedRole}/${file.name}`;
+      const { error } = await supabase.storage
+        .from('user-files')
+        .upload(filePath, file);
+
+      if (error) return alert('Upload failed');
+
+      // Create file record for each user with this role
+      const fileInserts = roleUsers.map(roleUser => ({
+        user_id: roleUser.id,
         file_url: `https://tywemactebkksgdsleha.supabase.co/storage/v1/object/public/user-files/${filePath}`,
         title: file.name,
         uploaded_by: session.user.id,
         tenant_id: activeTenantId,
-      },
-    ]);
+        assigned_role: selectedRole, // Track which role this was assigned to
+      }));
 
-    setFile(null);
-    setSelectedUser('');
-    fetchFiles();
-    alert('File uploaded for user');
+      await supabase.from('files').insert(fileInserts);
+
+      setFile(null);
+      setSelectedRole('');
+      fetchFiles();
+      const roleName = tenantRoles.find(r => r.role_key === selectedRole)?.role_label || selectedRole;
+      alert(`File uploaded for ${roleUsers.length} users with ${roleName} role`);
+    }
   };
 
   const handleUserUpload = async (e) => {
@@ -196,20 +264,82 @@ const FilesPage = () => {
         <h1 className="text-2xl font-bold mb-6">Files</h1>
 
         {role === 'admin' ? (
-          <form onSubmit={handleAdminUpload} className="bg-white p-4 rounded shadow mb-6 space-y-3">
-            <h2 className="font-semibold">Upload a file for a user</h2>
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              className="border p-2 rounded w-full"
-            >
-              <option value="">Select user</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.email}</option>
-              ))}
-            </select>
+          <form onSubmit={handleAdminUpload} className="bg-white p-4 rounded shadow mb-6 space-y-4">
+            <h2 className="font-semibold">Upload a file</h2>
+            
+            {/* Assignment Type Selection */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Assign to:</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="assignmentType"
+                    value="user"
+                    checked={assignmentType === 'user'}
+                    onChange={(e) => setAssignmentType(e.target.value)}
+                    className="mr-2"
+                  />
+                  Specific User
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="assignmentType"
+                    value="role"
+                    checked={assignmentType === 'role'}
+                    onChange={(e) => setAssignmentType(e.target.value)}
+                    className="mr-2"
+                  />
+                  User Role
+                </label>
+              </div>
+            </div>
+
+            {/* User Selection */}
+            {assignmentType === 'user' && (
+              <select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="border p-2 rounded w-full"
+              >
+                <option value="">Select user</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.email}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Role Selection */}
+            {assignmentType === 'role' && (
+              <div>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="border p-2 rounded w-full"
+                >
+                  <option value="">Select role</option>
+                  {tenantRoles.map((role) => (
+                    <option key={role.role_key} value={role.role_key}>
+                      {role.role_label}
+                    </option>
+                  ))}
+                </select>
+                {assignmentType === 'role' && selectedRole && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    File will be assigned to all users with the {tenantRoles.find(r => r.role_key === selectedRole)?.role_label} role
+                  </p>
+                )}
+              </div>
+            )}
+
             <input type="file" onChange={(e) => setFile(e.target.files[0])} className="w-full" />
-            <button className="bg-blue-600 text-white px-4 py-2 rounded">Upload</button>
+            <button 
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              disabled={!file || (assignmentType === 'user' && !selectedUser) || (assignmentType === 'role' && !selectedRole)}
+            >
+              Upload
+            </button>
           </form>
         ) : (
           <form onSubmit={handleUserUpload} className="bg-white p-4 rounded shadow mb-6 space-y-3">
