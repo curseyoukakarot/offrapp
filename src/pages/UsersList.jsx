@@ -26,11 +26,34 @@ const UsersList = () => {
   const [editFeedback, setEditFeedback] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tenantRoles, setTenantRoles] = useState([]); // Dynamic tenant roles
 
   useEffect(() => {
     if (!user || tenantLoading) return;
     fetchUsers();
+    fetchTenantRoles();
   }, [user, activeTenantId, scope, tenantLoading]);
+
+  const fetchTenantRoles = async () => {
+    try {
+      if (!activeTenantId && scope === 'tenant') {
+        setTenantRoles([]);
+        return;
+      }
+
+      const res = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching tenant roles:', data);
+        return;
+      }
+
+      setTenantRoles(data.roles || []);
+    } catch (error) {
+      console.error('Error fetching tenant roles:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -207,7 +230,7 @@ const UsersList = () => {
             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, role" className="pl-9 pr-3 py-2 border rounded-lg w-72" />
           </div>
-          <MultiRoleFilter value={filterRoles} onChange={setFilterRoles} />
+          <MultiRoleFilter value={filterRoles} onChange={setFilterRoles} tenantRoles={tenantRoles} />
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
             <option value="">All status</option>
             <option value="active">Active</option>
@@ -216,8 +239,15 @@ const UsersList = () => {
           {selectedIds.length > 0 && (
             <div className="ml-auto flex items-center gap-2">
               <span className="text-sm text-gray-600">{selectedIds.length} selected</span>
-              <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => bulkChangeRole('client')}>Change role → {roleLabel('client')}</button>
-              <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => bulkChangeRole('recruitpro')}>→ {roleLabel('recruitpro')}</button>
+              {tenantRoles.slice(0, 2).map(role => (
+                <button 
+                  key={role.role_key}
+                  className="px-3 py-1 bg-gray-100 rounded text-sm" 
+                  onClick={() => bulkChangeRole(role.role_key)}
+                >
+                  Change role → {role.role_label}
+                </button>
+              ))}
               <button className="px-3 py-1 bg-red-100 text-red-700 rounded" onClick={() => selectedIds.forEach((id) => handleDeleteUser(id))}>Delete</button>
             </div>
           )}
@@ -273,7 +303,11 @@ const UsersList = () => {
                     </button>
                   </td>
                   <td className="p-3">{u.email}</td>
-                  <td className="p-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs ${roleChip(u.role)}`}>{roleLabel((u.role || '').toLowerCase())}</span></td>
+                  <td className="p-3 capitalize">
+                    <span className={`px-2 py-1 rounded-full text-xs ${roleChip(u.role, tenantRoles)}`}>
+                      {tenantRoles.find(r => r.role_key === u.role)?.role_label || u.role}
+                    </span>
+                  </td>
                   <td className="p-3 text-gray-500">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '—'}</td>
                   <td className="p-3 text-gray-500">{new Date(u.created_at).toLocaleDateString()}</td>
                   <td className="p-3">
@@ -328,7 +362,9 @@ const UsersList = () => {
           <div className="p-6 space-y-6 overflow-y-auto h-full">
             <div>
               <div className="text-sm text-gray-500 mb-1">Role</div>
-              <div className={`inline-flex px-2 py-1 rounded-full text-xs ${roleChip(drawerUser.role)}`}>{roleLabel((drawerUser.role || '').toLowerCase())}</div>
+              <div className={`inline-flex px-2 py-1 rounded-full text-xs ${roleChip(drawerUser.role, tenantRoles)}`}>
+                {tenantRoles.find(r => r.role_key === drawerUser.role)?.role_label || drawerUser.role}
+              </div>
             </div>
             <div>
               <div className="text-sm text-gray-500 mb-1">Activity (last 30 days)</div>
@@ -385,28 +421,48 @@ function roleBg(role) {
     default: return 'bg-gray-200 text-gray-700';
   }
 }
-function roleChip(role) {
-  switch ((role || '').toLowerCase()) {
-    case 'admin': return 'bg-blue-100 text-blue-700';
-    case 'recruitpro': return 'bg-green-100 text-green-700';
-    case 'jobseeker': return 'bg-orange-100 text-orange-700';
-    case 'client': return 'bg-gray-100 text-gray-700';
-    default: return 'bg-gray-100 text-gray-700';
+function roleChip(role, tenantRoles) {
+  const roleConfig = tenantRoles.find(r => r.role_key === role);
+  if (roleConfig) {
+    const colorClasses = {
+      blue: 'bg-blue-100 text-blue-700',
+      purple: 'bg-purple-100 text-purple-700',
+      green: 'bg-green-100 text-green-700',
+      gray: 'bg-gray-100 text-gray-700',
+      orange: 'bg-orange-100 text-orange-700',
+      red: 'bg-red-100 text-red-700'
+    };
+    return colorClasses[roleConfig.role_color] || 'bg-gray-100 text-gray-700';
   }
+  return 'bg-gray-100 text-gray-700';
 }
 
-function MultiRoleFilter({ value, onChange }) {
-  const roles = ['admin', 'recruitpro', 'jobseeker', 'client'];
-  const toggle = (r) => {
+function MultiRoleFilter({ value, onChange, tenantRoles }) {
+  const toggle = (roleKey) => {
     const set = new Set(value);
-    set.has(r) ? set.delete(r) : set.add(r);
+    set.has(roleKey) ? set.delete(roleKey) : set.add(roleKey);
     onChange(Array.from(set));
   };
+  
   return (
     <div className="flex gap-2">
-      {roles.map((r) => (
-        <button key={r} type="button" onClick={() => toggle(r)} className={`px-3 py-2 rounded-lg text-sm border ${value.includes(r) ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white'}`}>
-          {r.charAt(0).toUpperCase() + r.slice(1)}
+      {tenantRoles.map((role) => (
+        <button 
+          key={role.role_key} 
+          type="button" 
+          onClick={() => toggle(role.role_key)} 
+          className={`px-3 py-2 rounded-lg text-sm border ${
+            value.includes(role.role_key) 
+              ? `${role.role_color === 'blue' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                  role.role_color === 'purple' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                  role.role_color === 'green' ? 'bg-green-100 text-green-700 border-green-200' :
+                  role.role_color === 'gray' ? 'bg-gray-100 text-gray-700 border-gray-200' :
+                  role.role_color === 'orange' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                  'bg-red-100 text-red-700 border-red-200'}`
+              : 'bg-white'
+          }`}
+        >
+          {role.role_label}
         </button>
       ))}
     </div>
