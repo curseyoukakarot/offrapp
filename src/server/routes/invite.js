@@ -61,7 +61,12 @@ router.post('/', withAuth(withTenant(async (req, res) => {
 
     if (inviteError) {
       console.error('Failed to create invitation:', inviteError);
-      return res.status(500).json({ error: 'Failed to create invitation' });
+      console.error('Invitation data:', { email, tenant_id: tenantId, role, token: token_string, expires_at, invited_by: user.id });
+      return res.status(500).json({ 
+        error: 'Failed to create invitation', 
+        details: inviteError.message,
+        code: inviteError.code 
+      });
     }
 
     // Send invitation email
