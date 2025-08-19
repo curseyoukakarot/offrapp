@@ -40,12 +40,24 @@ export default function ClientDashboard({ variant }) {
         const all = Array.isArray(json.embeds) ? json.embeds : [];
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
+        // Map current userRole back to actual role keys for embed filtering
+        const actualRoleKeys = [];
+        if (userRole === 'admin') actualRoleKeys.push('admin');
+        if (userRole === 'client') actualRoleKeys.push('client', 'role2', 'role3'); // client can map to role2 or role3
+        if (userRole === 'recruitpro') actualRoleKeys.push('recruitpro', 'role1');
+        if (userRole === 'jobseeker') actualRoleKeys.push('jobseeker', 'role2');
+        
+        console.log('🎯 ClientDashboard: Filtering embeds for userRole:', userRole, 'actualRoleKeys:', actualRoleKeys);
+        
         const visible = all
-          .filter(e => (
-            (e.embed_type === 'role' && e.role === userRole && e.is_active) ||
-            (e.embed_type === 'user' && e.user_id === userId && e.is_active)
-          ))
+          .filter(e => {
+            const roleMatch = e.embed_type === 'role' && actualRoleKeys.includes(e.role) && e.is_active;
+            const userMatch = e.embed_type === 'user' && e.user_id === userId && e.is_active;
+            return roleMatch || userMatch;
+          })
           .sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+          
+        console.log('🎯 ClientDashboard: Visible embeds:', visible);
         setEmbeds(visible);
       } catch (_e) {
         setEmbeds([]);
