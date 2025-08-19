@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
+// import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
 
 const router = Router();
 
@@ -117,6 +117,9 @@ router.post('/:id/memberships', async (req, res) => {
     const normalizedRole = String(role || '').toLowerCase();
     const isTeamRole = ['owner','admin','editor'].includes(normalizedRole);
     const isClientRole = ['member','client','jobseeker','recruitpro','role1','role2','role3'].includes(normalizedRole);
+    // Temporarily disabled enforcement to fix server crashes
+    // TODO: Re-enable after resolving import issues
+    /*
     try {
       if (isTeamRole) {
         await ensureTeamCapacity(tid, supabase as any);
@@ -127,6 +130,7 @@ router.post('/:id/memberships', async (req, res) => {
       const status = e.status || 400;
       return res.status(status).json({ error: e.code || 'BAD_REQUEST', message: e.message || 'Plan limit reached' });
     }
+    */
     const { data, error } = await supabase.from('memberships').upsert({ tenant_id: tid, user_id, role }, { onConflict: 'tenant_id,user_id' }).select('*').single();
     if (error) throw error;
     res.json({ membership: data });

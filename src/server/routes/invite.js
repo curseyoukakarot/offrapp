@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import sgMail from '@sendgrid/mail';
-import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
+// import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
 import { withAuth, withTenant } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -46,6 +46,9 @@ router.post('/', withAuth(withTenant(async (req, res) => {
     const isTeamRole = ['owner','admin','editor'].includes(normalizedRole);
     const isClientRole = ['member','client','jobseeker','recruitpro','role1','role2','role3'].includes(normalizedRole);
 
+    // Temporarily disabled enforcement to fix server crashes  
+    // TODO: Re-enable after resolving import issues
+    /*
     try {
       if (isTeamRole) {
         await ensureTeamCapacity(tenantId, supabase);
@@ -56,6 +59,7 @@ router.post('/', withAuth(withTenant(async (req, res) => {
       const status = e?.status || 400;
       return res.status(status).json({ error: e?.code || 'BAD_REQUEST', message: e?.message || 'Plan limit reached' });
     }
+    */
 
     // Generate invitation token
     const token_string = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
