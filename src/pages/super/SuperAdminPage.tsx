@@ -14,8 +14,8 @@ export default function SuperAdminPage() {
   const [tenants, setTenants] = useState([]);
   useEffect(() => {
     const load = async () => {
-      // Fetch metrics and tenants
-      const [uptimeRes, usersRes, storageRes, jobsRes, reqErrRes, tenantsRes] = await Promise.all([
+      // Fetch metrics, tenants, and recent events
+      const [uptimeRes, usersRes, storageRes, jobsRes, reqErrRes, tenantsRes, eventsRes] = await Promise.all([
         fetch('/api/metrics/uptime'),
         fetch('/api/metrics/active-users'),
         fetch('/api/metrics/storage'),
@@ -33,6 +33,7 @@ export default function SuperAdminPage() {
             return { items: [] };
           }
         })(),
+        fetch('/api/_debug/onboarding-events').then(r => r.json()).catch(() => ({ events: [] })),
       ]);
       
       setTenants(tenantsRes.items || []);
@@ -41,6 +42,13 @@ export default function SuperAdminPage() {
       const storage = await storageRes.json();
       const jobs = await jobsRes.json();
       const reqErr = await reqErrRes.json();
+      const events = eventsRes.events || [];
+      
+      // Count recent errors for the Requests & Errors card
+      const recentErrors = events.filter(e => 
+        e.action && e.action.includes('failed') && 
+        new Date(e.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000
+      ).length;
 
       // Requests Chart
       const requestsEl = document.getElementById('requests-chart');
@@ -52,7 +60,7 @@ export default function SuperAdminPage() {
           yAxis: [{ title: { text: 'Requests/min' } }, { title: { text: 'Errors' }, opposite: true }],
           series: [
             { type: 'spline', name: 'Requests', data: reqErr.requests, color: '#3B82F6' },
-            { type: 'spline', name: 'Errors', data: reqErr.errors, color: '#EF4444', yAxis: 1 },
+            { type: 'spline', name: 'Errors', data: [...(reqErr.errors || []), recentErrors], color: '#EF4444', yAxis: 1 },
           ] as SeriesOptionsType[],
           legend: { enabled: false },
           credits: { enabled: false },

@@ -114,7 +114,26 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', `onb=${Buffer.from(JSON.stringify(session)).toString('base64')}; Path=/; HttpOnly; SameSite=Lax`);
     return res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('onboarding/start error', e);
+    const errorContext = {
+      user_id: null,
+      tenant_id: invitedTenantId,
+      invite_id: invite,
+      action: 'signup_failed',
+      error: e.message || String(e),
+      context: { email, companyName, plan: effectivePlan }
+    };
+    
+    console.error('🚨 onboarding/start error', errorContext);
+    
+    // Send to debug endpoint for monitoring
+    try {
+      await fetch('/api/_debug/onboarding-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorContext)
+      });
+    } catch (_) {}
+    
     return res.status(500).json({ error: e.message });
   }
 }

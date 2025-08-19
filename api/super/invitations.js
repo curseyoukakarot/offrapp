@@ -103,7 +103,31 @@ export default async function handler(req, res) {
     } catch (e) { emailError = e?.message || String(e); }
     return res.status(200).json({ invitationId: invite.id, token: invite.token, signup_url: signupUrl, emailSent, emailError });
   } catch (e) {
-    console.error('api/super/invitations error', e);
+    const errorContext = {
+      user_id: user?.id || null,
+      tenant_id: body.tenant?.id || body.tenant_id || null,
+      invite_id: null,
+      action: 'invitation_failed',
+      error: e.message || String(e),
+      context: { 
+        email: body.admin?.email || body.email,
+        tenant_name: body.tenant?.name,
+        role: body.admin?.role || body.role,
+        bypass_billing: body.bypass_billing
+      }
+    };
+    
+    console.error('🚨 api/super/invitations error', errorContext);
+    
+    // Send to debug endpoint for monitoring
+    try {
+      await fetch('/api/_debug/onboarding-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorContext)
+      });
+    } catch (_) {}
+    
     return res.status(500).json({ error: e.message });
   }
 }

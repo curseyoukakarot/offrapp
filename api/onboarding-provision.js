@@ -101,18 +101,30 @@ export default async function handler(req, res) {
     return res.status(200).json({ ready: true, tenantSlug: tenant.slug });
   } catch (e) {
     const msg = e?.message || String(e);
-    console.error('onboarding/provision error', msg);
+    const errorContext = {
+      user_id: user?.id || null,
+      tenant_id: invitedTenantId || null,
+      invite_id: onb?.invite || null,
+      action: 'provision_failed',
+      error: msg,
+      context: { 
+        companyName: onb?.companyName,
+        plan,
+        subdomain: branding?.subdomain,
+        step: 'provision'
+      }
+    };
     
-    // Notify about provisioning errors for monitoring
+    console.error('🚨 onboarding/provision error', errorContext);
+    
+    // Send to debug endpoint for monitoring
     try {
-      const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-      await svc.rpc('pg_notify', { 
-        channel: 'onboarding_errors', 
-        payload: `provision_failed user=${user?.id || 'unknown'} tenant=${invitedTenantId || 'new'} err=${msg}` 
+      await fetch('/api/_debug/onboarding-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorContext)
       });
-    } catch (_) {
-      // Ignore notification failures
-    }
+    } catch (_) {}
     
     return res.status(500).json({ error: msg });
   }
