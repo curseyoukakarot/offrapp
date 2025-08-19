@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import AssignedFormsViewer from '../components/AssignedFormsViewer';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 import { Link } from 'react-router-dom';
 
 export default function ClientDashboard({ variant }) {
   const [activeTab, setActiveTab] = useState('files');
   const { userRole } = useAuth();
+  const { activeTenantId, scope } = useActiveTenant();
   const [embeds, setEmbeds] = useState([]);
   const [loadingEmbeds, setLoadingEmbeds] = useState(true);
   const [files, setFiles] = useState([]);
@@ -34,8 +37,10 @@ export default function ClientDashboard({ variant }) {
     const loadEmbeds = async () => {
       try {
         setLoadingEmbeds(true);
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-        const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        if (!activeTenantId) return;
+        
+        console.log('🎯 ClientDashboard: Fetching embeds for tenantId:', activeTenantId);
+        const res = await tenantFetch('/api/embeds', {}, activeTenantId, scope);
         const json = await res.json();
         const all = Array.isArray(json.embeds) ? json.embeds : [];
         const { data: { session } } = await supabase.auth.getSession();
@@ -66,7 +71,7 @@ export default function ClientDashboard({ variant }) {
       }
     };
     loadEmbeds();
-  }, [userRole]);
+  }, [userRole, activeTenantId, scope]);
 
   useEffect(() => {
     const loadFiles = async () => {

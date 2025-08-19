@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
@@ -58,22 +59,27 @@ const Sidebar = () => {
 
   useEffect(() => {
     const fetchEmbeds = async () => {
-      if (!userRole) return;
+      if (!userRole || !activeTenantId) {
+        console.log('🎯 Sidebar: Waiting for userRole and activeTenantId...', { userRole, activeTenantId });
+        return;
+      }
+      
       try {
-        // Use activeTenantId from context instead of localStorage
-        const tenantId = activeTenantId;
-        if (!tenantId) return;
+        console.log('🎯 Sidebar: Fetching embeds for tenantId:', activeTenantId, 'userRole:', userRole);
+        const res = await tenantFetch('/api/embeds', {}, activeTenantId, scope);
         
-        // Tenant branding
-        try {
-          const tc = await fetch('/api/tenant-config', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({}));
-          if (tc?.name) setTenantName(tc.name);
-        } catch {}
-        const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        if (!res.ok) {
+          console.error('🎯 Sidebar: Failed to fetch embeds:', res.status);
+          return;
+        }
+        
         const json = await res.json();
         const all = Array.isArray(json.embeds) ? json.embeds : [];
+        console.log('🎯 Sidebar: All embeds from API:', all);
+        
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
+        
         // Map current userRole back to actual role keys for embed filtering
         const actualRoleKeys = [];
         if (userRole === 'admin') actualRoleKeys.push('admin');
@@ -81,22 +87,24 @@ const Sidebar = () => {
         if (userRole === 'recruitpro') actualRoleKeys.push('recruitpro', 'role1');
         if (userRole === 'jobseeker') actualRoleKeys.push('jobseeker', 'role2');
         
-        console.log('🎯 Filtering embeds for userRole:', userRole, 'actualRoleKeys:', actualRoleKeys);
+        console.log('🎯 Sidebar: Filtering embeds for userRole:', userRole, 'actualRoleKeys:', actualRoleKeys);
         
         const visible = all.filter(e => {
           const roleMatch = e.embed_type === 'role' && actualRoleKeys.includes(e.role) && e.is_active;
           const userMatch = e.embed_type === 'user' && e.user_id === userId && e.is_active;
+          console.log('🎯 Sidebar: Checking embed:', e.title, 'roleMatch:', roleMatch, 'userMatch:', userMatch);
           return roleMatch || userMatch;
         }).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
         
-        console.log('🎯 Visible embeds for member:', visible);
+        console.log('🎯 Sidebar: Visible embeds for member:', visible);
         setEmbeds(visible);
-      } catch (_e) {
+      } catch (error) {
+        console.error('🎯 Sidebar: Error fetching embeds:', error);
         setEmbeds([]);
       }
     };
     fetchEmbeds();
-  }, [userRole, activeTenantId]);
+  }, [userRole, activeTenantId, scope]);
 
   const getRoleTitle = () => {
     switch (userRole) {
