@@ -65,6 +65,8 @@ export default function Signup() {
         // For member invites, manually create the membership immediately
         if (invite && data.user) {
           try {
+            console.log('🔗 Member signup successful, accepting invitation for user:', data.user.id);
+            
             // Accept the invitation to attach membership
             const acceptRes = await fetch('/api/public/invitations/accept', {
               method: 'POST',
@@ -72,18 +74,32 @@ export default function Signup() {
               body: JSON.stringify({ token: invite })
             });
             
-            if (acceptRes.ok) {
-              console.log('✅ Invitation accepted and membership created');
-              // Wait a bit longer to ensure membership is fully created
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              window.location.href = '/login?message=account_created';
-            } else {
-              console.error('Failed to accept invitation, but account was created');
-              window.location.href = '/login?message=signup_complete';
+            if (!acceptRes.ok) {
+              const errorData = await acceptRes.json();
+              console.error('❌ Failed to accept invitation:', errorData);
+              alert(`Failed to accept invitation: ${errorData.details || errorData.error}`);
+              setLoading(false);
+              return;
             }
+            
+            const acceptData = await acceptRes.json();
+            console.log('✅ Invitation accepted successfully:', acceptData);
+            
+            // Refresh the session to ensure latest auth state
+            await supabase.auth.refreshSession();
+            
+            // Wait longer to ensure membership is fully created and visible
+            console.log('⏳ Waiting for membership to propagate...');
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 3s wait
+            
+            // Redirect with tenant context
+            const tenantParam = acceptData.tenant_id ? `?tenant_id=${acceptData.tenant_id}` : '';
+            window.location.href = `/login${tenantParam}&message=account_created`;
+            
           } catch (acceptError) {
-            console.error('Error accepting invitation:', acceptError);
-            window.location.href = '/login?message=signup_complete';
+            console.error('❌ Error accepting invitation:', acceptError);
+            alert('Failed to complete signup process');
+            setLoading(false);
           }
         } else {
           window.location.href = '/login?message=signup_complete';

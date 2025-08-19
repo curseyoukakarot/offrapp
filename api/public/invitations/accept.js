@@ -40,18 +40,60 @@ export default async function handler(req, res) {
     // Attach membership if tenant invite
     if (inv.tenant_id && userId) {
       try {
-        await supabase
+        console.log('🔗 Creating membership for:', { tenant_id: inv.tenant_id, user_id: userId, role: inv.role });
+        
+        const { data: membershipData, error: membershipError } = await supabase
           .from('memberships')
           .upsert({ 
             tenant_id: inv.tenant_id, 
             user_id: userId, 
             role: inv.role,
             status: 'active'
-          }, { onConflict: 'tenant_id,user_id' });
-        console.log('✅ Membership attached:', { tenant_id: inv.tenant_id, user_id: userId, role: inv.role });
+          }, { onConflict: 'tenant_id,user_id' })
+          .select('*');
+          
+        if (membershipError) {
+          throw membershipError;
+        }
+        
+        console.log('✅ Membership attached successfully:', membershipData);
+        
+        // Verify membership was created by querying it back
+        const { data: verifyMembership } = await supabase
+          .from('memberships')
+          .select('*')
+          .eq('tenant_id', inv.tenant_id)
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        console.log('🔍 Membership verification:', verifyMembership);
+        
       } catch (membershipError) {
         console.error('❌ Failed to attach membership:', membershipError);
-        // Continue anyway - user can be manually added later
+        console.error('❌ Membership error details:', {
+          code: membershipError.code,
+          message: membershipError.message,
+          details: membershipError.details
+        });
+        
+        // Log this critical error for debugging
+        try {
+          await fetch('/api/_debug/onboarding-events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: userId,
+              tenant_id: inv.tenant_id,
+              invite_id: inv.id,
+              action: 'membership_attach_failed',
+              error: membershipError.message,
+              context: { role: inv.role, email: inv.email }
+            })
+          });
+        } catch (_) {}
+        
+        // Don't continue - this is critical for member flow
+        return res.status(500).json({ error: 'Failed to attach membership', details: membershipError.message });
       }
     }
     

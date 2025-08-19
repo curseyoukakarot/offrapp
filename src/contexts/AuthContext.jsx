@@ -102,19 +102,40 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      // Check memberships for regular users
-      const { data: mems, error: memsError } = await supabase
-        .from('memberships')
-        .select('tenant_id, role')
-        .eq('user_id', userId);
+      // Check memberships for regular users with retry logic for race conditions
+      let mems = [];
+      let memsError = null;
+      let attempts = 0;
       
-      if (memsError) {
-        console.warn('⚠️ Error fetching memberships (possibly RLS blocking):', memsError.message);
-        // If RLS is blocking, try to stay on current page or go to a safe default
-        if (currentPath === '/login') {
-          console.log('🔄 RLS blocking memberships, staying on login page');
-          return; // Stay on login, don't redirect
+      console.log('🔍 AuthContext: Fetching memberships for user', userId);
+      
+      while (mems.length === 0 && attempts < 3) {
+        const { data, error } = await supabase
+          .from('memberships')
+          .select('tenant_id, role')
+          .eq('user_id', userId)
+          .eq('status', 'active'); // Add status filter
+          
+        memsError = error;
+        mems = data || [];
+        
+        console.log(`🔍 Memberships attempt ${attempts + 1}:`, mems, 'Error:', memsError);
+        
+        if (memsError) {
+          console.warn('⚠️ Error fetching memberships (possibly RLS blocking):', memsError.message);
+          break; // Don't retry on actual errors
         }
+        
+        if (mems.length === 0) {
+          console.log(`🔄 No memberships on attempt ${attempts + 1} - retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1s wait
+        }
+        attempts++;
+      }
+      
+      if (memsError && currentPath === '/login') {
+        console.log('🔄 RLS blocking memberships, staying on login page');
+        return; // Stay on login, don't redirect
       }
       
       if (mems && mems.length > 0) {
