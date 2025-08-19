@@ -55,6 +55,14 @@ export default function AdminLayout({ children }) {
               <i className="fa-solid fa-cloud-upload"></i>
               <span>File Upload</span>
             </Link>
+            <Link to="/dashboard/admin/billing" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+              <i className="fa-solid fa-credit-card"></i>
+              <span>Billing</span>
+            </Link>
+            <Link to="/dashboard/admin/integrations" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
+              <i className="fa-solid fa-plug"></i>
+              <span>Integrations</span>
+            </Link>
             <Link to="/dashboard/admin/settings" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray hover:bg-gray-50 transition-colors cursor-pointer">
               <i className="fa-solid fa-gear"></i>
               <span>Settings</span>

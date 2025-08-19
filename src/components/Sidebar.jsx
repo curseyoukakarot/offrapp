@@ -50,6 +50,11 @@ const Sidebar = () => {
   
   console.log('🔍 Sidebar render:', { userRole, isAdmin, activeTenantId });
   
+  // Add useEffect to track userRole changes
+  useEffect(() => {
+    console.log('🔍 Sidebar userRole changed:', userRole, 'isAdmin:', isAdmin);
+  }, [userRole]);
+  
   // Don't render admin navigation until userRole is loaded
   if (!userRole) {
     console.log('🔍 Sidebar: Showing loading skeleton because userRole is null');
