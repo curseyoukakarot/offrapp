@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 const EmbedPage = () => {
   const { userRole } = useAuth();
+  const { activeTenantId, scope } = useActiveTenant();
   const { id } = useParams();
   const navigate = useNavigate();
   const [embed, setEmbed] = useState(null);
@@ -38,11 +41,14 @@ const EmbedPage = () => {
         return;
       }
 
-      // Fetch embed data via server API (bypasses RLS) with tenant header
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-      const res = await fetch(`/api/embeds?id=${encodeURIComponent(id)}`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+      // Fetch embed data via server API with proper tenant context
+      console.log('🎯 EmbedPage: Fetching embed with activeTenantId:', activeTenantId, 'embedId:', id);
+      const res = await tenantFetch(`/api/embeds?id=${encodeURIComponent(id)}`, {}, activeTenantId, scope);
       const json = await res.json();
       const embedData = json?.embed || null;
+      
+      console.log('🎯 EmbedPage: Embed data from API:', embedData);
+      console.log('🎯 EmbedPage: Current user ID:', session.user.id);
 
       if (embedData) {
         let accessGranted = false;
