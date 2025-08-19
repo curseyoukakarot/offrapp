@@ -30,6 +30,14 @@ const AdminEmbedsManager = () => {
 
   useEffect(() => {
     if (!user) return;
+    
+    console.log('🎯 AdminEmbedsManager: useEffect triggered', { 
+      user: user?.email, 
+      activeTenantId, 
+      scope, 
+      tenantLoading 
+    });
+    
     // Fetch role from users table
     const fetchRole = async () => {
       const { data: userRow } = await supabase
@@ -149,6 +157,9 @@ const AdminEmbedsManager = () => {
   }
 
   async function addEmbed() {
+    console.log('🎯 AdminEmbedsManager: Creating embed with activeTenantId:', activeTenantId);
+    console.log('🎯 AdminEmbedsManager: Embed data:', { ...newEmbed, tenant_id: activeTenantId });
+    
     const { error } = await supabase.from('embeds').insert([{ ...newEmbed, tenant_id: activeTenantId }]);
     if (!error) {
             setNewEmbed({ 
