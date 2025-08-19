@@ -11,7 +11,11 @@ export function useBilling() {
   const [usage, setUsage] = useState(null);
   const [invoices, setInvoices] = useState([]);
 
-  const plan = String(tenant?.tier || tenant?.plan || 'starter').toLowerCase();
+  // Temporary hardcode for IgniteGTM until API server is fixed
+  let plan = String(tenant?.tier || tenant?.plan || 'starter').toLowerCase();
+  if (activeTenantId === '7b7af77b-17c3-4522-9d9a-11581e3f9568') {
+    plan = 'advanced';
+  }
 
   const fetchSummary = useCallback(async () => {
     if (!activeTenantId || !session) return;
