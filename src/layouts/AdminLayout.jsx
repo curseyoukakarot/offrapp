@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ScopeHeader } from '../components/ScopeHeader';
 
 export default function AdminLayout({ children }) {
   const { signOut } = useAuth();
@@ -35,6 +36,8 @@ export default function AdminLayout({ children }) {
           </div>
         </div>
       </header>
+
+      <ScopeHeader />
 
       <div className="flex">
         {/* Sidebar from AdminDashboard */}

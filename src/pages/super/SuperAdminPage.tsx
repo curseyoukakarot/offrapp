@@ -1,22 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import Highcharts from 'highcharts';
 import type { Options as HighchartsOptions, SeriesOptionsType } from 'highcharts';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import NotifyAdminsModal from '../../components/modals/NotifyAdminsModal';
 import ImpersonateUserModal from '../../components/modals/ImpersonateUserModal';
+import { useActiveTenant } from '../../contexts/ActiveTenantContext';
 
 export default function SuperAdminPage() {
+  const navigate = useNavigate();
+  const { setScope, setActiveTenantId } = useActiveTenant();
   const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [tenants, setTenants] = useState([]);
   useEffect(() => {
     const load = async () => {
-      // Fetch metrics
-      const [uptimeRes, usersRes, storageRes, jobsRes, reqErrRes] = await Promise.all([
+      // Fetch metrics and tenants
+      const [uptimeRes, usersRes, storageRes, jobsRes, reqErrRes, tenantsRes] = await Promise.all([
         fetch('/api/metrics/uptime'),
         fetch('/api/metrics/active-users'),
         fetch('/api/metrics/storage'),
         fetch('/api/metrics/jobs'),
         fetch('/api/metrics/requests-errors?window=24h'),
+        fetch('/api/super/tenants').then(r => r.json()).catch(() => ({ items: [] })),
       ]);
+      
+      setTenants(tenantsRes.items || []);
       const uptime = await uptimeRes.json();
       const users = await usersRes.json();
       const storage = await storageRes.json();
@@ -78,6 +85,12 @@ export default function SuperAdminPage() {
   const onRebuildIndex = () => {};
   const onCreateTenant = () => {};
   const onNotifyAdmins = () => { setShowNotifyModal(true); };
+  
+  const viewAsTenant = (tenantId: string) => {
+    setScope('tenant');
+    setActiveTenantId(tenantId);
+    navigate(`/dashboard/admin?tenant_id=${tenantId}`);
+  };
 
   return (
     <div className="bg-gray-50">
@@ -200,6 +213,45 @@ export default function SuperAdminPage() {
                   <span>Purge Cache</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Tenants Quick Access */}
+          <div className="mt-8">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Tenant Access</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {tenants.map(tenant => (
+                  <div key={tenant.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">{tenant.name}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        tenant.tier === 'advanced' ? 'bg-purple-100 text-purple-800' :
+                        tenant.tier === 'pro' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {tenant.tier}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-3">
+                      {tenant.seats_used || 0} / {tenant.seats_total || 3} users
+                    </div>
+                    <button
+                      onClick={() => viewAsTenant(tenant.id)}
+                      className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                    >
+                      <i className="fa-solid fa-eye mr-2"></i>
+                      View as Tenant
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {tenants.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  <i className="fa-solid fa-building text-2xl mb-2"></i>
+                  <p>No tenants found</p>
+                </div>
+              )}
             </div>
           </div>
       </div>
