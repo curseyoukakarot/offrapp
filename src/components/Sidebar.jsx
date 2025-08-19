@@ -59,8 +59,14 @@ const Sidebar = () => {
 
   useEffect(() => {
     const fetchEmbeds = async () => {
-      if (!userRole || !activeTenantId) {
-        console.log('🎯 Sidebar: Waiting for userRole and activeTenantId...', { userRole, activeTenantId });
+      if (!userRole) {
+        console.log('🎯 Sidebar: Waiting for userRole...', { userRole });
+        return;
+      }
+      
+      if (!activeTenantId && scope === 'tenant') {
+        console.log('🎯 Sidebar: No activeTenantId in tenant scope, skipping embeds');
+        setEmbeds([]);
         return;
       }
       

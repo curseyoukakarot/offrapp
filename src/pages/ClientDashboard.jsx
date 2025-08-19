@@ -37,9 +37,15 @@ export default function ClientDashboard({ variant }) {
     const loadEmbeds = async () => {
       try {
         setLoadingEmbeds(true);
-        if (!activeTenantId) return;
         
-        console.log('🎯 ClientDashboard: Fetching embeds for tenantId:', activeTenantId);
+        console.log('🎯 ClientDashboard: Fetching embeds for tenantId:', activeTenantId, 'scope:', scope);
+        
+        if (!activeTenantId && scope === 'tenant') {
+          console.log('🎯 ClientDashboard: No activeTenantId in tenant scope, skipping embeds');
+          setEmbeds([]);
+          return;
+        }
+        
         const res = await tenantFetch('/api/embeds', {}, activeTenantId, scope);
         const json = await res.json();
         const all = Array.isArray(json.embeds) ? json.embeds : [];
