@@ -13,9 +13,9 @@ export default function AdminSettings() {
   const [brand, setBrand] = useState({ name: '', support_email: '', logo_url: '', favicon_url: '' });
   const [roles, setRoles] = useState({
     admin: { label: 'Admin', color: 'blue' },
-    recruitpro: { label: 'RecruitPro', color: 'purple' },
-    jobseeker: { label: 'Job Seeker', color: 'green' },
-    client: { label: 'Client', color: 'gray' },
+    role1: { label: 'Team Member', color: 'purple' },
+    role2: { label: 'Client', color: 'green' },
+    role3: { label: 'Guest', color: 'gray' },
   });
   const [savingBrand, setSavingBrand] = useState(false);
 
@@ -52,13 +52,30 @@ export default function AdminSettings() {
           logo_url: json?.logo_url || '',
           favicon_url: json?.favicon_url || ''
         });
-        if (json?.role_labels || json?.role_colors) {
-          setRoles({
-            admin: { label: json?.role_labels?.admin || 'Admin', color: json?.role_colors?.admin || 'blue' },
-            recruitpro: { label: json?.role_labels?.recruitpro || 'RecruitPro', color: json?.role_colors?.recruitpro || '紫' },
-            jobseeker: { label: json?.role_labels?.jobseeker || 'Job Seeker', color: json?.role_colors?.jobseeker || 'green' },
-            client: { label: json?.role_labels?.client || 'Client', color: json?.role_colors?.client || 'gray' },
+        // Load tenant-specific custom roles
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const rolesRes = await fetch('/api/tenant-roles', { 
+            headers: { 
+              Authorization: `Bearer ${session?.access_token || ''}`,
+              ...(tenantId ? { 'x-tenant-id': tenantId } : {}) 
+            } 
           });
+          if (rolesRes.ok) {
+            const rolesJson = await rolesRes.json();
+            const rolesData = {};
+            (rolesJson.roles || []).forEach(role => {
+              rolesData[role.role_key] = { 
+                label: role.role_label, 
+                color: role.role_color 
+              };
+            });
+            if (Object.keys(rolesData).length > 0) {
+              setRoles(rolesData);
+            }
+          }
+        } catch (rolesError) {
+          console.warn('Failed to load custom roles:', rolesError);
         }
         const enabled = json?.features?.custom_domain !== false;
         setCustomDomainEnabled(!!enabled);
@@ -231,6 +248,8 @@ export default function AdminSettings() {
       setSavingBrand(true);
       const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // Save brand settings
       await fetch('/api/tenant-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}`, ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
@@ -239,21 +258,23 @@ export default function AdminSettings() {
           support_email: brand.support_email,
           logo_url: brand.logo_url,
           favicon_url: brand.favicon_url,
-          role_labels: {
-            admin: roles.admin.label,
-            recruitpro: roles.recruitpro.label,
-            jobseeker: roles.jobseeker.label,
-            client: roles.client.label,
-          },
-          role_colors: {
-            admin: roles.admin.color,
-            recruitpro: roles.recruitpro.color,
-            jobseeker: roles.jobseeker.color,
-            client: roles.client.color,
-          },
         })
       });
-      setToast({ type: 'success', message: 'Brand saved' });
+      
+      // Save custom roles
+      await fetch('/api/tenant-roles', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}`, ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
+        body: JSON.stringify({
+          roles: Object.entries(roles).map(([key, value]) => ({
+            role_key: key,
+            role_label: value.label,
+            role_color: value.color
+          }))
+        })
+      });
+      
+      setToast({ type: 'success', message: 'Settings saved' });
       setTimeout(() => setToast(null), 2000);
     } catch (e) {
       setToast({ type: 'error', message: e.message || 'Save failed' });

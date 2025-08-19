@@ -14,6 +14,7 @@ import usersRouter from './src/server/routes/users.js';
 import superRouter from './src/server/routes/super.js';
 import filesRouter from './src/server/routes/files.js';
 import formsRouter from './src/server/routes/forms.js';
+import tenantRolesRouter from './src/server/routes/tenant-roles.js';
 import { impersonationMiddleware } from './src/server/middleware/impersonation.js';
 
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
@@ -77,6 +78,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/super', superRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/forms', formsRouter);
+app.use('/api/tenant-roles', tenantRolesRouter);
 
 // Simple health endpoints
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
