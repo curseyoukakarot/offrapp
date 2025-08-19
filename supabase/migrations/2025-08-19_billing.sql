@@ -33,9 +33,9 @@ DO $$ BEGIN
   ALTER TABLE public.tenants ALTER COLUMN seats_purchased SET DEFAULT 1;
 EXCEPTION WHEN undefined_column THEN NULL; END $$;
 
--- backfill nulls
-UPDATE public.tenants SET plan = COALESCE(plan, 'starter');
-UPDATE public.tenants SET seats_purchased = COALESCE(seats_purchased, 1);
+-- backfill nulls and migrate tier -> plan
+UPDATE public.tenants SET plan = COALESCE(plan, tier, 'starter');
+UPDATE public.tenants SET seats_purchased = COALESCE(seats_purchased, seats_total, 1);
 
 -- set NOT NULL
 DO $$ BEGIN
