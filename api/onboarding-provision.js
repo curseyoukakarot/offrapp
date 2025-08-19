@@ -55,17 +55,41 @@ export default async function handler(req, res) {
       tenant = trow;
     }
 
-    // Membership: use invited role if provided
-    await svc.from('memberships').upsert({ tenant_id: tenant.id, user_id: user.id, role: invited_role || 'owner' }, { onConflict: 'tenant_id,user_id' });
+    // Membership: use invited role if provided (only if not already attached)
+    try {
+      const { data: existingMem } = await svc.from('memberships').select('id').eq('tenant_id', tenant.id).eq('user_id', user.id).maybeSingle();
+      if (!existingMem) {
+        await svc.from('memberships').insert({ 
+          tenant_id: tenant.id, 
+          user_id: user.id, 
+          role: invited_role || 'owner',
+          status: 'active'
+        });
+        console.log('✅ Membership created:', { tenant_id: tenant.id, user_id: user.id, role: invited_role || 'owner' });
+      } else {
+        console.log('ℹ️ Membership already exists, skipping');
+      }
+    } catch (membershipError) {
+      console.error('❌ Failed to create membership:', membershipError);
+      // Don't fail the entire provisioning - user can be added manually
+    }
 
     // Limits
     const planDef = PLANS[plan] || PLANS.starter;
     try { await svc.from('tenant_limits').upsert({ tenant_id: tenant.id, max_clients: planDef.maxClients, features: planDef.features }); } catch (_) {}
     try { await svc.from('tenant_stats').upsert({ tenant_id: tenant.id, admin_seats: adminSeats, clients_count: 0 }); } catch (_) {}
 
-    // Seed sample content
-    await svc.from('embeds').insert({ tenant_id: tenant.id, title: 'Welcome to Nestbase', url: 'https://nestbase.io', active: true });
-    await svc.from('forms').insert({ tenant_id: tenant.id, title: 'Client Intake', status: 'draft', assigned_roles: ['admin'] });
+    // Seed sample content (only if new tenant was created)
+    if (!invitedTenantId) {
+      try {
+        await svc.from('embeds').insert({ tenant_id: tenant.id, title: 'Welcome to Nestbase', url: 'https://nestbase.io', active: true });
+        await svc.from('forms').insert({ tenant_id: tenant.id, title: 'Client Intake', status: 'draft', assigned_roles: ['admin'] });
+        console.log('✅ Sample content seeded for new tenant');
+      } catch (seedError) {
+        console.warn('⚠️ Failed to seed sample content:', seedError);
+        // Continue anyway
+      }
+    }
 
     // Cookie/host note: we keep the user on the same host during provisioning.
     // If you redirect to a different host (e.g., slug.nestbase.io), ensure the
@@ -78,6 +102,18 @@ export default async function handler(req, res) {
   } catch (e) {
     const msg = e?.message || String(e);
     console.error('onboarding/provision error', msg);
+    
+    // Notify about provisioning errors for monitoring
+    try {
+      const svc = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      await svc.rpc('pg_notify', { 
+        channel: 'onboarding_errors', 
+        payload: `provision_failed user=${user?.id || 'unknown'} tenant=${invitedTenantId || 'new'} err=${msg}` 
+      });
+    } catch (_) {
+      // Ignore notification failures
+    }
+    
     return res.status(500).json({ error: msg });
   }
 }

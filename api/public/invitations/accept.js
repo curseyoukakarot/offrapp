@@ -39,11 +39,29 @@ export default async function handler(req, res) {
 
     // Attach membership if tenant invite
     if (inv.tenant_id && userId) {
-      await supabase
-        .from('memberships')
-        .upsert({ tenant_id: inv.tenant_id, user_id: userId, role: inv.role }, { onConflict: 'tenant_id,user_id' });
+      try {
+        await supabase
+          .from('memberships')
+          .upsert({ 
+            tenant_id: inv.tenant_id, 
+            user_id: userId, 
+            role: inv.role,
+            status: 'active'
+          }, { onConflict: 'tenant_id,user_id' });
+        console.log('✅ Membership attached:', { tenant_id: inv.tenant_id, user_id: userId, role: inv.role });
+      } catch (membershipError) {
+        console.error('❌ Failed to attach membership:', membershipError);
+        // Continue anyway - user can be manually added later
+      }
     }
-    await supabase.from('invitations').update({ status: 'accepted' }).eq('id', inv.id);
+    
+    try {
+      await supabase.from('invitations').update({ status: 'accepted' }).eq('id', inv.id);
+      console.log('✅ Invitation marked as accepted:', inv.id);
+    } catch (inviteError) {
+      console.error('❌ Failed to mark invitation accepted:', inviteError);
+      // Continue anyway
+    }
     const redirect = inv.bypass_billing
       ? `/onboarding?tenant=${inv.tenant_id}&bypass_billing=1`
       : `/`;
