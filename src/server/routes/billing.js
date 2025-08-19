@@ -59,7 +59,12 @@ router.get('/summary', withAuth(withTenant(async (req, res) => {
   try {
     const supabase = req.supabase || getSupabase();
     const tenantId = req.tenantId;
-    const { data: tenant } = await supabase.from('tenants').select('id, plan, seats_purchased, stripe_customer_id, stripe_subscription_id').eq('id', tenantId).single();
+    const { data: tenant } = await supabase.from('tenants').select('id, plan, tier, seats_purchased, seats_total, stripe_customer_id, stripe_subscription_id').eq('id', tenantId).single();
+    // Fix plan/tier mismatch: use tier if plan is starter but tier is different
+    if (tenant) {
+      tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+      tenant.seats_purchased = tenant.seats_purchased || tenant.seats_total || 1;
+    }
     const { data: usage } = await supabase.from('tenant_usage').select('clients_count, team_count, updated_at').eq('tenant_id', tenantId).maybeSingle();
     const { data: invoices } = await supabase
       .from('invoices')
@@ -84,9 +89,14 @@ router.post('/checkout', withAuth(withTenant(async (req, res) => {
     const { mode, purpose, plan, seats } = req.body || {};
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, plan, seats_purchased, stripe_customer_id, stripe_subscription_id')
+      .select('id, plan, tier, seats_purchased, seats_total, stripe_customer_id, stripe_subscription_id')
       .eq('id', tenantId)
       .single();
+    // Fix plan/tier mismatch: use tier if plan is starter but tier is different
+    if (tenant) {
+      tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+      tenant.seats_purchased = tenant.seats_purchased || tenant.seats_total || 1;
+    }
     // require tenant admin
     const role = (req.membership?.role || '').toLowerCase();
     if (!['owner','admin'].includes(role)) return res.status(403).json({ error: 'admin_required' });
@@ -155,9 +165,13 @@ router.get('/portal', withAuth(withTenant(async (req, res) => {
     const tenantId = req.tenantId;
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, stripe_customer_id')
+      .select('id, plan, tier, stripe_customer_id')
       .eq('id', tenantId)
       .single();
+    // Fix plan/tier mismatch
+    if (tenant) {
+      tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+    }
     const role = (req.membership?.role || '').toLowerCase();
     if (!['owner','admin'].includes(role)) return res.status(403).json({ error: 'admin_required' });
     if (!tenant.stripe_customer_id) return res.status(400).json({ error: 'no_customer' });
