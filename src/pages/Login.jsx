@@ -15,21 +15,8 @@ const Login = () => {
   const [forgotSending, setForgotSending] = useState(false);
   const [forgotMsg, setForgotMsg] = useState('');
 
-  useEffect(() => {
-    let alive = true;
-    // If already logged in, redirect once
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const sessUserId = data?.session?.user?.id;
-        if (alive && sessUserId && !redirectedRef.current) {
-          redirectedRef.current = true;
-          await checkProfileAndRedirect(sessUserId);
-        }
-      } catch (_) {}
-    })();
-    return () => { alive = false; };
-  }, [navigate]);
+  // Redirect logic now handled by AuthContext
+  // No need for useEffect redirect here
 
   const checkProfileAndRedirect = async (userId) => {
     try {
@@ -132,11 +119,8 @@ const Login = () => {
 
       console.log('Sign in successful for user:', signInData.user.id);
 
-      // Check profile and redirect accordingly (once)
-      if (!redirectedRef.current) {
-        redirectedRef.current = true;
-        await checkProfileAndRedirect(signInData.user.id);
-      }
+      // AuthContext will handle redirect automatically
+      console.log('✅ Login successful, AuthContext will handle redirect');
     } catch (error) {
       console.error('Unexpected error during login:', error);
       setErrorMsg(error.message || 'An unexpected error occurred during login');

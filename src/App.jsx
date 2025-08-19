@@ -74,9 +74,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ActiveTenantProvider>
-        <Router>
+    <Router>
+      <AuthProvider>
+        <ActiveTenantProvider>
           <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -328,9 +328,9 @@ function App() {
           {/* Catch-all route for unknown paths */}
           <Route path="*" element={<Navigate to="/login" />} />
           </Routes>
-        </Router>
-      </ActiveTenantProvider>
-    </AuthProvider>
+        </ActiveTenantProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

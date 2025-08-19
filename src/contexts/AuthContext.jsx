@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext({
@@ -12,12 +13,14 @@ const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   const handleSession = async (currentSession) => {
     console.log('🔄 Handling session:', currentSession);
@@ -70,11 +73,61 @@ export const AuthProvider = ({ children }) => {
       const superAdmin = rolesList.includes('super_admin') || rolesList.includes('superadmin') || rolesList.includes('super-admin');
       setIsSuperAdmin(superAdmin);
       console.log('🔐 isSuperAdmin:', superAdmin);
+      
+      // Centralized redirect logic after auth resolution
+      handleRedirect(superAdmin, currentSession.user.id);
     } catch (e) {
       console.warn('⚠️ Error resolving user_global_roles:', e);
       setIsSuperAdmin(false);
     }
     setLoading(false);
+  };
+
+  const handleRedirect = async (isSuper, userId) => {
+    if (hasRedirected) return;
+    
+    // Skip redirect if we're already on the right page
+    const currentPath = window.location.pathname;
+    if (currentPath === '/login' || currentPath === '/signup' || currentPath === '/onboarding') {
+      // Only redirect from auth pages
+    } else {
+      return; // Don't redirect if user is already navigating
+    }
+    
+    try {
+      if (isSuper) {
+        console.log('🔄 Redirecting super admin to /super');
+        setHasRedirected(true);
+        navigate('/super');
+        return;
+      }
+      
+      // Check memberships for regular users
+      const { data: mems } = await supabase
+        .from('memberships')
+        .select('tenant_id, role')
+        .eq('user_id', userId);
+      
+      if (mems && mems.length > 0) {
+        // Get tenant from URL or use first membership
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTenantId = urlParams.get('tenant_id');
+        const targetTenantId = urlTenantId || mems[0].tenant_id;
+        
+        console.log('🔄 Redirecting tenant admin to /dashboard/admin with tenant:', targetTenantId);
+        setHasRedirected(true);
+        navigate(`/dashboard/admin?tenant_id=${targetTenantId}`);
+        return;
+      }
+      
+      // No memberships - redirect to onboarding
+      console.log('🔄 No memberships found, redirecting to /onboarding');
+      setHasRedirected(true);
+      navigate('/onboarding');
+      
+    } catch (error) {
+      console.error('Error in handleRedirect:', error);
+    }
   };
 
   useEffect(() => {
