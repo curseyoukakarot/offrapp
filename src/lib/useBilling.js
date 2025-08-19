@@ -11,7 +11,7 @@ export function useBilling() {
   const [usage, setUsage] = useState(null);
   const [invoices, setInvoices] = useState([]);
 
-  const plan = String(tenant?.plan || 'starter').toLowerCase();
+  const plan = String(tenant?.tier || tenant?.plan || 'starter').toLowerCase();
 
   const fetchSummary = useCallback(async () => {
     if (!activeTenantId || !session) return;

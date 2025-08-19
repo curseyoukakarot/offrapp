@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 type Plan = 'starter' | 'pro' | 'advanced';
 
@@ -23,9 +22,9 @@ async function fetchTenantAndUsage(supabase: any, tenantId: string) {
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (uErr) throw uErr;
-  // Fix plan/tier mismatch
+  // Fix plan/tier mismatch: prefer tier first
   if (tenant) {
-    tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+    tenant.plan = tenant.tier || tenant.plan || 'starter';  // Prefer tier first
     tenant.seats_purchased = tenant.seats_purchased || tenant.seats_total || 1;
   }
   return { tenant, usage: usage || { clients_count: 0, team_count: 1 } } as {

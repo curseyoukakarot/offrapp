@@ -44,7 +44,7 @@ export default function Billing() {
 
   const isAdmin = userRole === 'admin';
 
-  const plan = String(summary.tenant?.plan || 'starter').toLowerCase();
+  const plan = String(summary.tenant?.tier || summary.tenant?.plan || 'starter').toLowerCase();
   const seatsPurchased = Number(summary.tenant?.seats_purchased || 1);
   const clientsCount = Number(summary.usage?.clients_count || 0);
   const teamCount = Number(summary.usage?.team_count || 1);

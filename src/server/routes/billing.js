@@ -60,9 +60,9 @@ router.get('/summary', withAuth(withTenant(async (req, res) => {
     const supabase = req.supabase || getSupabase();
     const tenantId = req.tenantId;
     const { data: tenant } = await supabase.from('tenants').select('id, plan, tier, seats_purchased, seats_total, stripe_customer_id, stripe_subscription_id').eq('id', tenantId).single();
-    // Fix plan/tier mismatch: use tier if plan is starter but tier is different
+    // Fix plan/tier mismatch: prefer tier first
     if (tenant) {
-      tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+      tenant.plan = tenant.tier || tenant.plan || 'starter';  // Prefer tier first
       tenant.seats_purchased = tenant.seats_purchased || tenant.seats_total || 1;
     }
     const { data: usage } = await supabase.from('tenant_usage').select('clients_count, team_count, updated_at').eq('tenant_id', tenantId).maybeSingle();
@@ -92,9 +92,9 @@ router.post('/checkout', withAuth(withTenant(async (req, res) => {
       .select('id, plan, tier, seats_purchased, seats_total, stripe_customer_id, stripe_subscription_id')
       .eq('id', tenantId)
       .single();
-    // Fix plan/tier mismatch: use tier if plan is starter but tier is different
+    // Fix plan/tier mismatch: prefer tier first
     if (tenant) {
-      tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+      tenant.plan = tenant.tier || tenant.plan || 'starter';  // Prefer tier first
       tenant.seats_purchased = tenant.seats_purchased || tenant.seats_total || 1;
     }
     // require tenant admin
