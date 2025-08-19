@@ -17,6 +17,7 @@ import filesRouter from './src/server/routes/files.js';
 import formsRouter from './src/server/routes/forms.js';
 import tenantRolesRouter from './src/server/routes/tenant-roles.js';
 import inviteRouter from './src/server/routes/invite.js';
+import integrationsRouter from './src/server/routes/integrations.js';
 import { impersonationMiddleware } from './src/server/middleware/impersonation.js';
 
 console.log('=== API SERVER STARTUP ===');
@@ -87,6 +88,7 @@ app.use('/api/files', filesRouter);
 app.use('/api/forms', formsRouter);
 app.use('/api/tenant-roles', tenantRolesRouter);
 app.use('/api/invite', inviteRouter);
+app.use('/api/integrations', integrationsRouter);
 
 // Simple health endpoints with error handling
 app.get('/api/health', async (req, res) => {

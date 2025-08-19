@@ -32,6 +32,7 @@ router.get('/', async (req, res) => {
   try {
     const supabase = getSupabase();
     const user = req.authedUser;
+    const { includeIntegrations } = req.query;
     let superFlag = false;
     if (user) {
       const { data: roles } = await supabase.from('user_global_roles').select('role').eq('user_id', user.id);
@@ -40,7 +41,23 @@ router.get('/', async (req, res) => {
     if (!superFlag) return res.status(403).json({ error: 'forbidden' });
     const { data, error } = await supabase.from('tenants').select('*');
     if (error) throw error;
-    res.json({ tenants: data });
+    
+    // Add mock integrations data if requested
+    let tenants = data;
+    if (includeIntegrations) {
+      tenants = data.map(tenant => ({
+        ...tenant,
+        integrations: {
+          slack: Math.random() > 0.5,
+          sendgrid: Math.random() > 0.5,
+          google: Math.random() > 0.5,
+          microsoft: Math.random() > 0.5,
+          webhooks: Math.random() > 0.5
+        }
+      }));
+    }
+    
+    res.json({ tenants });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -240,6 +257,39 @@ router.delete('/:id/domains/:domain', async (req, res) => {
     if (error) throw error;
     await logAudit({ action: 'domain.remove', entityType: 'tenant_domain', entityId: null, tenantId: tid, reason: null, before: null, after: null, req });
     res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /api/tenants/:id/integrations - Toggle tenant integrations (super admin)
+router.patch('/:id/integrations', async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const user = req.authedUser;
+    const tid = req.params.id;
+    const { key, enabled } = req.body || {};
+    
+    // Super admin gate
+    let superFlag = false;
+    if (user) {
+      const { data: roles } = await supabase.from('user_global_roles').select('role').eq('user_id', user.id);
+      superFlag = isSuperAdmin(roles || []);
+    }
+    if (!superFlag) return res.status(403).json({ error: 'forbidden' });
+
+    // In real implementation, store in tenant_integrations table
+    // For now, return mock response
+    const integrations = {
+      slack: key === 'slack' ? enabled : Math.random() > 0.5,
+      sendgrid: key === 'sendgrid' ? enabled : Math.random() > 0.5,
+      google: key === 'google' ? enabled : Math.random() > 0.5,
+      microsoft: key === 'microsoft' ? enabled : Math.random() > 0.5,
+      webhooks: key === 'webhooks' ? enabled : Math.random() > 0.5
+    };
+    
+    res.json({ integrations });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });

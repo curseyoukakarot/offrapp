@@ -377,7 +377,8 @@ export default function Integrations() {
           <h3>Examples</h3>
           <p>Fetch your forms:</p>
           <pre className="bg-gray-50 p-3 rounded text-sm"><code>{`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-     https://api.nestbase.io/v1/forms`}</code></pre>
+     -H "x-tenant-id: YOUR_TENANT_ID" \\
+     https://www.nestbase.io/api/forms`}</code></pre>
         </div>
       </Section>
     </div>
