@@ -472,7 +472,16 @@ function MultiRoleFilter({ value, onChange, tenantRoles }) {
 function InviteUserButton({ tenantRoles }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState(tenantRoles[0]?.role_key || 'role3'); // Default to first role or role3
+  const [role, setRole] = useState('');
+  
+  // Set default role when tenantRoles loads or modal opens
+  useEffect(() => {
+    if (tenantRoles.length > 0 && (!role || role === '')) {
+      setRole(tenantRoles[0].role_key);
+    } else if (tenantRoles.length === 0 && (!role || role === '')) {
+      setRole('role3'); // Default fallback
+    }
+  }, [tenantRoles, role, open]);
   
   const submit = async () => {
     const res = await fetch('/api/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, role }) });
@@ -489,11 +498,21 @@ function InviteUserButton({ tenantRoles }) {
             <h3 className="text-lg font-semibold mb-3">Invite New User</h3>
             <input className="w-full border rounded px-3 py-2 mb-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <select className="w-full border rounded px-3 py-2 mb-4" value={role} onChange={(e) => setRole(e.target.value)}>
-              {tenantRoles.map((roleOption) => (
-                <option key={roleOption.role_key} value={roleOption.role_key}>
-                  {roleOption.role_label}
-                </option>
-              ))}
+              {tenantRoles.length > 0 ? (
+                tenantRoles.map((roleOption) => (
+                  <option key={roleOption.role_key} value={roleOption.role_key}>
+                    {roleOption.role_label}
+                  </option>
+                ))
+              ) : (
+                // Fallback options if tenant roles haven't loaded yet
+                <>
+                  <option value="admin">Admin</option>
+                  <option value="role1">Team Member</option>
+                  <option value="role2">Client</option>
+                  <option value="role3">Guest</option>
+                </>
+              )}
             </select>
             <div className="flex justify-end gap-2">
               <button className="px-3 py-2 rounded border" onClick={() => setOpen(false)}>Cancel</button>
