@@ -12,6 +12,7 @@ const AdminEmbedsManager = () => {
   const [embeds, setEmbeds] = useState([]);
   const [users, setUsers] = useState([]);
   const [profiles, setProfiles] = useState({});
+  const [tenantRoles, setTenantRoles] = useState([]); // Dynamic tenant roles
   const [newEmbed, setNewEmbed] = useState({
     title: '',
     role: 'role2', // Default to role2 (Client equivalent)
@@ -45,12 +46,34 @@ const AdminEmbedsManager = () => {
       // Only fetch data if user is admin
       fetchEmbeds();
       fetchUsers();
+      fetchTenantRoles();
     };
     
     if (!tenantLoading) {
       fetchRole();
     }
   }, [user, navigate, activeTenantId, scope, tenantLoading]);
+
+  async function fetchTenantRoles() {
+    try {
+      if (!activeTenantId && scope === 'tenant') {
+        setTenantRoles([]);
+        return;
+      }
+
+      const res = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching tenant roles:', data);
+        return;
+      }
+
+      setTenantRoles(data.roles || []);
+    } catch (error) {
+      console.error('Error fetching tenant roles:', error);
+    }
+  }
 
   async function fetchUsers() {
     try {
@@ -195,10 +218,11 @@ const AdminEmbedsManager = () => {
 
           {newEmbed.embed_type === 'role' ? (
             <select className="border p-2 rounded" value={newEmbed.role} onChange={e => setNewEmbed({ ...newEmbed, role: e.target.value })}>
-              <option value="admin">Admin</option>
-              <option value="role1">Team Member</option>
-              <option value="role2">Client</option>
-              <option value="role3">Guest</option>
+              {tenantRoles.map(role => (
+                <option key={role.role_key} value={role.role_key}>
+                  {role.role_label}
+                </option>
+              ))}
             </select>
           ) : (
             <select 

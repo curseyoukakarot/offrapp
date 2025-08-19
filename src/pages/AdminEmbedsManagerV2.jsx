@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useTenantConfig } from '../lib/tenantConfig';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 export default function AdminEmbedsManagerV2() {
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [audience, setAudience] = useState('user-type');
   const [embeds, setEmbeds] = useState([]);
   const [loadingEmbeds, setLoadingEmbeds] = useState(true);
@@ -14,13 +17,15 @@ export default function AdminEmbedsManagerV2() {
   const [url, setUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
+  const [tenantRoles, setTenantRoles] = useState([]); // Dynamic tenant roles
 
   useEffect(() => {
+    if (tenantLoading || !activeTenantId) return; // Wait for tenant context
+    
     const loadEmbeds = async () => {
       try {
         setLoadingEmbeds(true);
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-        const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const res = await tenantFetch('/api/embeds', {}, activeTenantId, scope);
         const json = await res.json();
         setEmbeds(Array.isArray(json.embeds) ? json.embeds : []);
       } catch {
@@ -29,8 +34,22 @@ export default function AdminEmbedsManagerV2() {
         setLoadingEmbeds(false);
       }
     };
+    
+    const loadTenantRoles = async () => {
+      try {
+        const res = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
+        const data = await res.json();
+        if (res.ok) {
+          setTenantRoles(data.roles || []);
+        }
+      } catch (error) {
+        console.error('Error loading tenant roles:', error);
+      }
+    };
+    
     loadEmbeds();
-  }, []);
+    loadTenantRoles();
+  }, [activeTenantId, scope, tenantLoading]);
 
   const updateEmbed = async (id, patch) => {
     const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
@@ -160,18 +179,25 @@ export default function AdminEmbedsManagerV2() {
                   </label>
 
                   <div id="user-type-chips" className="flex flex-wrap gap-2 ml-6" style={{ display: audience === 'user-type' ? 'flex' : 'none' }}>
-                    <Chip>
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Job Seeker</span>
-                    </Chip>
-                    <Chip>
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Client</span>
-                    </Chip>
-                    <Chip>
-                      <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">RecruitPro</span>
-                    </Chip>
-                    <Chip>
-                      <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">Admin</span>
-                    </Chip>
+                    {tenantRoles.map(role => {
+                      const colorClasses = {
+                        blue: 'bg-blue-100 text-blue-800',
+                        purple: 'bg-purple-100 text-purple-800',
+                        green: 'bg-green-100 text-green-800',
+                        gray: 'bg-gray-100 text-gray-800',
+                        orange: 'bg-orange-100 text-orange-800',
+                        red: 'bg-red-100 text-red-800'
+                      };
+                      const colorClass = colorClasses[role.role_color] || 'bg-gray-100 text-gray-800';
+                      
+                      return (
+                        <Chip key={role.role_key}>
+                          <span className={`${colorClass} px-3 py-1 rounded-full text-sm`}>
+                            {role.role_label}
+                          </span>
+                        </Chip>
+                      );
+                    })}
                   </div>
 
                   <label className="flex items-center space-x-3 cursor-pointer">
