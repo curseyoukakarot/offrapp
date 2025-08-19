@@ -1,6 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import sgMail from '@sendgrid/mail';
+import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
 import { withAuth, withTenant } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -38,6 +39,22 @@ router.post('/', withAuth(withTenant(async (req, res) => {
 
     if (!membership || !['admin', 'owner'].includes(membership.role)) {
       return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    // Enforce plan & seats before creating invitation
+    const normalizedRole = String(role || '').toLowerCase();
+    const isTeamRole = ['owner','admin','editor'].includes(normalizedRole);
+    const isClientRole = ['member','client','jobseeker','recruitpro','role1','role2','role3'].includes(normalizedRole);
+
+    try {
+      if (isTeamRole) {
+        await ensureTeamCapacity(tenantId, supabase);
+      } else if (isClientRole) {
+        await ensureClientCapacity(tenantId, supabase);
+      }
+    } catch (e) {
+      const status = e?.status || 400;
+      return res.status(status).json({ error: e?.code || 'BAD_REQUEST', message: e?.message || 'Plan limit reached' });
     }
 
     // Generate invitation token

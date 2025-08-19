@@ -16,6 +16,8 @@ import UsersList from './pages/UsersList';
 import FilesPage from './pages/FilesPage';
 import AdminFilesManager from './pages/AdminFilesManager';
 import AdminSettings from './pages/AdminSettings.jsx';
+import Billing from './pages/Billing.jsx';
+import Integrations from './pages/Integrations.jsx';
 import FormsList from './pages/FormsList';
 import FormBuilder from './pages/FormBuilder.tsx';
 import FormRenderer from './pages/FormRenderer';
@@ -108,6 +110,20 @@ function App() {
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminLayout>
                 <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/admin/billing" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <Billing />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/admin/integrations" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout>
+                <Integrations />
               </AdminLayout>
             </ProtectedRoute>
           } />

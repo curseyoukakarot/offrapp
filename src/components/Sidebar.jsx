@@ -220,6 +220,22 @@ const Sidebar = () => {
                 <i className="fa-solid fa-gear mr-3" />
                 <span>Settings</span>
               </NavLink>
+              <NavLink to="/dashboard/admin/billing" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-credit-card mr-3" />
+                <span>Billing</span>
+              </NavLink>
+              <NavLink to="/dashboard/admin/integrations" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-plug mr-3" />
+                <span>Integrations</span>
+              </NavLink>
             </>
           ) : (
             <>
