@@ -146,7 +146,7 @@ function App() {
 
           {/* Client Routes */}
           <Route path="/dashboard/client" element={
-            <ProtectedRoute allowedRoles={['client']}>
+            <ProtectedRoute allowedRoles={['client', 'role1', 'role2', 'role3']}>
               <ClientLayout>
                 <ClientDashboard />
               </ClientLayout>
@@ -155,7 +155,7 @@ function App() {
 
           {/* Shared Routes */}
           <Route path="/files" element={
-            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client', 'role1', 'role2', 'role3']}>
               <ClientLayout>
                 <FilesPage />
               </ClientLayout>
@@ -183,7 +183,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/forms/:id" element={
-            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client', 'role1', 'role2', 'role3']}>
               <ClientLayout>
                 <FormRenderer />
               </ClientLayout>
@@ -197,7 +197,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/my-files" element={
-            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client', 'role1', 'role2', 'role3']}>
               <ClientLayout>
                 <UserFiles />
               </ClientLayout>
@@ -212,7 +212,7 @@ function App() {
           } />
           {/* Embed Route */}
           <Route path="/embed/:id" element={
-            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client']}>
+            <ProtectedRoute allowedRoles={['admin', 'recruitpro', 'jobseeker', 'client', 'role1', 'role2', 'role3']}>
               <ClientLayout>
                 <EmbedPage />
               </ClientLayout>

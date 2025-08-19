@@ -143,10 +143,19 @@ export const AuthProvider = ({ children }) => {
         const urlParams = new URLSearchParams(window.location.search);
         const urlTenantId = urlParams.get('tenant_id');
         const targetTenantId = urlTenantId || mems[0].tenant_id;
+        const userRole = mems[0].role;
         
-        console.log('🔄 Redirecting tenant admin to /dashboard/admin with tenant:', targetTenantId);
-        setHasRedirected(true);
-        navigate(`/dashboard/admin?tenant_id=${targetTenantId}`);
+        // Route based on user's role in the tenant
+        if (userRole === 'admin' || userRole === 'owner') {
+          console.log('🔄 Redirecting tenant admin to /dashboard/admin with tenant:', targetTenantId);
+          setHasRedirected(true);
+          navigate(`/dashboard/admin?tenant_id=${targetTenantId}`);
+        } else {
+          // Members (role1, role2, role3, etc.) go to client dashboard
+          console.log('🔄 Redirecting member to /dashboard/client with tenant:', targetTenantId);
+          setHasRedirected(true);
+          navigate(`/dashboard/client?tenant_id=${targetTenantId}`);
+        }
         return;
       }
       
