@@ -103,10 +103,19 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Check memberships for regular users
-      const { data: mems } = await supabase
+      const { data: mems, error: memsError } = await supabase
         .from('memberships')
         .select('tenant_id, role')
         .eq('user_id', userId);
+      
+      if (memsError) {
+        console.warn('⚠️ Error fetching memberships (possibly RLS blocking):', memsError.message);
+        // If RLS is blocking, try to stay on current page or go to a safe default
+        if (currentPath === '/login') {
+          console.log('🔄 RLS blocking memberships, staying on login page');
+          return; // Stay on login, don't redirect
+        }
+      }
       
       if (mems && mems.length > 0) {
         // Get tenant from URL or use first membership
@@ -120,10 +129,15 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      // No memberships - redirect to onboarding
-      console.log('🔄 No memberships found, redirecting to /onboarding');
-      setHasRedirected(true);
-      navigate('/onboarding');
+      // Only redirect to onboarding if we're sure there are no memberships
+      // and we're not dealing with an RLS error
+      if (!memsError) {
+        console.log('🔄 No memberships found, redirecting to /onboarding');
+        setHasRedirected(true);
+        navigate('/onboarding');
+      } else {
+        console.log('🔄 Cannot determine memberships due to RLS, staying put');
+      }
       
     } catch (error) {
       console.error('Error in handleRedirect:', error);

@@ -21,10 +21,17 @@ const Login = () => {
   const checkProfileAndRedirect = async (userId) => {
     try {
       // 1. Determine role from memberships
-      const { data: mems } = await supabase
+      const { data: mems, error: memsError } = await supabase
         .from('memberships')
         .select('role, tenant_id')
         .eq('user_id', userId);
+        
+      if (memsError) {
+        console.warn('⚠️ Error fetching memberships in Login:', memsError.message);
+        // If RLS is blocking, let AuthContext handle the redirect
+        return;
+      }
+      
       const roles = (mems || []).map(r => String(r.role || '').toLowerCase());
       let role = (roles.includes('owner') || roles.includes('admin')) ? 'admin' : '';
       if (!role) {

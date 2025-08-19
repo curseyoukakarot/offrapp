@@ -222,7 +222,7 @@ const UsersList = () => {
           <h2 className="text-2xl font-bold text-gray-800">CRM – Users</h2>
           <div className="flex items-center gap-2">
             <button className="px-3 py-2 rounded-lg border" onClick={exportCsv}><i className="fa-solid fa-download mr-2"></i>Export CSV</button>
-            <InviteUserButton />
+            <InviteUserButton tenantRoles={tenantRoles} />
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -469,14 +469,16 @@ function MultiRoleFilter({ value, onChange, tenantRoles }) {
   );
 }
 
-function InviteUserButton() {
+function InviteUserButton({ tenantRoles }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('client');
+  const [role, setRole] = useState(tenantRoles[0]?.role_key || 'role3'); // Default to first role or role3
+  
   const submit = async () => {
     const res = await fetch('/api/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, role }) });
     if (res.ok) { setOpen(false); setEmail(''); }
   };
+  
   return (
     <>
       <button className="px-3 py-2 rounded-lg bg-blue-600 text-white" onClick={() => setOpen(true)}><i className="fa-solid fa-user-plus mr-2"></i>Invite</button>
@@ -487,10 +489,11 @@ function InviteUserButton() {
             <h3 className="text-lg font-semibold mb-3">Invite New User</h3>
             <input className="w-full border rounded px-3 py-2 mb-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <select className="w-full border rounded px-3 py-2 mb-4" value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="client">Client</option>
-              <option value="recruitpro">RecruitPro</option>
-              <option value="jobseeker">Job Seeker</option>
-              <option value="admin">Admin</option>
+              {tenantRoles.map((roleOption) => (
+                <option key={roleOption.role_key} value={roleOption.role_key}>
+                  {roleOption.role_label}
+                </option>
+              ))}
             </select>
             <div className="flex justify-end gap-2">
               <button className="px-3 py-2 rounded border" onClick={() => setOpen(false)}>Cancel</button>
