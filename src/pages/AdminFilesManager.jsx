@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useTenantConfig } from '../lib/tenantConfig';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 export default function AdminFilesManager() {
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
-  const [roles] = useState(['admin', 'recruitpro', 'jobseeker', 'client']);
+  const [tenantRoles, setTenantRoles] = useState([]); // Dynamic tenant roles
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
@@ -30,11 +33,12 @@ export default function AdminFilesManager() {
   }, [drawerOpen]);
 
   useEffect(() => {
+    if (tenantLoading || !activeTenantId) return; // Wait for tenant context
+    
     const load = async () => {
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
       try {
         setLoadingUsers(true);
-        const usrRes = await fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const usrRes = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
         const usr = await usrRes.json();
         setUsers(usr.users || []);
       } catch (_e) {
@@ -45,7 +49,7 @@ export default function AdminFilesManager() {
 
       try {
         setLoadingFiles(true);
-        const flsRes = await fetch(`/api/files?limit=100`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const flsRes = await tenantFetch('/api/files?limit=100', {}, activeTenantId, scope);
         const fls = await flsRes.json();
         setFiles(fls.files || []);
       } catch (_e) {
@@ -53,9 +57,20 @@ export default function AdminFilesManager() {
       } finally {
         setLoadingFiles(false);
       }
+
+      // Load tenant roles
+      try {
+        const rolesRes = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
+        const rolesData = await rolesRes.json();
+        if (rolesRes.ok) {
+          setTenantRoles(rolesData.roles || []);
+        }
+      } catch (_e) {
+        setTenantRoles([]);
+      }
     };
     load();
-  }, []);
+  }, [activeTenantId, scope, tenantLoading]);
 
   const humanFileSize = (bytes) => {
     if (!bytes && bytes !== 0) return '';
@@ -259,9 +274,28 @@ export default function AdminFilesManager() {
                   <div className="flex items-center gap-2">
                     <div className="text-sm text-gray-500">Assign to roles:</div>
                     <div className="flex items-center gap-2">
-                      {roles.map((r) => (
-                        <label key={r} className="inline-flex items-center gap-1 text-xs">
-                          <input type="checkbox" checked={selectedRoles.includes(r)} onChange={(e) => setSelectedRoles((prev) => e.target.checked ? [...prev, r] : prev.filter((x) => x !== r))} /> {roleLabel(r)}
+                      {tenantRoles.map((role) => (
+                        <label key={role.role_key} className="inline-flex items-center gap-1 text-xs">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedRoles.includes(role.role_key)} 
+                            onChange={(e) => setSelectedRoles((prev) => 
+                              e.target.checked 
+                                ? [...prev, role.role_key] 
+                                : prev.filter((x) => x !== role.role_key)
+                            )} 
+                          /> 
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            role.role_color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                            role.role_color === 'purple' ? 'bg-purple-100 text-purple-800' :
+                            role.role_color === 'green' ? 'bg-green-100 text-green-800' :
+                            role.role_color === 'gray' ? 'bg-gray-100 text-gray-800' :
+                            role.role_color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                            role.role_color === 'red' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {role.role_label}
+                          </span>
                         </label>
                       ))}
                     </div>

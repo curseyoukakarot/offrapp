@@ -52,25 +52,29 @@ export default function AdminEmbedsManagerV2() {
   }, [activeTenantId, scope, tenantLoading]);
 
   const updateEmbed = async (id, patch) => {
-    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-    await fetch(`/api/embeds?id=${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) }, body: JSON.stringify(patch) });
-    const res = await fetch('/api/embeds', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+    await tenantFetch(`/api/embeds?id=${id}`, { 
+      method: 'PATCH', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(patch) 
+    }, activeTenantId, scope);
+    
+    const res = await tenantFetch('/api/embeds', {}, activeTenantId, scope);
     const json = await res.json();
     setEmbeds(Array.isArray(json.embeds) ? json.embeds : []);
   };
 
   const deleteEmbed = async (id) => {
-    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
-    await fetch(`/api/embeds?id=${id}`, { method: 'DELETE', headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+    await tenantFetch(`/api/embeds?id=${id}`, { method: 'DELETE' }, activeTenantId, scope);
     setEmbeds((prev) => prev.filter((e) => e.id !== id));
   };
 
   useEffect(() => {
+    if (tenantLoading || !activeTenantId) return; // Wait for tenant context
+    
     const loadUsers = async () => {
-      const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
       try {
         setLoadingUsers(true);
-        const res = await fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const res = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
         const json = await res.json();
         setUsers(Array.isArray(json.users) ? json.users : []);
       } catch {
@@ -80,7 +84,7 @@ export default function AdminEmbedsManagerV2() {
       }
     };
     loadUsers();
-  }, []);
+  }, [activeTenantId, scope, tenantLoading]);
 
   const Chip = ({ children }) => {
     const [active, setActive] = useState(false);
