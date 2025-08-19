@@ -110,21 +110,22 @@ const EmbedPage = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      <main className="bg-gray-50 p-0 flex flex-col min-h-screen">
-        <div className="p-8 pb-0">
-          <h1 className="text-2xl font-bold mb-4">{embed.title}</h1>
-        </div>
-        <div className="flex-1 flex min-h-0">
-          {/* Render iframe or embed based on provider */}
-          <iframe
-            src={embed.url}
-            title={embed.title}
-            className="w-full h-full border-none rounded flex-1 min-h-0"
-            allow="camera; microphone; fullscreen"
-          />
-        </div>
-      </main>
+    <div className="h-screen flex flex-col">
+      {/* Header with embed title */}
+      <div className="bg-white border-b border-gray-200 p-6 flex-shrink-0">
+        <h1 className="text-2xl font-bold text-gray-900">{embed.title}</h1>
+      </div>
+      
+      {/* Iframe container that takes remaining space */}
+      <div className="flex-1 bg-white">
+        <iframe
+          src={embed.url}
+          title={embed.title}
+          className="w-full h-full border-none"
+          allow="camera; microphone; fullscreen; clipboard-read; clipboard-write"
+          loading="lazy"
+        />
+      </div>
     </div>
   );
 };
