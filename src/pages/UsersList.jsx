@@ -470,6 +470,7 @@ function MultiRoleFilter({ value, onChange, tenantRoles }) {
 }
 
 function InviteUserButton({ tenantRoles }) {
+  const { scope, activeTenantId } = useActiveTenant();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
@@ -484,8 +485,30 @@ function InviteUserButton({ tenantRoles }) {
   }, [tenantRoles, role, open]);
   
   const submit = async () => {
-    const res = await fetch('/api/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, role }) });
-    if (res.ok) { setOpen(false); setEmail(''); }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await tenantFetch('/api/invite', { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        }, 
+        body: JSON.stringify({ email, role }) 
+      }, activeTenantId, scope);
+      
+      if (res.ok) { 
+        setOpen(false); 
+        setEmail(''); 
+        setRole(tenantRoles[0]?.role_key || 'role3');
+        alert('Invitation sent successfully!');
+      } else {
+        const errorData = await res.json();
+        alert(`Failed to send invitation: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      alert('Failed to send invitation');
+    }
   };
   
   return (
