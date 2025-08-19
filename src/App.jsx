@@ -204,7 +204,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
-            <ProtectedRoute allowedRoles={['recruitpro', 'jobseeker']}>
+            <ProtectedRoute allowedRoles={['recruitpro', 'jobseeker', 'client', 'role1', 'role2', 'role3']}>
               <ClientLayout>
                 <Settings />
               </ClientLayout>
