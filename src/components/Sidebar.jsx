@@ -47,6 +47,7 @@ const Sidebar = () => {
   }, [activeTenantId, memberships]);
 
   const isAdmin = userRole === 'admin';
+  console.log('🔍 Sidebar debug:', { userRole, isAdmin });
   const isRecruitPro = userRole === 'recruitpro' || userRole === 'role1';
   const isJobSeeker = userRole === 'jobseeker' || userRole === 'role2';
   const isClient = userRole === 'client' || userRole === 'role3';
