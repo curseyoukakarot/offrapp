@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import NotifyAdminsModal from '../../components/modals/NotifyAdminsModal';
 import ImpersonateUserModal from '../../components/modals/ImpersonateUserModal';
 import { useActiveTenant } from '../../contexts/ActiveTenantContext';
+import { supabase } from '../../supabaseClient';
 
 export default function SuperAdminPage() {
   const navigate = useNavigate();
@@ -20,7 +21,18 @@ export default function SuperAdminPage() {
         fetch('/api/metrics/storage'),
         fetch('/api/metrics/jobs'),
         fetch('/api/metrics/requests-errors?window=24h'),
-        fetch('/api/super/tenants').then(r => r.json()).catch(() => ({ items: [] })),
+        (async () => {
+          try {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            const res = await fetch('/api/super/tenants', {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            });
+            return res.json();
+          } catch {
+            return { items: [] };
+          }
+        })(),
       ]);
       
       setTenants(tenantsRes.items || []);

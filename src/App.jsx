@@ -302,16 +302,7 @@ function App() {
               </SuperAdminRoute>
             }
           />
-          <Route
-            path="/super/users"
-            element={
-              <SuperAdminRoute>
-                <SuperAdminLayout>
-                  <UsersList />
-                </SuperAdminLayout>
-              </SuperAdminRoute>
-            }
-          />
+
           <Route
             path="/super/settings"
             element={
