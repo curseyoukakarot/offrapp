@@ -13,7 +13,7 @@ function getSupabase() {
 async function fetchTenantAndUsage(supabase: any, tenantId: string) {
   const { data: tenant, error: tErr } = await supabase
     .from('tenants')
-    .select('id, plan, seats_purchased')
+    .select('id, plan, tier, seats_purchased, seats_total')
     .eq('id', tenantId)
     .single();
   if (tErr) throw tErr;
@@ -23,6 +23,11 @@ async function fetchTenantAndUsage(supabase: any, tenantId: string) {
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (uErr) throw uErr;
+  // Fix plan/tier mismatch
+  if (tenant) {
+    tenant.plan = (tenant.plan === 'starter' && tenant.tier && tenant.tier !== 'starter') ? tenant.tier : tenant.plan;
+    tenant.seats_purchased = tenant.seats_purchased || tenant.seats_total || 1;
+  }
   return { tenant, usage: usage || { clients_count: 0, team_count: 1 } } as {
     tenant: { id: string; plan: Plan; seats_purchased: number };
     usage: { clients_count: number; team_count: number };
