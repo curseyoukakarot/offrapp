@@ -14,6 +14,20 @@ const Login = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSending, setForgotSending] = useState(false);
   const [forgotMsg, setForgotMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Check for success messages from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const message = urlParams.get('message');
+    if (message === 'account_created') {
+      setSuccessMsg('Account created successfully! Please log in.');
+    } else if (message === 'signup_complete') {
+      setSuccessMsg('Account created! Please log in.');
+    } else if (message === 'invitation_accepted') {
+      setSuccessMsg('Invitation accepted! Please log in.');
+    }
+  }, []);
 
   // Redirect logic now handled by AuthContext
   // No need for useEffect redirect here
@@ -210,6 +224,9 @@ const Login = () => {
 
             {errorMsg && (
               <div className="text-red-600 text-sm">{errorMsg}</div>
+            )}
+            {successMsg && (
+              <div className="text-green-600 text-sm bg-green-50 border border-green-200 rounded p-2">{successMsg}</div>
             )}
 
             <div>

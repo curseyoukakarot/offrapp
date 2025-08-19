@@ -45,11 +45,14 @@ export default function Signup() {
       // Simple member signup - just create account and accept invitation
       try {
         const { supabase } = await import('../supabaseClient');
+        
+        // Create the user account
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: name, title },
+            emailRedirectTo: `${window.location.origin}/login`
           }
         });
         
@@ -59,7 +62,10 @@ export default function Signup() {
           return;
         }
         
-        // Accept the invitation
+        // Wait a moment for the user to be created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Accept the invitation to attach membership
         if (invite) {
           const acceptRes = await fetch('/api/public/invitations/accept', {
             method: 'POST',
@@ -68,9 +74,10 @@ export default function Signup() {
           });
           
           if (acceptRes.ok) {
-            const acceptData = await acceptRes.json();
-            window.location.href = acceptData.redirect || '/login?message=welcome';
+            // Redirect to login with success message
+            window.location.href = '/login?message=account_created';
           } else {
+            console.error('Failed to accept invitation, but account was created');
             window.location.href = '/login?message=signup_complete';
           }
         } else {
