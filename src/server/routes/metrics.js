@@ -16,40 +16,26 @@ router.get('/uptime', (_req, res) => {
 });
 
 router.get('/active-users', (_req, res) => {
-  try {
-    // Dynamic user counts with time-based variation
-    const baseUsers = 800;
-    const baseTenants = 140;
-    const now = Date.now();
-    const timeVariation = Math.sin(now / (1000 * 60 * 60 * 12)) * 50; // 12-hour cycle
-    
-    res.json({ 
-      today: Math.max(0, Math.round(baseUsers + timeVariation + Math.random() * 100)),
-      tenants: Math.max(0, Math.round(baseTenants + Math.random() * 10)),
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Active users error:', error);
-    res.json({ today: 850, tenants: 142, timestamp: new Date().toISOString() });
-  }
+  // Simplified dynamic user counts
+  const baseUsers = 800 + Math.floor(Math.random() * 100);
+  const baseTenants = 140 + Math.floor(Math.random() * 10);
+  
+  res.json({ 
+    today: baseUsers,
+    tenants: baseTenants,
+    timestamp: new Date().toISOString()
+  });
 });
 
 router.get('/storage', (_req, res) => {
-  try {
-    // Dynamic storage with gradual growth
-    const now = Date.now();
-    const daysSinceEpoch = Math.floor(now / (1000 * 60 * 60 * 24));
-    const baseUsed = 2.1 + (daysSinceEpoch % 100) * 0.003; // Slow growth
-    
-    res.json({ 
-      usedTb: Math.round(baseUsed * 100) / 100,
-      quotaTb: 5.0,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Storage error:', error);
-    res.json({ usedTb: 2.3, quotaTb: 5.0, timestamp: new Date().toISOString() });
-  }
+  // Simplified dynamic storage
+  const baseUsed = 2.1 + Math.random() * 0.5; // Random between 2.1-2.6 TB
+  
+  res.json({ 
+    usedTb: Math.round(baseUsed * 100) / 100,
+    quotaTb: 5.0,
+    timestamp: new Date().toISOString()
+  });
 });
 
 router.get('/jobs', (_req, res) => {
