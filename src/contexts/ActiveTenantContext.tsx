@@ -61,7 +61,7 @@ export const ActiveTenantProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setLoading(true);
         
         // Fetch user's memberships with tenant names
-        const { data: membershipData } = await supabase
+        const { data: membershipData, error: membershipError } = await supabase
           .from('memberships')
           .select(`
             tenant_id,
@@ -72,11 +72,16 @@ export const ActiveTenantProvider: React.FC<{ children: React.ReactNode }> = ({ 
           `)
           .eq('user_id', user.id);
 
+        console.log('🔍 ActiveTenantContext: membershipData:', membershipData);
+        console.log('🔍 ActiveTenantContext: membershipError:', membershipError);
+
         const mems: Membership[] = (membershipData || []).map(m => ({
           tenant_id: m.tenant_id,
           role: m.role,
           tenant_name: (m as any).tenants?.name || 'Unknown Tenant'
         }));
+        
+        console.log('🔍 ActiveTenantContext: processed memberships:', mems);
 
         setMemberships(mems);
 

@@ -6,22 +6,44 @@ import { supabase } from '../supabaseClient';
 
 const Sidebar = () => {
   const { userRole, signOut, isSuperAdmin } = useAuth();
-  const { activeTenant, activeTenantId, scope } = useActiveTenant();
+  const { activeTenantId, scope, memberships } = useActiveTenant();
   const navigate = useNavigate();
   const [embeds, setEmbeds] = useState([]);
-  const [tenantName, setTenantName] = useState(activeTenant?.name || 'Career Kitchen');
+  const [tenantName, setTenantName] = useState('Career Kitchen');
 
-  // Update tenant name when activeTenant changes
+  // Update tenant name when activeTenantId changes
   useEffect(() => {
-    console.log('🏢 Sidebar: activeTenant changed:', activeTenant);
     console.log('🏢 Sidebar: activeTenantId:', activeTenantId);
-    if (activeTenant?.name) {
-      console.log('🏢 Setting tenant name to:', activeTenant.name);
-      setTenantName(activeTenant.name);
+    console.log('🏢 Sidebar: memberships:', memberships);
+    
+    if (activeTenantId && memberships.length > 0) {
+      const currentMembership = memberships.find(m => m.tenant_id === activeTenantId);
+      if (currentMembership?.tenant_name) {
+        console.log('🏢 Setting tenant name to:', currentMembership.tenant_name);
+        setTenantName(currentMembership.tenant_name);
+      } else {
+        console.log('🏢 No tenant name found in membership, fetching from API...');
+        // Fallback: fetch tenant name from API
+        const fetchTenantName = async () => {
+          try {
+            const res = await fetch('/api/tenant-config', { 
+              headers: { 'x-tenant-id': activeTenantId } 
+            });
+            const data = await res.json();
+            if (data?.name) {
+              console.log('🏢 Got tenant name from API:', data.name);
+              setTenantName(data.name);
+            }
+          } catch (error) {
+            console.error('Failed to fetch tenant name:', error);
+          }
+        };
+        fetchTenantName();
+      }
     } else {
-      console.log('🏢 No activeTenant name, keeping default');
+      console.log('🏢 No activeTenantId or memberships, keeping default');
     }
-  }, [activeTenant, activeTenantId]);
+  }, [activeTenantId, memberships]);
 
   const isAdmin = userRole === 'admin';
   const isRecruitPro = userRole === 'recruitpro' || userRole === 'role1';
