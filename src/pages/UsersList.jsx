@@ -63,6 +63,7 @@ const UsersList = () => {
         return;
       }
 
+      // First, get tenant users with roles from memberships
       const res = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
       const data = await res.json();
       
@@ -71,18 +72,50 @@ const UsersList = () => {
         setUsers([]);
       } else {
         const usersData = data.users || [];
-        setUsers(usersData);
+        
+        // Fetch role information from the users table for these users
+        if (usersData.length > 0) {
+          const userIds = usersData.map(u => u.id);
+          const { data: usersWithRoles, error: rolesError } = await supabase
+            .from('users')
+            .select('id, role, last_sign_in_at')
+            .in('id', userIds);
+            
+          if (!rolesError && usersWithRoles) {
+            // Merge role data with user data
+            const rolesMap = {};
+            usersWithRoles.forEach(user => {
+              rolesMap[user.id] = { role: user.role, last_sign_in_at: user.last_sign_in_at };
+            });
+            
+            const enrichedUsers = usersData.map(user => ({
+              ...user,
+              role: rolesMap[user.id]?.role || null,
+              last_sign_in_at: rolesMap[user.id]?.last_sign_in_at || null
+            }));
+            
+            setUsers(enrichedUsers);
+          } else {
+            console.error('Error fetching user roles:', rolesError);
+            setUsers(usersData); // Fallback to users without roles
+          }
+        } else {
+          setUsers([]);
+        }
+        
         // Fetch all profiles for these users
         const userIds = usersData.map(u => u.id);
-        const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
-        // Map profiles by user id
-        const profilesMap = {};
-        if (profilesData) {
-          profilesData.forEach(profile => {
-            profilesMap[profile.id] = profile;
-          });
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
+          // Map profiles by user id
+          const profilesMap = {};
+          if (profilesData) {
+            profilesData.forEach(profile => {
+              profilesMap[profile.id] = profile;
+            });
+          }
+          setProfiles(profilesMap);
         }
-        setProfiles(profilesMap);
       }
     } catch (error) {
       console.error('Error in fetchUsers:', error);
