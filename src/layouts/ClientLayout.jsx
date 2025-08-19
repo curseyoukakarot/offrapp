@@ -1,12 +1,16 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Sidebar from '../components/Sidebar';
 
 export default function ClientLayout({ children, variant }) {
   const { signOut } = useAuth();
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div id="main-content" className="min-h-screen">
+    <div className="bg-gray-50 min-h-screen flex">
+      {/* Sidebar */}
+      <Sidebar />
+      
+      {/* Main Content */}
+      <div className="flex-1 ml-64">
         <header id="header" className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
@@ -25,7 +29,7 @@ export default function ClientLayout({ children, variant }) {
           </div>
         </header>
 
-        {/* Optional welcome banner space for pages to use; not forcing here */}
+        {/* Main content area */}
         <main className="min-h-screen">
           {children}
         </main>
