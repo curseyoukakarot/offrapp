@@ -115,43 +115,53 @@ const UsersList = () => {
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     setEditFeedback('');
-    // Update email/role as before
-    const { error } = await supabase
-      .from('users')
-      .update({ email: editEmail, role: editRole })
-      .eq('id', editingUser.id);
+    
+    try {
+      // Update email/role
+      const { error } = await supabase
+        .from('users')
+        .update({ email: editEmail, role: editRole })
+        .eq('id', editingUser.id);
 
-    if (error) {
-      setEditFeedback('Update failed: ' + error.message);
-      return;
-    }
-
-    // If password is set, call the serverless function
-    if (editPassword) {
-      try {
-        const res = await fetch('/api/admin-reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: editingUser.id, new_password: editPassword }),
-        });
-        const result = await res.json();
-        if (!res.ok) {
-          setEditFeedback('Password update failed: ' + (result.error || 'Unknown error'));
-          return;
-        }
-      } catch (err) {
-        setEditFeedback('Password update failed: ' + err.message);
+      if (error) {
+        setEditFeedback('Update failed: ' + error.message);
         return;
       }
-    }
 
-    setEditFeedback('User updated!');
-    setTimeout(() => {
-      setEditingUser(null);
-      setEditPassword('');
-      setEditFeedback('');
-    }, 1200);
-    fetchUsers();
+      // If password is set, call the serverless function
+      if (editPassword) {
+        try {
+          const res = await fetch('/api/admin-reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: editingUser.id, new_password: editPassword }),
+          });
+          const result = await res.json();
+          if (!res.ok) {
+            setEditFeedback('Password update failed: ' + (result.error || 'Unknown error'));
+            return;
+          }
+        } catch (err) {
+          setEditFeedback('Password update failed: ' + err.message);
+          return;
+        }
+      }
+
+      const roleName = tenantRoles.find(r => r.role_key === editRole)?.role_label || editRole;
+      setEditFeedback(`User updated successfully! Role changed to ${roleName}.`);
+      
+      // Refresh users list to show updated data immediately
+      await fetchUsers();
+      
+      setTimeout(() => {
+        setEditingUser(null);
+        setEditPassword('');
+        setEditFeedback('');
+      }, 2000);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setEditFeedback('Update failed: ' + error.message);
+    }
   };
 
   // Derived filtering, search, sorting
@@ -191,9 +201,58 @@ const UsersList = () => {
   };
 
   const bulkChangeRole = async (nextRole) => {
-    await supabase.from('users').update({ role: nextRole }).in('id', selectedIds);
-    setSelectedIds([]);
-    fetchUsers();
+    try {
+      const { error } = await supabase.from('users').update({ role: nextRole }).in('id', selectedIds);
+      
+      if (error) {
+        alert('Error updating roles: ' + error.message);
+        return;
+      }
+      
+      const roleName = tenantRoles.find(r => r.role_key === nextRole)?.role_label || nextRole;
+      alert(`Successfully updated ${selectedIds.length} user(s) to ${roleName} role`);
+      setSelectedIds([]);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error in bulkChangeRole:', error);
+      alert('Failed to update roles. Please try again.');
+    }
+  };
+
+  const handleIndividualRoleChange = async (user) => {
+    setMenuOpenId(null);
+    
+    // Create options string for prompt based on available tenant roles
+    const roleOptions = tenantRoles.map(r => `${r.role_key} (${r.role_label})`).join(', ');
+    const currentRole = user.role || '';
+    
+    const next = prompt(`Change role to one of: ${roleOptions}\n\nCurrent role: ${currentRole}`, currentRole);
+    
+    if (!next || next === currentRole) {
+      return; // User cancelled or didn't change anything
+    }
+    
+    // Validate the entered role exists
+    const validRole = tenantRoles.find(r => r.role_key === next);
+    if (!validRole) {
+      alert(`Invalid role "${next}". Please use one of: ${tenantRoles.map(r => r.role_key).join(', ')}`);
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.from('users').update({ role: next }).eq('id', user.id);
+      
+      if (error) {
+        alert('Error updating role: ' + error.message);
+        return;
+      }
+      
+      alert(`Successfully updated ${user.email} to ${validRole.role_label} role`);
+      fetchUsers(); // Refresh the user list to show updated role
+    } catch (error) {
+      console.error('Error in handleIndividualRoleChange:', error);
+      alert('Failed to update role. Please try again.');
+    }
   };
   const exportCsv = () => {
     const headers = ['Name', 'Email', 'Role', 'Created'];
@@ -325,7 +384,7 @@ const UsersList = () => {
                         <button className="block w-full text-left px-3 py-2 hover:bg-gray-50" onClick={() => { setEditingUser(u); setEditEmail(u.email); setEditRole(u.role); setMenuOpenId(null); }}>Edit</button>
                         <button className="block w-full text-left px-3 py-2 hover:bg-gray-50" onClick={() => { setDrawerUser(u); setMenuOpenId(null); }}>View Activity</button>
                         <button className="block w-full text-left px-3 py-2 hover:bg-gray-50" onClick={async () => { setMenuOpenId(null); await fetch('/api/admin-reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: u.id, new_password: 'Temp123!@#' }) }); alert('Password reset link sent'); }}>Reset Password</button>
-                        <button className="block w-full text-left px-3 py-2 hover:bg-gray-50" onClick={() => { const next = prompt('Change role to (admin/recruitpro/jobseeker/client):', u.role || ''); if (next) supabase.from('users').update({ role: next }).eq('id', u.id).then(fetchUsers); setMenuOpenId(null); }}>Change Role</button>
+                        <button className="block w-full text-left px-3 py-2 hover:bg-gray-50" onClick={() => handleIndividualRoleChange(u)}>Change Role</button>
                         <button className="block w-full text-left px-3 py-2 hover:bg-red-50 text-red-600" onClick={() => { setMenuOpenId(null); handleDeleteUser(u.id); }}>Delete</button>
                       </div>
                     )}
