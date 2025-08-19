@@ -1,18 +1,21 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
 const Sidebar = () => {
   const { userRole, signOut, isSuperAdmin } = useAuth();
+  const { activeTenant } = useActiveTenant();
   const navigate = useNavigate();
   const [embeds, setEmbeds] = useState([]);
-  const [tenantName, setTenantName] = useState('Career Kitchen');
+  const [tenantName, setTenantName] = useState(activeTenant?.name || 'Career Kitchen');
 
   const isAdmin = userRole === 'admin';
-  const isRecruitPro = userRole === 'recruitpro';
-  const isJobSeeker = userRole === 'jobseeker';
-  const isClient = userRole === 'client';
+  const isRecruitPro = userRole === 'recruitpro' || userRole === 'role1';
+  const isJobSeeker = userRole === 'jobseeker' || userRole === 'role2';
+  const isClient = userRole === 'client' || userRole === 'role3';
+  const isMember = ['role1', 'role2', 'role3', 'client', 'recruitpro', 'jobseeker'].includes(userRole);
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -51,13 +54,16 @@ const Sidebar = () => {
       case 'admin':
         return 'Admin Dashboard';
       case 'recruitpro':
-        return 'RecruitPro Dashboard';
+      case 'role1':
+        return 'Team Member Dashboard';
       case 'jobseeker':
-        return 'Job Seeker Dashboard';
-      case 'client':
+      case 'role2':
         return 'Client Dashboard';
+      case 'client':
+      case 'role3':
+        return 'Guest Dashboard';
       default:
-        return 'Career Kitchen';
+        return 'Member Dashboard';
     }
   };
 
@@ -66,10 +72,13 @@ const Sidebar = () => {
       case 'admin':
         return '/dashboard/admin';
       case 'recruitpro':
-        return '/dashboard/recruitpro';
+      case 'role1':
+        return '/dashboard/client'; // All members use client dashboard
       case 'jobseeker':
-        return '/dashboard/jobseeker';
+      case 'role2':
+        return '/dashboard/client';
       case 'client':
+      case 'role3':
         return '/dashboard/client';
       default:
         return '/';
