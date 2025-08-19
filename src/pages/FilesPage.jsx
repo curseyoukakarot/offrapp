@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 const FilesPage = () => {
   const { user } = useUser();
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
@@ -45,29 +48,32 @@ const FilesPage = () => {
         setLoading(false);
       }
     };
-    fetchRole();
-  }, [user]);
+    
+    if (!tenantLoading) {
+      fetchRole();
+    }
+  }, [user, activeTenantId, scope, tenantLoading]);
 
   const fetchFiles = async () => {
     try {
       console.log('Fetching files...');
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      
+      if (!activeTenantId && scope === 'tenant') {
+        setFiles([]);
+        return;
+      }
 
-      const { data, error: filesError } = await supabase
-        .from('files')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (filesError) {
-        console.error('Error fetching files:', filesError);
+      const res = await tenantFetch('/api/files?limit=1000', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching files:', data);
         setError('Failed to fetch files');
         return;
       }
 
-      console.log('Files fetched:', data?.length || 0);
-      setFiles(data || []);
+      console.log('Files fetched:', data?.files?.length || 0);
+      setFiles(data?.files || []);
     } catch (error) {
       console.error('Error in fetchFiles:', error);
       setError('An error occurred while fetching files');
@@ -77,14 +83,23 @@ const FilesPage = () => {
   const fetchUsers = async () => {
     try {
       console.log('Fetching users...');
-      const { data, error: usersError } = await supabase.from('users').select('id, email');
-      if (usersError) {
-        console.error('Error fetching users:', usersError);
+      
+      if (!activeTenantId && scope === 'tenant') {
+        setUsers([]);
+        return;
+      }
+
+      const res = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching users:', data);
         setError('Failed to fetch users');
         return;
       }
-      console.log('Users fetched:', data?.length || 0);
-      setUsers(data || []);
+      
+      console.log('Users fetched:', data?.users?.length || 0);
+      setUsers(data?.users || []);
     } catch (error) {
       console.error('Error in fetchUsers:', error);
       setError('An error occurred while fetching users');
@@ -111,6 +126,7 @@ const FilesPage = () => {
         file_url: `https://tywemactebkksgdsleha.supabase.co/storage/v1/object/public/user-files/${filePath}`,
         title: file.name,
         uploaded_by: session.user.id,
+        tenant_id: activeTenantId,
       },
     ]);
 
@@ -141,6 +157,7 @@ const FilesPage = () => {
         file_url: `https://tywemactebkksgdsleha.supabase.co/storage/v1/object/public/user-files/${filePath}`,
         title: file.name,
         uploaded_by: userId,
+        tenant_id: activeTenantId,
       },
     ]);
 

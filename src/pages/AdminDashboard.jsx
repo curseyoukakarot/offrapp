@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 export default function AdminDashboard() {
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [recentUsers, setRecentUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
@@ -15,14 +18,14 @@ export default function AdminDashboard() {
   const [recentFiles, setRecentFiles] = useState([]);
 
   useEffect(() => {
-    const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+    if (tenantLoading || !activeTenantId) return;
 
     const loadCounts = async () => {
       try {
         const [usersRes, formsRes, filesRes] = await Promise.all([
-          fetch('/api/files/tenant-users', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then((r) => r.json()).catch(() => ({ users: [] })),
-          fetch('/api/forms?limit=1000', { headers: { 'x-tenant-id': tenantId } }).then((r) => r.json()).catch(() => ({ forms: [] })),
-          fetch('/api/files?limit=1000', { headers: { 'x-tenant-id': tenantId } }).then((r) => r.json()).catch(() => ({ files: [] })),
+          tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope).then((r) => r.json()).catch(() => ({ users: [] })),
+          tenantFetch('/api/forms?limit=1000', {}, activeTenantId, scope).then((r) => r.json()).catch(() => ({ forms: [] })),
+          tenantFetch('/api/files?limit=1000', {}, activeTenantId, scope).then((r) => r.json()).catch(() => ({ files: [] })),
         ]);
         const users = Array.isArray(usersRes?.users) ? usersRes.users : [];
         const forms = Array.isArray(formsRes?.forms) ? formsRes.forms : [];
@@ -47,14 +50,8 @@ export default function AdminDashboard() {
     const loadRecent = async () => {
       setUsersLoading(true);
       try {
-        const doFetch = async (withTenant) => {
-          const headers = withTenant && tenantId ? { 'x-tenant-id': tenantId } : {};
-          const res = await fetch('/api/users/recent', { headers });
-          const json = await res.json();
-          return { res, json };
-        };
-        let { res, json } = await doFetch(true);
-        if (!res.ok) ({ res, json } = await doFetch(false));
+        const res = await tenantFetch('/api/users/recent', {}, activeTenantId, scope);
+        const json = await res.json();
         if (!res.ok) throw new Error(json?.error || json?.message || 'Failed');
         setRecentUsers(json.users || []);
       } catch (_e) {
@@ -66,7 +63,7 @@ export default function AdminDashboard() {
 
     loadCounts();
     loadRecent();
-  }, []);
+  }, [activeTenantId, scope, tenantLoading]);
 
   const timeAgo = (iso) => {
     if (!iso) return '';

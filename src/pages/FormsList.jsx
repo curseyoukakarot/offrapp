@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 export default function FormsList() {
   const navigate = useNavigate();
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [isCardView, setIsCardView] = useState(true);
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [tab, setTab] = useState('roles'); // roles | preview | responses
-  const tenantId = useMemo(() => localStorage.getItem('offrapp-active-tenant-id') || '', []);
 
   const activeForm = useMemo(() => forms.find((f) => f.id === activeId) || null, [forms, activeId]);
   const [assignedRoles, setAssignedRoles] = useState([]);
@@ -24,10 +26,12 @@ export default function FormsList() {
   const [activeResponse, setActiveResponse] = useState(null);
 
   useEffect(() => {
+    if (tenantLoading || (!activeTenantId && scope === 'tenant')) return;
+    
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/forms?limit=200', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const res = await tenantFetch('/api/forms?limit=200', {}, activeTenantId, scope);
         const isJson = (res.headers.get('content-type') || '').includes('application/json');
         const json = isJson ? await res.json() : { forms: [] };
         if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load forms');
@@ -40,14 +44,14 @@ export default function FormsList() {
       }
     };
     load();
-  }, [tenantId]);
+  }, [activeTenantId, scope, tenantLoading]);
 
   useEffect(() => {
     if (tab !== 'responses' || !activeId) return;
     const load = async () => {
       setLoadingResponses(true);
       try {
-        const res = await fetch(`/api/form-responses?formId=${encodeURIComponent(activeId)}`, { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+        const res = await tenantFetch(`/api/form-responses?formId=${encodeURIComponent(activeId)}`, {}, activeTenantId, scope);
         const json = await res.json();
         setResponses(json.responses || []);
       } catch (_e) {
@@ -57,15 +61,15 @@ export default function FormsList() {
       }
     };
     load();
-  }, [tab, activeId, tenantId]);
+      }, [tab, activeId, activeTenantId, scope]);
 
   const saveAssignments = async () => {
     if (!activeForm) return;
-    const res = await fetch('/api/forms', {
+    const res = await tenantFetch('/api/forms', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: activeForm.id, assigned_roles: assignedRoles })
-    });
+    }, activeTenantId, scope);
     const json = await res.json();
     if (res.ok) {
       setForms((prev) => prev.map((f) => f.id === activeForm.id ? { ...f, assigned_roles: assignedRoles, updated_at: new Date().toISOString() } : f));
@@ -193,7 +197,7 @@ export default function FormsList() {
                   </button>
                   <button title="Copy" className="p-2 text-gray-400 hover:text-secondary hover:bg-gray-100 rounded-lg" onClick={async (e) => {
                     e.stopPropagation();
-                    const res = await fetch(`/api/forms/${form.id}/copy`, { method: 'POST', headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } });
+                    const res = await tenantFetch(`/api/forms/${form.id}/copy`, { method: 'POST' }, activeTenantId, scope);
                     const json = await res.json();
                     if (res.ok) setForms((prev) => [json.form, ...prev]);
                   }}>

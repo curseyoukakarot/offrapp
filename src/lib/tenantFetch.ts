@@ -53,11 +53,20 @@ export async function tenantFetch(
  * Hook version that uses the ActiveTenantContext automatically
  */
 export function useTenantFetch() {
-  // This will be imported and used after ActiveTenantContext is integrated
+  // Import useActiveTenant dynamically to avoid circular dependency
+  let useActiveTenant: any;
+  try {
+    useActiveTenant = require('../contexts/ActiveTenantContext').useActiveTenant;
+  } catch {
+    // Fallback if context not available
+    useActiveTenant = () => ({ scope: 'tenant', activeTenantId: null });
+  }
+  
+  const { scope, activeTenantId } = useActiveTenant();
+  
   return {
     tenantFetch: (path: string, options: TenantFetchOptions = {}) => {
-      // Will be enhanced to use useActiveTenant() hook
-      return tenantFetch(path, options);
+      return tenantFetch(path, options, activeTenantId, scope);
     }
   };
 }

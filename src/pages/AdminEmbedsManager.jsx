@@ -3,9 +3,12 @@ import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
 import { useNavigate } from 'react-router-dom';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 const AdminEmbedsManager = () => {
   const { user } = useUser();
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [embeds, setEmbeds] = useState([]);
   const [users, setUsers] = useState([]);
   const [profiles, setProfiles] = useState({});
@@ -43,8 +46,11 @@ const AdminEmbedsManager = () => {
       fetchEmbeds();
       fetchUsers();
     };
-    fetchRole();
-  }, [user, navigate]);
+    
+    if (!tenantLoading) {
+      fetchRole();
+    }
+  }, [user, navigate, activeTenantId, scope, tenantLoading]);
 
   async function fetchUsers() {
     try {
@@ -71,10 +77,23 @@ const AdminEmbedsManager = () => {
   async function fetchEmbeds() {
     try {
       console.log('Fetching embeds...');
-      const { data, error } = await supabase
+      
+      if (!activeTenantId && scope === 'tenant') {
+        setEmbeds([]);
+        setLoading(false);
+        return;
+      }
+
+      let query = supabase
         .from('embeds')
         .select('id, title, role, provider, url, sort_order, is_active, user_id, embed_type')
         .order('sort_order');
+      
+      if (scope === 'tenant' && activeTenantId) {
+        query = query.eq('tenant_id', activeTenantId);
+      }
+      
+      const { data, error } = await query;
       
       console.log('Embeds response:', { data, error });
       
@@ -82,7 +101,7 @@ const AdminEmbedsManager = () => {
         console.error('Error fetching embeds:', error);
         setNotification({ type: 'error', message: 'Failed to fetch embeds. Please try again.' });
       } else {
-        setEmbeds(data);
+        setEmbeds(data || []);
       }
     } catch (error) {
       console.error('Error in fetchEmbeds:', error);
@@ -92,7 +111,7 @@ const AdminEmbedsManager = () => {
   }
 
   async function addEmbed() {
-    const { error } = await supabase.from('embeds').insert([newEmbed]);
+    const { error } = await supabase.from('embeds').insert([{ ...newEmbed, tenant_id: activeTenantId }]);
     if (!error) {
       setNewEmbed({ 
         title: '', 
