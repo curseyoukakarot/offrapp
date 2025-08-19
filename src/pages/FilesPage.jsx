@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
 import { useActiveTenant } from '../contexts/ActiveTenantContext';
 import { tenantFetch } from '../lib/tenantFetch';
@@ -257,10 +256,8 @@ const FilesPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-
-      <main className="flex-1 bg-gray-50 p-8 ml-64">
+    <div className="min-h-screen">
+      <main className="bg-gray-50 p-8">
         <h1 className="text-2xl font-bold mb-6">Files</h1>
 
         {role === 'admin' ? (

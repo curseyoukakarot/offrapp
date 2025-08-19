@@ -6,10 +6,17 @@ import { supabase } from '../supabaseClient';
 
 const Sidebar = () => {
   const { userRole, signOut, isSuperAdmin } = useAuth();
-  const { activeTenant } = useActiveTenant();
+  const { activeTenant, activeTenantId, scope } = useActiveTenant();
   const navigate = useNavigate();
   const [embeds, setEmbeds] = useState([]);
   const [tenantName, setTenantName] = useState(activeTenant?.name || 'Career Kitchen');
+
+  // Update tenant name when activeTenant changes
+  useEffect(() => {
+    if (activeTenant?.name) {
+      setTenantName(activeTenant.name);
+    }
+  }, [activeTenant]);
 
   const isAdmin = userRole === 'admin';
   const isRecruitPro = userRole === 'recruitpro' || userRole === 'role1';
@@ -26,7 +33,10 @@ const Sidebar = () => {
     const fetchEmbeds = async () => {
       if (!userRole) return;
       try {
-        const tenantId = localStorage.getItem('offrapp-active-tenant-id') || '';
+        // Use activeTenantId from context instead of localStorage
+        const tenantId = activeTenantId;
+        if (!tenantId) return;
+        
         // Tenant branding
         try {
           const tc = await fetch('/api/tenant-config', { headers: { ...(tenantId ? { 'x-tenant-id': tenantId } : {}) } }).then(r => r.json()).catch(() => ({}));
@@ -47,7 +57,7 @@ const Sidebar = () => {
       }
     };
     fetchEmbeds();
-  }, [userRole]);
+  }, [userRole, activeTenantId]);
 
   const getRoleTitle = () => {
     switch (userRole) {
