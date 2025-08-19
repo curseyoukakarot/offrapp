@@ -253,20 +253,32 @@ export default function AdminSettings() {
       const tenantId = activeTenantId;
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Save brand settings
+      // Save brand settings (only save tenant name)
       await fetch('/api/tenant-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}`, ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
         body: JSON.stringify({
           name: brand.name,
-          support_email: brand.support_email,
-          logo_url: brand.logo_url,
-          favicon_url: brand.favicon_url,
         })
       });
       
+      setToast({ type: 'success', message: 'Brand settings saved' });
+      setTimeout(() => setToast(null), 2000);
+    } catch (e) {
+      setToast({ type: 'error', message: e.message || 'Save failed' });
+    } finally {
+      setSavingBrand(false);
+    }
+  };
+
+  const saveRoles = async () => {
+    try {
+      setSavingBrand(true); // Reuse the same loading state
+      const tenantId = activeTenantId;
+      const { data: { session } } = await supabase.auth.getSession();
+      
       // Save custom roles
-      await fetch('/api/tenant-roles', {
+      const response = await fetch('/api/tenant-roles', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}`, ...(tenantId ? { 'x-tenant-id': tenantId } : {}) },
         body: JSON.stringify({
@@ -277,11 +289,18 @@ export default function AdminSettings() {
           }))
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save roles');
+      }
       
-      setToast({ type: 'success', message: 'Settings saved' });
+      setToast({ type: 'success', message: 'Role types saved successfully!' });
       setTimeout(() => setToast(null), 2000);
     } catch (e) {
-      setToast({ type: 'error', message: e.message || 'Save failed' });
+      console.error('Save roles error:', e);
+      setToast({ type: 'error', message: e.message || 'Failed to save roles' });
+      setTimeout(() => setToast(null), 3000);
     } finally {
       setSavingBrand(false);
     }
@@ -441,7 +460,7 @@ export default function AdminSettings() {
             </button>
             <button 
               className={`px-3 py-1.5 text-sm rounded text-white ${savingBrand ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} 
-              onClick={saveBrand} 
+              onClick={saveRoles} 
               disabled={savingBrand}
             >
               {savingBrand ? 'Saving...' : 'Save'}
