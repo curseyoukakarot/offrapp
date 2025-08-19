@@ -13,10 +13,15 @@ const Sidebar = () => {
 
   // Update tenant name when activeTenant changes
   useEffect(() => {
+    console.log('🏢 Sidebar: activeTenant changed:', activeTenant);
+    console.log('🏢 Sidebar: activeTenantId:', activeTenantId);
     if (activeTenant?.name) {
+      console.log('🏢 Setting tenant name to:', activeTenant.name);
       setTenantName(activeTenant.name);
+    } else {
+      console.log('🏢 No activeTenant name, keeping default');
     }
-  }, [activeTenant]);
+  }, [activeTenant, activeTenantId]);
 
   const isAdmin = userRole === 'admin';
   const isRecruitPro = userRole === 'recruitpro' || userRole === 'role1';

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
 
 const UserFiles = () => {
@@ -103,9 +102,8 @@ const UserFiles = () => {
 
   if (error) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar role={role} />
-        <main className="flex-1 bg-gray-50 p-8 ml-64">
+      <div className="min-h-screen">
+        <main className="bg-gray-50 p-8">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             <p className="font-bold">Error</p>
             <p>{error}</p>
@@ -116,9 +114,8 @@ const UserFiles = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-      <main className="flex-1 bg-gray-50 p-8 ml-64">
+    <div className="min-h-screen">
+      <main className="bg-gray-50 p-8">
         <h1 className="text-2xl font-bold mb-6">Your Files</h1>
 
         <form onSubmit={handleUserUpload} className="bg-white p-4 rounded shadow mb-6 space-y-3">

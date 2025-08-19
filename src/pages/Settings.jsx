@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
 
 const Settings = () => {
@@ -99,9 +98,8 @@ const Settings = () => {
   if (loading) return <div className="flex justify-center items-center h-screen text-gray-600">Loading...</div>;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-      <main className="flex-1 bg-gray-50 p-8 ml-64 max-w-xl mx-auto">
+    <div className="min-h-screen">
+      <main className="bg-gray-50 p-8 max-w-xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
         {success && <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">{success}</div>}
         {error && <div className="bg-red-100 text-red-800 px-4 py-2 rounded mb-4">{error}</div>}
