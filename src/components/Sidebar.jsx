@@ -195,15 +195,6 @@ const Sidebar = () => {
                 <i className="fa-solid fa-folder mr-3" />
                 <span>Files</span>
               </NavLink>
-              {/* Removed Forms link as requested */}
-              <NavLink to="/settings" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-gear mr-3" />
-                <span>Settings</span>
-              </NavLink>
               <NavLink to="/admin-embeds" className={({ isActive }) =>
                 `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
                   isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
@@ -211,14 +202,6 @@ const Sidebar = () => {
               }>
                 <i className="fa-solid fa-layer-group mr-3" />
                 <span>Admin Embeds</span>
-              </NavLink>
-              <NavLink to="/dashboard/admin/settings" className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }>
-                <i className="fa-solid fa-gear mr-3" />
-                <span>Settings</span>
               </NavLink>
               <NavLink to="/dashboard/admin/billing" className={({ isActive }) =>
                 `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
@@ -235,6 +218,14 @@ const Sidebar = () => {
               }>
                 <i className="fa-solid fa-plug mr-3" />
                 <span>Integrations</span>
+              </NavLink>
+              <NavLink to="/dashboard/admin/settings" className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }>
+                <i className="fa-solid fa-gear mr-3" />
+                <span>Settings</span>
               </NavLink>
             </>
           ) : (
