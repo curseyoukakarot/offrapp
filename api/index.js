@@ -19,8 +19,12 @@ import tenantRolesRouter from './src/server/routes/tenant-roles.js';
 import inviteRouter from './src/server/routes/invite.js';
 import { impersonationMiddleware } from './src/server/middleware/impersonation.js';
 
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
-console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Loaded' : 'Missing');
+console.log('=== API SERVER STARTUP ===');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing');
+console.log('STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? 'Set' : 'Missing');
+console.log('Node version:', process.version);
+console.log('Starting Express app...');
 
 const app = express();
 app.use(cors());
@@ -318,14 +322,26 @@ app.post('/api/notify/admins', async (req, res) => {
   res.json({ ok: true });
 });
 
-// Global error handler - must be after all routes/middleware  
+// Enhanced error handler for debugging
 app.use((err, req, res, next) => {
-  console.error('API Error:', err);  // Logs to Vercel console
+  console.error('=== API ERROR DETAILS ===');
   console.error('Route:', req.method, req.url);
+  console.error('Error:', err.message);
   console.error('Stack:', err.stack);
-  res.status(500).json({ 
-    error: 'Internal Server Error', 
-    details: err.message,
-    route: req.url 
-  });
+  console.error('Headers:', req.headers);
+  console.error('========================');
+  
+  if (!res.headersSent) {
+    res.status(500).json({ 
+      error: 'Internal Server Error', 
+      details: err.message,
+      route: req.url,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Catch unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
