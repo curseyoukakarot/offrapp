@@ -479,10 +479,21 @@ const UsersList = () => {
               <div>
                 <label className="block text-sm font-medium">Role</label>
                 <select className="border w-full px-3 py-2 rounded mt-1" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
-                  <option value="admin">Admin</option>
-                  <option value="recruitpro">RecruitPro</option>
-                  <option value="jobseeker">Job Seeker</option>
-                  <option value="client">Client</option>
+                  {tenantRoles.length > 0 ? (
+                    tenantRoles.map((roleOption) => (
+                      <option key={roleOption.role_key} value={roleOption.role_key}>
+                        {roleOption.role_label}
+                      </option>
+                    ))
+                  ) : (
+                    // Fallback options if tenant roles haven't loaded yet
+                    <>
+                      <option value="admin">Admin</option>
+                      <option value="role1">Team Member</option>
+                      <option value="role2">Client</option>
+                      <option value="role3">Guest</option>
+                    </>
+                  )}
                 </select>
               </div>
               <div>
