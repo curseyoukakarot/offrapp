@@ -75,7 +75,7 @@ app.use('/api/impersonate', impersonateRouter);
 app.use('/api/metrics', metricsRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/notifications', notificationsRouter);
-app.use('/api/billing', billingRouter);
+// app.use('/api/billing', billingRouter); // Temporarily disabled - causing FUNCTION_INVOCATION_FAILED
 app.use('/api/audit', auditRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/super', superRouter);
