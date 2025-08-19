@@ -46,7 +46,7 @@ export default function Signup() {
       try {
         const { supabase } = await import('../supabaseClient');
         
-        // Create the user account
+        // Create the user account without email confirmation (like admin invites)
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -55,6 +55,34 @@ export default function Signup() {
             emailRedirectTo: `${window.location.origin}/login`
           }
         });
+        
+        // If signup requires confirmation, try admin create instead
+        if (error && error.message.includes('confirmation')) {
+          console.log('🔄 Signup requires confirmation, trying admin create...');
+          
+          // Try to create user as confirmed via admin API
+          const adminRes = await fetch('/api/admin-create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email, 
+              password, 
+              full_name: name, 
+              title,
+              email_confirm: true 
+            })
+          });
+          
+          if (!adminRes.ok) {
+            const adminError = await adminRes.json();
+            throw new Error(adminError.error || 'Failed to create user');
+          }
+          
+          const adminData = await adminRes.json();
+          data = { user: adminData.user };
+        } else if (error) {
+          throw error;
+        }
         
         if (error) {
           alert(`Sign up failed: ${error.message}`);
@@ -66,6 +94,10 @@ export default function Signup() {
         if (invite && data.user) {
           try {
             console.log('🔗 Member signup successful, accepting invitation for user:', data.user.id);
+            console.log('🎯 Invitation token:', invite);
+            
+            // Wait a moment for the user to be fully created in the database
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Accept the invitation to attach membership
             const acceptRes = await fetch('/api/public/invitations/accept', {
@@ -73,6 +105,8 @@ export default function Signup() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token: invite })
             });
+            
+            console.log('📡 Invitation acceptance response status:', acceptRes.status);
             
             if (!acceptRes.ok) {
               const errorData = await acceptRes.json();
@@ -85,16 +119,31 @@ export default function Signup() {
             const acceptData = await acceptRes.json();
             console.log('✅ Invitation accepted successfully:', acceptData);
             
+            // Manually verify the membership was created
+            const { data: membershipCheck } = await supabase
+              .from('memberships')
+              .select('tenant_id, role, status')
+              .eq('user_id', data.user.id);
+              
+            console.log('🔍 Membership verification after accept:', membershipCheck);
+            
+            if (!membershipCheck || membershipCheck.length === 0) {
+              console.error('❌ No membership found after invitation acceptance!');
+              alert('Signup completed but membership not created. Please contact support.');
+              window.location.href = '/login?message=signup_incomplete';
+              return;
+            }
+            
             // Refresh the session to ensure latest auth state
             await supabase.auth.refreshSession();
             
             // Wait longer to ensure membership is fully created and visible
             console.log('⏳ Waiting for membership to propagate...');
-            await new Promise(resolve => setTimeout(resolve, 3000)); // 3s wait
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2s additional wait
             
             // Redirect with tenant context
-            const tenantParam = acceptData.tenant_id ? `?tenant_id=${acceptData.tenant_id}` : '';
-            window.location.href = `/login${tenantParam}&message=account_created`;
+            const tenantId = membershipCheck[0].tenant_id;
+            window.location.href = `/login?tenant_id=${tenantId}&message=account_created`;
             
           } catch (acceptError) {
             console.error('❌ Error accepting invitation:', acceptError);
@@ -102,6 +151,7 @@ export default function Signup() {
             setLoading(false);
           }
         } else {
+          console.error('❌ No invite token or user data');
           window.location.href = '/login?message=signup_complete';
         }
       } catch (error) {
