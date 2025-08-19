@@ -191,6 +191,7 @@ const Sidebar = () => {
           </NavLink>
 
           {/* Menu Items */}
+          {console.log('🔍 Sidebar render:', { userRole, isAdmin, activeTenantId })}
           {isAdmin ? (
             <>
               <NavLink to="/crm/users" className={({ isActive }) =>
