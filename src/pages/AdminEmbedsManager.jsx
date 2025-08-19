@@ -14,7 +14,7 @@ const AdminEmbedsManager = () => {
   const [profiles, setProfiles] = useState({});
   const [newEmbed, setNewEmbed] = useState({
     title: '',
-    role: 'jobseeker',
+    role: 'role2', // Default to role2 (Client equivalent)
     provider: 'calendly',
     url: '',
     sort_order: 0,
@@ -54,10 +54,25 @@ const AdminEmbedsManager = () => {
 
   async function fetchUsers() {
     try {
-      const { data: usersData, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-      if (!error && usersData) {
-        setUsers(usersData);
-        // Fetch all profiles for these users
+      if (!activeTenantId && scope === 'tenant') {
+        setUsers([]);
+        return;
+      }
+
+      // Use tenant-scoped API to fetch users for this tenant only
+      const res = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('Error fetching tenant users:', data);
+        return;
+      }
+
+      const usersData = data.users || [];
+      setUsers(usersData);
+      
+      // Fetch all profiles for these users
+      if (usersData.length > 0) {
         const userIds = usersData.map(u => u.id);
         const { data: profilesData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds);
         // Map profiles by user id
@@ -113,15 +128,15 @@ const AdminEmbedsManager = () => {
   async function addEmbed() {
     const { error } = await supabase.from('embeds').insert([{ ...newEmbed, tenant_id: activeTenantId }]);
     if (!error) {
-      setNewEmbed({ 
+            setNewEmbed({ 
         title: '', 
-        role: 'jobseeker', 
+        role: 'role2', // Default to role2 (Client equivalent)
         provider: 'calendly', 
         url: '', 
         sort_order: 0, 
         is_active: true, 
-        user_id: null,
-        embed_type: 'role'
+        user_id: null, 
+        embed_type: 'role' 
       });
       fetchEmbeds();
       setNotification({ type: 'success', message: 'Embed created successfully!' });
@@ -171,7 +186,7 @@ const AdminEmbedsManager = () => {
             <select 
               className="border p-2 rounded flex-1" 
               value={newEmbed.embed_type} 
-              onChange={e => setNewEmbed({ ...newEmbed, embed_type: e.target.value, user_id: null, role: 'jobseeker' })}
+              onChange={e => setNewEmbed({ ...newEmbed, embed_type: e.target.value, user_id: null, role: 'role2' })}
             >
               <option value="role">User Type Embed</option>
               <option value="user">Individual User Embed</option>
@@ -181,9 +196,9 @@ const AdminEmbedsManager = () => {
           {newEmbed.embed_type === 'role' ? (
             <select className="border p-2 rounded" value={newEmbed.role} onChange={e => setNewEmbed({ ...newEmbed, role: e.target.value })}>
               <option value="admin">Admin</option>
-              <option value="recruitpro">RecruitPro</option>
-              <option value="jobseeker">Job Seeker</option>
-              <option value="client">Client</option>
+              <option value="role1">Team Member</option>
+              <option value="role2">Client</option>
+              <option value="role3">Guest</option>
             </select>
           ) : (
             <select 
