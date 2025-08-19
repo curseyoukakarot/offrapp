@@ -131,6 +131,16 @@ export const AuthProvider = ({ children }) => {
       
       // Only redirect to onboarding if we're sure there are no memberships
       // and we're not dealing with an RLS error
+      // Also check if this is a member invite that should skip onboarding
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteMessage = urlParams.get('message');
+      
+      if (inviteMessage === 'account_created' || inviteMessage === 'invitation_accepted') {
+        // This is a member who just signed up, don't send to onboarding
+        console.log('🔄 Member signup detected, staying on login');
+        return;
+      }
+      
       if (!memsError) {
         console.log('🔄 No memberships found, redirecting to /onboarding');
         setHasRedirected(true);

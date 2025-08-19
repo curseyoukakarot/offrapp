@@ -62,22 +62,27 @@ export default function Signup() {
           return;
         }
         
-        // Wait a moment for the user to be created
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Accept the invitation to attach membership
-        if (invite) {
-          const acceptRes = await fetch('/api/public/invitations/accept', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: invite })
-          });
-          
-          if (acceptRes.ok) {
-            // Redirect to login with success message
-            window.location.href = '/login?message=account_created';
-          } else {
-            console.error('Failed to accept invitation, but account was created');
+        // For member invites, manually create the membership immediately
+        if (invite && data.user) {
+          try {
+            // Accept the invitation to attach membership
+            const acceptRes = await fetch('/api/public/invitations/accept', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: invite })
+            });
+            
+            if (acceptRes.ok) {
+              console.log('✅ Invitation accepted and membership created');
+              // Wait a bit longer to ensure membership is fully created
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              window.location.href = '/login?message=account_created';
+            } else {
+              console.error('Failed to accept invitation, but account was created');
+              window.location.href = '/login?message=signup_complete';
+            }
+          } catch (acceptError) {
+            console.error('Error accepting invitation:', acceptError);
             window.location.href = '/login?message=signup_complete';
           }
         } else {
