@@ -47,7 +47,20 @@ const Sidebar = () => {
   }, [activeTenantId, memberships]);
 
   const isAdmin = userRole === 'admin';
-  console.log('🔍 Sidebar debug:', { userRole, isAdmin });
+  
+  // Don't render admin navigation until userRole is loaded
+  if (!userRole) {
+    return (
+      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
+        <div className="p-6">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      </aside>
+    );
+  }
   const isRecruitPro = userRole === 'recruitpro' || userRole === 'role1';
   const isJobSeeker = userRole === 'jobseeker' || userRole === 'role2';
   const isClient = userRole === 'client' || userRole === 'role3';
