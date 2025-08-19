@@ -62,10 +62,20 @@ export default async function handler(req, res) {
       console.error('❌ Failed to mark invitation accepted:', inviteError);
       // Continue anyway
     }
-    const redirect = inv.bypass_billing
+    // Only send admin/owner roles to onboarding, regular members go straight to login
+    const isAdminRole = ['admin', 'owner'].includes(inv.role);
+    const redirect = (inv.bypass_billing && isAdminRole)
       ? `/onboarding?tenant=${inv.tenant_id}&bypass_billing=1`
-      : `/`;
-    return res.status(200).json({ ok: true, redirect, tenant_id: inv.tenant_id, bypass_billing: !!inv.bypass_billing });
+      : `/login?message=invitation_accepted`;
+    
+    return res.status(200).json({ 
+      ok: true, 
+      redirect, 
+      tenant_id: inv.tenant_id, 
+      bypass_billing: !!inv.bypass_billing,
+      role: inv.role,
+      is_admin: isAdminRole
+    });
   } catch (e) {
     console.error('api/public/invitations/accept error', e);
     return res.status(500).json({ error: e.message });

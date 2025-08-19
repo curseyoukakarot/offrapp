@@ -105,7 +105,11 @@ export default async function handler(req, res) {
             ? `${req.headers['x-forwarded-proto']}://${req.headers['x-forwarded-host']}`
             : 'https://www.nestbase.io');
             
-        const signup_url = `${siteBase}/signup?invite=${token_string}`;
+        // For regular members, send to simple signup. For admins, send to full onboarding
+        const isAdminRole = ['admin', 'owner'].includes(role);
+        const signup_url = isAdminRole 
+          ? `${siteBase}/signup?invite=${token_string}` 
+          : `${siteBase}/signup?invite=${token_string}&member=true`;
 
         const msg = {
           to: email,
