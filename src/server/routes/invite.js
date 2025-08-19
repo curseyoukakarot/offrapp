@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import sgMail from '@sendgrid/mail';
-import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
+import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.js';
 import { withAuth, withTenant } from '../middleware/auth.js';
 
 const router = express.Router();

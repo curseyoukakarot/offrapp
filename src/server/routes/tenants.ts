@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.ts';
+import { ensureClientCapacity, ensureTeamCapacity } from '../middleware/enforcePlanLimits.js';
 
 const router = Router();
 
