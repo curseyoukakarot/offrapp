@@ -47,8 +47,20 @@ const EmbedPage = () => {
       if (embedData) {
         let accessGranted = false;
         if (embedData.embed_type === 'role') {
-          accessGranted = embedData.role === currentRole;
-          console.log('Role-based access check:', { userRole: currentRole, embedRole: embedData.role, hasAccess: accessGranted });
+          // Map current userRole back to actual role keys for access check
+          const actualRoleKeys = [];
+          if (currentRole === 'admin') actualRoleKeys.push('admin');
+          if (currentRole === 'client') actualRoleKeys.push('client', 'role2', 'role3');
+          if (currentRole === 'recruitpro') actualRoleKeys.push('recruitpro', 'role1');
+          if (currentRole === 'jobseeker') actualRoleKeys.push('jobseeker', 'role2');
+          
+          accessGranted = actualRoleKeys.includes(embedData.role);
+          console.log('Role-based access check:', { 
+            userRole: currentRole, 
+            actualRoleKeys, 
+            embedRole: embedData.role, 
+            hasAccess: accessGranted 
+          });
         } else if (embedData.embed_type === 'user') {
           accessGranted = embedData.user_id === session.user.id;
           console.log('User-based access check:', { userId: session.user.id, embedUserId: embedData.user_id, hasAccess: accessGranted });
