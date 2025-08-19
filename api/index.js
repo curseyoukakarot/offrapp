@@ -84,20 +84,38 @@ app.use('/api/forms', formsRouter);
 app.use('/api/tenant-roles', tenantRolesRouter);
 app.use('/api/invite', inviteRouter);
 
-// Simple health endpoints
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+// Simple health endpoints with error handling
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test basic functionality
+    res.json({ ok: true, timestamp: new Date().toISOString() });
+  } catch (err) {
+    console.error('Health error:', err);
+    res.status(500).json({ error: 'Health check failed', details: err.message });
+  }
+});
+
 app.get('/api/ping', (_req, res) => res.json({ ok: true }));
 
 // Diagnostic endpoint for production debugging
-app.get('/api/debug/env', (_req, res) => {
-  res.json({
-    nodeVersion: process.version,
-    hasSupabase: !!process.env.SUPABASE_URL,
-    hasStripe: !!process.env.STRIPE_SECRET_KEY,
-    hasSendgrid: !!process.env.SENDGRID_API_KEY,
-    timestamp: new Date().toISOString(),
-    routes: ['billing', 'tenants', 'users', 'super', 'files', 'forms']
-  });
+app.get('/api/debug/env', async (req, res) => {
+  try {
+    res.json({
+      nodeVersion: process.version,
+      hasSupabase: !!process.env.SUPABASE_URL,
+      hasStripe: !!process.env.STRIPE_SECRET_KEY,
+      hasSendgrid: !!process.env.SENDGRID_API_KEY,
+      timestamp: new Date().toISOString(),
+      routes: ['tenants', 'users', 'super', 'files', 'forms'],
+      env: {
+        supabaseUrl: process.env.SUPABASE_URL ? 'set' : 'missing',
+        supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'set' : 'missing'
+      }
+    });
+  } catch (err) {
+    console.error('Debug env error:', err);
+    res.status(500).json({ error: 'Debug failed', details: err.message });
+  }
 });
 
 // ✅ Supabase invite helper function
@@ -300,13 +318,14 @@ app.post('/api/notify/admins', async (req, res) => {
   res.json({ ok: true });
 });
 
-// Express error handler to avoid plain text FUNCTION_INVOCATION_FAILED
-// eslint-disable-next-line no-unused-vars
-app.use((err, _req, res, _next) => {
-  console.error('[UNHANDLED]', err);
-  try {
-    res.status(500).json({ error: err?.message || 'Server error' });
-  } catch (_e) {
-    res.status(500).send('{"error":"Server error"}');
-  }
+// Global error handler - must be after all routes/middleware  
+app.use((err, req, res, next) => {
+  console.error('API Error:', err);  // Logs to Vercel console
+  console.error('Route:', req.method, req.url);
+  console.error('Stack:', err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error', 
+    details: err.message,
+    route: req.url 
+  });
 });
