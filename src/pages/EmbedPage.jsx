@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import Sidebar from '../components/Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 
 const EmbedPage = () => {
@@ -88,9 +87,8 @@ const EmbedPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar role={role} />
-        <main className="flex-1 bg-gray-50 p-0 ml-64 flex flex-col min-h-screen">
+      <div className="min-h-screen">
+        <main className="bg-gray-50 p-0 flex flex-col min-h-screen">
           <div className="flex justify-center items-center h-screen text-gray-600">
             Loading embed...
           </div>
@@ -101,9 +99,8 @@ const EmbedPage = () => {
 
   if (!hasAccess || !embed) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar role={role} />
-        <main className="flex-1 bg-gray-50 p-0 ml-64 flex flex-col min-h-screen">
+      <div className="min-h-screen">
+        <main className="bg-gray-50 p-0 flex flex-col min-h-screen">
           <div className="flex justify-center items-center h-screen text-gray-600">
             You don't have access to this embed.
           </div>
@@ -113,9 +110,8 @@ const EmbedPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-      <main className="flex-1 bg-gray-50 p-0 ml-64 flex flex-col min-h-screen">
+    <div className="min-h-screen">
+      <main className="bg-gray-50 p-0 flex flex-col min-h-screen">
         <div className="p-8 pb-0">
           <h1 className="text-2xl font-bold mb-4">{embed.title}</h1>
         </div>
