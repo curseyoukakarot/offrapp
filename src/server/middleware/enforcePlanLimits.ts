@@ -3,14 +3,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 type Plan = 'starter' | 'pro' | 'advanced';
 
-function getSupabase(): SupabaseClient {
+function getSupabase() {
   const url = process.env.SUPABASE_URL as string;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
   if (!url || !key) throw new Error('Supabase env not configured');
   return createClient(url, key);
 }
 
-async function fetchTenantAndUsage(supabase: SupabaseClient, tenantId: string) {
+async function fetchTenantAndUsage(supabase: any, tenantId: string) {
   const { data: tenant, error: tErr } = await supabase
     .from('tenants')
     .select('id, plan, seats_purchased')
@@ -29,9 +29,9 @@ async function fetchTenantAndUsage(supabase: SupabaseClient, tenantId: string) {
   };
 }
 
-export async function ensureClientCapacity(tenantId: string, supabase?: SupabaseClient) {
+export async function ensureClientCapacity(tenantId: string, supabase?: any) {
   const sb = supabase || getSupabase();
-  const { tenant, usage } = await fetchTenantAndUsage(sb as SupabaseClient, tenantId);
+  const { tenant, usage } = await fetchTenantAndUsage(sb, tenantId);
   const plan = String(tenant.plan || 'starter').toLowerCase() as Plan;
   if (plan === 'starter' && usage.clients_count >= 30) {
     const e: any = new Error('Starter plan allows up to 30 clients.');
@@ -48,9 +48,9 @@ export async function ensureClientCapacity(tenantId: string, supabase?: Supabase
   // advanced: no cap
 }
 
-export async function ensureTeamCapacity(tenantId: string, supabase?: SupabaseClient) {
+export async function ensureTeamCapacity(tenantId: string, supabase?: any) {
   const sb = supabase || getSupabase();
-  const { tenant, usage } = await fetchTenantAndUsage(sb as SupabaseClient, tenantId);
+  const { tenant, usage } = await fetchTenantAndUsage(sb, tenantId);
   const plan = String(tenant.plan || 'starter').toLowerCase() as Plan;
   const seats = Math.max(1, Number(tenant.seats_purchased || 1));
 
