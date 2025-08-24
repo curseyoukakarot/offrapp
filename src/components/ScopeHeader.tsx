@@ -90,7 +90,7 @@ export const ScopeHeader: React.FC = () => {
         <div className="flex items-center space-x-3">
           <button
             onClick={switchToSuper}
-            className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition-colors"
+            className="px-3 py-1 bg-purple-100 text-purple-800 border border-purple-300 rounded-lg text-sm hover:bg-purple-200 transition-colors"
           >
             <i className="fa-solid fa-crown mr-1"></i>
             Super Admin
