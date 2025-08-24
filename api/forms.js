@@ -54,6 +54,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ form: data });
     }
 
+    if (req.method === 'DELETE') {
+      // Extract form ID from URL path (e.g., /api/forms/b983cd53-250d-4e2e-91b4-387930698729)
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const pathParts = url.pathname.split('/');
+      const id = pathParts[pathParts.length - 1]; // Get the last part of the path
+      
+      if (!id || id === 'forms') {
+        return res.status(400).json({ error: 'Form ID is required for deletion' });
+      }
+      
+      // Build delete query with tenant scoping for security
+      let deleteQuery = supabase.from('forms').delete().eq('id', id);
+      if (tenantId) {
+        deleteQuery = deleteQuery.eq('tenant_id', tenantId);
+      }
+      
+      const { error } = await deleteQuery;
+      if (error) throw error;
+      
+      return res.status(200).json({ success: true, message: 'Form deleted successfully' });
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     console.error('api/forms error', e);
