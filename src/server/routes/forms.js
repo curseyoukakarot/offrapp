@@ -75,9 +75,17 @@ router.delete('/:id', async (req, res) => {
       console.warn('DELETE /api/forms/:id form_responses error:', respErr.message);
     }
 
-    // Delete the form record itself
+    // Delete the form record itself (hard delete)
     const { error: formErr } = await supabase.from('forms').delete().eq('id', id);
-    if (formErr) throw formErr;
+    if (formErr) {
+      // If hard delete fails (e.g., unforeseen FKs), fallback to soft-delete
+      console.warn('DELETE /api/forms/:id hard delete failed, attempting soft delete:', formErr.message);
+      const { error: softErr } = await supabase
+        .from('forms')
+        .update({ status: 'archived', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (softErr) throw softErr;
+    }
 
     res.json({ ok: true });
   } catch (e) {
