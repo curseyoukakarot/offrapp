@@ -15,6 +15,27 @@ export default async function handler(req, res) {
       return res.status(200).json({ forms: data || [] });
     }
 
+    if (req.method === 'POST') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const bodyRaw = Buffer.concat(chunks).toString('utf8') || '{}';
+      const body = JSON.parse(bodyRaw);
+      
+      const payload = {
+        tenant_id: tenantId || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      ['title','description','status','schema','assigned_roles','theme','published'].forEach((k) => {
+        if (body[k] !== undefined) payload[k] = body[k];
+      });
+      
+      const { data, error } = await supabase.from('forms').insert([payload]).select('*').single();
+      if (error) throw error;
+      return res.status(200).json({ form: data });
+    }
+
     if (req.method === 'PATCH') {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);

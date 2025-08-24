@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { useActiveTenant } from '../contexts/ActiveTenantContext';
+import { tenantFetch } from '../lib/tenantFetch';
 
 type QuestionType = 'short' | 'long' | 'choice' | 'multi' | 'dropdown' | 'rating' | 'date' | 'file';
 
@@ -23,6 +25,7 @@ const defaultTheme: Theme = {
 };
 
 export default function FormBuilder() {
+  const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [title, setTitle] = useState('Untitled Form');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [activeIdx, setActiveIdx] = useState<number>(-1);
@@ -31,16 +34,55 @@ export default function FormBuilder() {
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [published, setPublished] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [tenantRoles, setTenantRoles] = useState<Array<{role_key: string, role_label: string, role_description?: string}>>([]);
+
+  // Fetch tenant roles
+  useEffect(() => {
+    if (tenantLoading || (!activeTenantId && scope === 'tenant')) return;
+    
+    const fetchTenantRoles = async () => {
+      try {
+        const res = await tenantFetch('/api/tenant-roles', {}, activeTenantId || undefined, scope);
+        const data = await res.json();
+        
+        if (res.ok) {
+          setTenantRoles(data.roles || []);
+        }
+      } catch (error) {
+        console.error('Error fetching tenant roles:', error);
+      }
+    };
+    
+    fetchTenantRoles();
+  }, [activeTenantId, scope, tenantLoading]);
 
   useEffect(() => {
     if (saving === 'saving') return;
     if (!title && questions.length === 0) return;
+    if (tenantLoading || (!activeTenantId && scope === 'tenant')) return;
+    
     const id = setTimeout(async () => {
       setSaving('saving');
       try {
-        await supabase.from('forms').upsert({ title, schema: questions, assigned_roles: assignedRoles, theme, published }, { onConflict: 'title' });
-        setSaving('saved');
-        setLastSavedAt(new Date());
+        // Use tenant-scoped API instead of direct Supabase call
+        const res = await tenantFetch('/api/forms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            title, 
+            schema: questions, 
+            assigned_roles: assignedRoles, 
+            theme, 
+            published 
+          })
+        }, activeTenantId || undefined, scope);
+        
+        if (res.ok) {
+          setSaving('saved');
+          setLastSavedAt(new Date());
+        } else {
+          setSaving('idle');
+        }
       } catch (_e) {
         setSaving('idle');
       } finally {
@@ -48,7 +90,7 @@ export default function FormBuilder() {
       }
     }, 1200);
     return () => clearTimeout(id);
-  }, [title, questions, assignedRoles, theme, published]);
+  }, [title, questions, assignedRoles, theme, published, activeTenantId, scope, tenantLoading]);
 
   const addQuestion = (type: QuestionType) => {
     const q: Question = { id: crypto.randomUUID(), type, label: defaultLabel(type), required: false, options: needsOptions(type) ? ['Option 1'] : undefined, logic: null };
@@ -146,7 +188,7 @@ export default function FormBuilder() {
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm text-gray-600">Fields</div>
             <div className="flex items-center gap-2">
-              <RolePicker value={assignedRoles} onChange={setAssignedRoles} />
+              <RolePicker value={assignedRoles} onChange={setAssignedRoles} tenantRoles={tenantRoles} />
               <AddMenu onPick={addQuestion} />
             </div>
           </div>
@@ -359,23 +401,42 @@ function PreviewQuestion({ q, theme }: { q: Question; theme: Theme }) {
   }
 }
 
-function RolePicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
-  const roles = [
-    { key: 'admin', label: 'Admin', desc: 'Can manage forms & data' },
-    { key: 'recruitpro', label: 'RecruitPro', desc: 'Power user tooling' },
-    { key: 'jobseeker', label: 'Job Seeker', desc: 'Candidate portal' },
-    { key: 'client', label: 'Client', desc: 'Client portal' },
-  ];
+function RolePicker({ value, onChange, tenantRoles }: { 
+  value: string[]; 
+  onChange: (v: string[]) => void; 
+  tenantRoles: Array<{role_key: string, role_label: string, role_description?: string}>
+}) {
   const toggle = (k: string) => {
     const set = new Set(value);
     set.has(k) ? set.delete(k) : set.add(k);
     onChange(Array.from(set));
   };
+  
+  // Show loading state if no tenant roles loaded yet
+  if (tenantRoles.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <i className="fa-solid fa-spinner fa-spin"></i>
+        Loading roles...
+      </div>
+    );
+  }
+  
   return (
     <div className="flex flex-wrap gap-2">
-      {roles.map((r) => (
-        <button key={r.key} type="button" title={r.desc} onClick={() => toggle(r.key)} className={`px-3 py-1 rounded-full text-xs border ${value.includes(r.key) ? roleChip(r.key) + ' border-transparent' : 'bg-white'}`}>
-          {r.label}
+      {tenantRoles.map((r) => (
+        <button 
+          key={r.role_key} 
+          type="button" 
+          title={r.role_description || r.role_label} 
+          onClick={() => toggle(r.role_key)} 
+          className={`px-3 py-1 rounded-full text-xs border ${
+            value.includes(r.role_key) 
+              ? roleChip(r.role_key) + ' border-transparent' 
+              : 'bg-white border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {r.role_label}
         </button>
       ))}
     </div>
