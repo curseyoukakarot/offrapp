@@ -48,7 +48,7 @@ export const ScopeHeader: React.FC = () => {
             {ownTenant && (
               <button
                 onClick={switchToMyTenant}
-                className="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition-colors"
+                className="px-3 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-lg text-sm hover:bg-blue-200 transition-colors"
               >
                 <i className="fa-solid fa-building mr-1"></i>
                 My Tenant
