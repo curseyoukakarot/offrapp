@@ -17,6 +17,8 @@ export default function FormsList() {
   const activeForm = useMemo(() => forms.find((f) => f.id === activeId) || null, [forms, activeId]);
   const [assignedRoles, setAssignedRoles] = useState([]);
   const [tenantRoles, setTenantRoles] = useState([]);
+  const [tenantUsers, setTenantUsers] = useState([]);
+  const [assignedUserId, setAssignedUserId] = useState('');
   useEffect(() => {
     setAssignedRoles(Array.isArray(activeForm?.assigned_roles) ? activeForm.assigned_roles : []);
   }, [activeForm?.id]);
@@ -43,6 +45,10 @@ export default function FormsList() {
         const rolesRes = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
         const rolesJson = await rolesRes.json();
         if (rolesRes.ok) setTenantRoles(rolesJson.roles || []);
+        // load tenant users for user-specific assignment
+        const usersRes = await tenantFetch('/api/files/tenant-users', {}, activeTenantId, scope);
+        const usersJson = await usersRes.json();
+        if (usersRes.ok) setTenantUsers(usersJson.users || []);
       } catch (e) {
         setError(e.message || String(e));
       } finally {
@@ -293,6 +299,17 @@ export default function FormsList() {
                     </div>
                   </div>
 
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">Or assign to a specific user</h4>
+                    <p className="text-sm text-gray-600 mb-3">Only the selected user will have access (admins always have access).</p>
+                    <select value={assignedUserId} onChange={(e) => setAssignedUserId(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                      <option value="">No specific user</option>
+                      {tenantUsers.map(u => (
+                        <option key={u.id} value={u.id}>{u.email}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="bg-white border border-gray-200 rounded-2xl p-6">
                     <h4 className="font-semibold text-gray-900 mb-3">Current Assignments</h4>
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -308,9 +325,15 @@ export default function FormsList() {
                     <div className="text-sm text-gray-500 mb-4">
                       <i className="fa-solid fa-users mr-2"></i>
                       {assignedRoles.length} roles assigned
+                      {assignedUserId ? <span className="ml-4"><i className="fa-solid fa-user mr-2"></i>{tenantUsers.find(u => u.id === assignedUserId)?.email}</span> : null}
                     </div>
                     <div className="text-right">
-                      <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 active:bg-green-800" onClick={saveAssignments}>
+                      <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 active:bg-green-800" onClick={async () => {
+                        await saveAssignments();
+                        if (activeForm) {
+                          await tenantFetch('/api/forms', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: activeForm.id, assigned_user_id: assignedUserId || null }) }, activeTenantId, scope);
+                        }
+                      }}>
                         <i className="fa-solid fa-save mr-2"></i>Save Assignments
                       </button>
                     </div>
