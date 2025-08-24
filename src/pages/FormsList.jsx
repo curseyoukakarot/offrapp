@@ -144,14 +144,14 @@ export default function FormsList() {
                 <button
                   id="card-view-btn"
                   onClick={() => setIsCardView(true)}
-                  className={`p-2 rounded-md ${isCardView ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                  className={`p-2 rounded-md ${isCardView ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400'}`}
                 >
                   <i className="fa-solid fa-grip"></i>
                 </button>
                 <button
                   id="table-view-btn"
                   onClick={() => setIsCardView(false)}
-                  className={`p-2 rounded-md ${!isCardView ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                  className={`p-2 rounded-md ${!isCardView ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400'}`}
                 >
                   <i className="fa-solid fa-list"></i>
                 </button>
@@ -310,7 +310,7 @@ export default function FormsList() {
                       {assignedRoles.length} roles assigned
                     </div>
                     <div className="text-right">
-                      <button className="bg-secondary text-white px-6 py-2 rounded-lg hover:bg-green-600" onClick={saveAssignments}>
+                      <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 active:bg-green-800" onClick={saveAssignments}>
                         <i className="fa-solid fa-save mr-2"></i>Save Assignments
                       </button>
                     </div>
