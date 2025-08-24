@@ -7,6 +7,7 @@ export default function FormsList() {
   const navigate = useNavigate();
   const { scope, activeTenantId, loading: tenantLoading } = useActiveTenant();
   const [isCardView, setIsCardView] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -131,11 +132,10 @@ export default function FormsList() {
                 <i className="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input type="text" placeholder="Search forms..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
               </div>
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
-                <option>All Status</option>
-                <option>Published</option>
-                <option>Draft</option>
-                <option>Archived</option>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="all">All Status</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
               </select>
             </div>
             <div className="flex items-center justify-between">
@@ -154,6 +154,18 @@ export default function FormsList() {
                   className={`p-2 rounded-md ${!isCardView ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
                 >
                   <i className="fa-solid fa-list"></i>
+                </button>
+                <button
+                  title="Archive"
+                  onClick={async () => {
+                    if (!activeForm) return;
+                    if (!window.confirm('Archive this form? It will be hidden from lists.')) return;
+                    const res = await tenantFetch('/api/forms', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: activeForm.id, status: 'archived' }) }, activeTenantId, scope);
+                    if (res.ok) setForms(prev => prev.filter(f => f.id !== activeForm.id));
+                  }}
+                  className="p-2 rounded-md text-gray-700 hover:bg-gray-200"
+                >
+                  <i className="fa-solid fa-box-archive"></i>
                 </button>
               </div>
               <div className="flex items-center space-x-2">
@@ -188,7 +200,9 @@ export default function FormsList() {
                 </button>
               </div>
             )}
-            {!loading && !error && forms.map((form) => (
+            {!loading && !error && forms
+              .filter((f) => statusFilter === 'all' ? true : (String(f.status || '').toLowerCase() === statusFilter))
+              .map((form) => (
             <div key={form.id} className={`bg-white border ${activeId === form.id ? 'border-primary' : 'border-gray-200'} rounded-2xl p-6 mb-4 hover:shadow-lg transition-shadow cursor-pointer group`} onClick={() => setActiveId(form.id)}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
