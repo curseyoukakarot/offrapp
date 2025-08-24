@@ -55,25 +55,54 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      // Extract form ID from URL path (e.g., /api/forms/b983cd53-250d-4e2e-91b4-387930698729)
-      const url = new URL(req.url, `http://${req.headers.host}`);
-      const pathParts = url.pathname.split('/');
-      const id = pathParts[pathParts.length - 1]; // Get the last part of the path
+      // Extract form ID from URL path - handle different URL formats
+      let id;
       
-      if (!id || id === 'forms') {
-        return res.status(400).json({ error: 'Form ID is required for deletion' });
+      try {
+        // Try multiple ways to extract the ID
+        if (req.query && req.query.id) {
+          // If ID is in query params: /api/forms?id=xxx
+          id = String(req.query.id);
+        } else {
+          // Extract from URL path: /api/forms/xxx
+          const urlPath = req.url.split('?')[0]; // Remove query params
+          const pathParts = urlPath.split('/').filter(Boolean); // Remove empty parts
+          id = pathParts[pathParts.length - 1]; // Get the last part
+        }
+        
+        console.log('DELETE request - extracted ID:', id, 'from URL:', req.url);
+        
+        if (!id || id === 'forms' || id === 'api') {
+          return res.status(400).json({ error: 'Form ID is required for deletion' });
+        }
+        
+        // Validate ID format (should be a UUID)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(id)) {
+          return res.status(400).json({ error: 'Invalid form ID format' });
+        }
+        
+        // Build delete query with tenant scoping for security
+        let deleteQuery = supabase.from('forms').delete().eq('id', id);
+        if (tenantId) {
+          deleteQuery = deleteQuery.eq('tenant_id', tenantId);
+        }
+        
+        console.log('Attempting to delete form:', id, 'for tenant:', tenantId);
+        
+        const { error, count } = await deleteQuery;
+        if (error) {
+          console.error('Delete error:', error);
+          throw error;
+        }
+        
+        console.log('Delete successful, affected rows:', count);
+        return res.status(200).json({ success: true, message: 'Form deleted successfully' });
+        
+      } catch (parseError) {
+        console.error('Error parsing DELETE request:', parseError);
+        return res.status(400).json({ error: 'Invalid request format' });
       }
-      
-      // Build delete query with tenant scoping for security
-      let deleteQuery = supabase.from('forms').delete().eq('id', id);
-      if (tenantId) {
-        deleteQuery = deleteQuery.eq('tenant_id', tenantId);
-      }
-      
-      const { error } = await deleteQuery;
-      if (error) throw error;
-      
-      return res.status(200).json({ success: true, message: 'Form deleted successfully' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
