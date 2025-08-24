@@ -61,13 +61,23 @@ router.get('/', withAuth(withSuperOrTenant(async (req, res) => {
   }
 })));
 
-// DELETE /api/forms/:id -> delete a form
+// DELETE /api/forms/:id -> delete a form (and its dependent data)
 router.delete('/:id', async (req, res) => {
   try {
     const supabase = getSupabase();
     const id = req.params.id;
-    const { error } = await supabase.from('forms').delete().eq('id', id);
-    if (error) throw error;
+
+    // Best-effort cascade: delete form_responses first to avoid FK violations
+    const { error: respErr } = await supabase.from('form_responses').delete().eq('form_id', id);
+    if (respErr) {
+      // Log but continue; parent delete may still succeed if no FK
+      console.warn('DELETE /api/forms/:id form_responses error:', respErr.message);
+    }
+
+    // Delete the form record itself
+    const { error: formErr } = await supabase.from('forms').delete().eq('id', id);
+    if (formErr) throw formErr;
+
     res.json({ ok: true });
   } catch (e) {
     console.error('DELETE /api/forms/:id error:', e);
