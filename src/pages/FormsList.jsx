@@ -218,7 +218,13 @@ export default function FormsList() {
                     e.stopPropagation();
                     if (!window.confirm('Delete this form?')) return;
                     const res = await tenantFetch(`/api/forms/${form.id}`, { method: 'DELETE' }, activeTenantId, scope);
-                    if (res.ok) setForms((prev) => prev.filter((f) => f.id !== form.id));
+                    if (res.ok) {
+                      // Remove immediately; server uses soft-delete so 200 means gone
+                      setForms((prev) => prev.filter((f) => f.id !== form.id));
+                    } else {
+                      const json = await res.json().catch(() => ({}));
+                      alert(json?.error || 'Failed to delete form');
+                    }
                   }}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
