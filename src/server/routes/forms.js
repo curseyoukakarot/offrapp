@@ -41,6 +41,7 @@ router.get('/', withAuth(withSuperOrTenant(async (req, res) => {
       .from('forms')
       .select('*')
       .eq('tenant_id', tenantId)
+      .neq('status', 'archived')
       .order('updated_at', { ascending: false })
       .limit(limit);
 

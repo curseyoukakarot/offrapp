@@ -217,7 +217,7 @@ export default function FormsList() {
                   <button title="Delete" className="p-2 text-gray-400 hover:text-danger hover:bg-gray-100 rounded-lg" onClick={async (e) => {
                     e.stopPropagation();
                     if (!window.confirm('Delete this form?')) return;
-                    const res = await fetch(`/api/forms/${form.id}`, { method: 'DELETE' });
+                    const res = await tenantFetch(`/api/forms/${form.id}`, { method: 'DELETE' }, activeTenantId, scope);
                     if (res.ok) setForms((prev) => prev.filter((f) => f.id !== form.id));
                   }}>
                     <i className="fa-solid fa-trash"></i>
