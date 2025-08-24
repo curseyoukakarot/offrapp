@@ -15,6 +15,7 @@ export default function FormsList() {
 
   const activeForm = useMemo(() => forms.find((f) => f.id === activeId) || null, [forms, activeId]);
   const [assignedRoles, setAssignedRoles] = useState([]);
+  const [tenantRoles, setTenantRoles] = useState([]);
   useEffect(() => {
     setAssignedRoles(Array.isArray(activeForm?.assigned_roles) ? activeForm.assigned_roles : []);
   }, [activeForm?.id]);
@@ -37,6 +38,10 @@ export default function FormsList() {
         if (!res.ok) throw new Error(json?.error || json?.message || 'Failed to load forms');
         setForms(json.forms || []);
         if ((json.forms || []).length > 0) setActiveId(json.forms[0].id);
+        // Load dynamic tenant roles
+        const rolesRes = await tenantFetch('/api/tenant-roles', {}, activeTenantId, scope);
+        const rolesJson = await rolesRes.json();
+        if (rolesRes.ok) setTenantRoles(rolesJson.roles || []);
       } catch (e) {
         setError(e.message || String(e));
       } finally {
@@ -247,13 +252,13 @@ export default function FormsList() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-900">{activeForm.title || 'Untitled Form'}</h2>
                   <div className="flex space-x-2">
-                    <button className={`px-4 py-2 ${tab === 'preview' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'} rounded-lg`} onClick={() => setTab('preview')}>
+                    <button className={`px-4 py-2 rounded-lg transition-colors ${tab === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400'}`} onClick={() => setTab('preview')}>
                       <i className="fa-solid fa-eye mr-2"></i>Preview
                     </button>
-                    <button className={`px-4 py-2 ${tab === 'roles' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'} rounded-lg`} onClick={() => setTab('roles')}>
+                    <button className={`px-4 py-2 rounded-lg transition-colors ${tab === 'roles' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400'}`} onClick={() => setTab('roles')}>
                       <i className="fa-solid fa-user-shield mr-2"></i>Role Assignment
                     </button>
-                    <button className={`px-4 py-2 ${tab === 'responses' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'} rounded-lg`} onClick={() => setTab('responses')}>
+                    <button className={`px-4 py-2 rounded-lg transition-colors ${tab === 'responses' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400'}`} onClick={() => setTab('responses')}>
                       <i className="fa-solid fa-chart-line mr-2"></i>Responses
                     </button>
                   </div>
@@ -268,10 +273,9 @@ export default function FormsList() {
                     <p className="text-sm text-gray-600 mb-4">Select which user roles can access this form</p>
 
                     <div className="space-y-3">
-                      <RoleRow roleKey="admin" label="Admin" desc="Full access to all forms and responses" color="bg-blue-100 text-blue-800" />
-                      <RoleRow roleKey="jobseeker" label="Jobseeker" desc="Can view and submit assigned forms" color="bg-green-100 text-green-800" />
-                      <RoleRow roleKey="client" label="Client" desc="Limited access to client-specific forms" color="bg-red-100 text-red-800" />
-                      <RoleRow roleKey="recruitpro" label="HR Manager" desc="Access to HR-related forms and analytics" color="bg-purple-100 text-purple-800" />
+                      {(tenantRoles || []).map(r => (
+                        <RoleRow key={r.role_key} roleKey={r.role_key} label={r.role_label} desc={r.role_description || ''} color="bg-gray-100 text-gray-800" />
+                      ))}
                     </div>
                   </div>
 
