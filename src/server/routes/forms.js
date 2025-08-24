@@ -37,6 +37,7 @@ router.get('/', withAuth(withSuperOrTenant(async (req, res) => {
       }
     }
     
+    // Fetch forms
     let query = supabase
       .from('forms')
       .select('*')
@@ -52,8 +53,27 @@ router.get('/', withAuth(withSuperOrTenant(async (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       return res.status(200).send(JSON.stringify({ forms: [] }));
     }
+    // Enrich with responses_count
+    const forms = data || [];
+    const ids = forms.map(f => f.id);
+    let counts = {};
+    if (ids.length > 0) {
+      const { data: respAgg } = await supabase
+        .from('form_responses')
+        .select('form_id, count:form_id', { count: 'exact', head: false })
+        .in('form_id', ids);
+      // Fallback aggregation if needed
+      (respAgg || []).forEach(r => {
+        counts[r.form_id] = (counts[r.form_id] || 0) + 1;
+      });
+    }
+    const enriched = forms.map(f => ({
+      ...f,
+      responses_count: counts[f.id] || 0,
+      status: f.published ? 'published' : (f.status || 'draft')
+    }));
     res.setHeader('Content-Type', 'application/json');
-    return res.status(200).send(JSON.stringify({ forms: data || [] }));
+    return res.status(200).send(JSON.stringify({ forms: enriched }));
   } catch (e) {
     console.error('GET /api/forms exception:', e);
     // Fail soft with empty list so the client never parses HTML

@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         updated_at: new Date().toISOString()
       };
       
-      ['title','description','status','schema','assigned_roles','theme','published'].forEach((k) => {
+      ['title','description','status','schema','assigned_roles','assigned_user_id','theme','published'].forEach((k) => {
         if (body[k] !== undefined) payload[k] = body[k];
       });
       
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       const id = body.id;
       if (!id) return res.status(400).json({ error: 'id is required' });
       const patch = {};
-      ['title','description','status','schema','assigned_roles','theme','published'].forEach((k) => {
+      ['title','description','status','schema','assigned_roles','assigned_user_id','theme','published'].forEach((k) => {
         if (body[k] !== undefined) patch[k] = body[k];
       });
       patch.updated_at = new Date().toISOString();

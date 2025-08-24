@@ -95,7 +95,7 @@ const FormRenderer = () => {
     const fetchForm = async () => {
       const { data, error } = await supabase
         .from('forms')
-        .select('title, fields, schema, assigned_roles')
+        .select('title, fields, schema, assigned_roles, assigned_user_id, published, status')
         .eq('id', id)
         .single();
 
@@ -105,7 +105,9 @@ const FormRenderer = () => {
         console.error('Error fetching form:', error.message);
         navigate('/forms');
       } else {
-        if (role === 'admin' || (Array.isArray(data.assigned_roles) && data.assigned_roles.includes(role))) {
+        const isPublished = !!data.published || String(data.status || '').toLowerCase() === 'published';
+        const isAssignedToUser = data.assigned_user_id && data.assigned_user_id === user.id;
+        if (role === 'admin' || isAssignedToUser || (Array.isArray(data.assigned_roles) && data.assigned_roles.includes(role))) {
           setHasAccess(true);
           setFormTitle(data.title);
           setFormFields(data.fields || data.schema || []);
