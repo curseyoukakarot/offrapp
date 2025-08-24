@@ -107,6 +107,11 @@ const Sidebar = () => {
         
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
+        console.log('🎯 Sidebar: Session info:', {
+          hasSession: !!session,
+          userId: userId,
+          userEmail: session?.user?.email
+        });
         
         // Map current userRole back to actual role keys for embed filtering
         const actualRoleKeys = [];
@@ -120,7 +125,16 @@ const Sidebar = () => {
         const visible = all.filter(e => {
           const roleMatch = e.embed_type === 'role' && actualRoleKeys.includes(e.role) && e.is_active;
           const userMatch = e.embed_type === 'user' && e.user_id === userId && e.is_active;
-          console.log('🎯 Sidebar: Checking embed:', e.title, 'roleMatch:', roleMatch, 'userMatch:', userMatch);
+          console.log('🎯 Sidebar: Checking embed:', {
+            title: e.title,
+            embedType: e.embed_type,
+            embedUserId: e.user_id,
+            currentUserId: userId,
+            isActive: e.is_active,
+            roleMatch,
+            userMatch,
+            userIdMatch: e.user_id === userId
+          });
           return roleMatch || userMatch;
         }).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
         
