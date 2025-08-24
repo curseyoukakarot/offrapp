@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import Sidebar from '../components/Sidebar';
 import { useUser } from '../lib/useUser';
 
 const notifyZapier = async (formTitle, answers) => {
@@ -186,148 +185,145 @@ const FormRenderer = () => {
     return <div className="p-6 text-red-500">🚫 You do not have access to this form.</div>;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-      <main className="flex-1 bg-gray-50 p-8 ml-64">
-        <h1 className="text-2xl font-bold mb-6">{formTitle}</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {formFields.map((field, index) => (
-            <div key={index}>
-              <label className="block text-gray-700 font-semibold mb-2">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              
-              {/* Short Answer Fields */}
-              {(field.type === 'short_answer' || field.type === 'text' || field.type === 'short') && (
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => handleChange(e, field.label, field.type)}
-                  required={field.required}
-                />
-              )}
-              
-              {/* Long Answer Fields */}
-              {(field.type === 'long_answer' || field.type === 'longtext' || field.type === 'long') && (
-                <textarea
-                  rows="4"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => handleChange(e, field.label, field.type)}
-                  required={field.required}
-                />
-              )}
-              
-              {/* Multiple Choice (Radio) */}
-              {field.type === 'choice' && (
-                <div className="space-y-2">
-                  {field.options?.map((opt, i) => (
-                    <label key={i} className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        name={field.label}
-                        value={opt}
-                        className="text-blue-600 focus:ring-blue-500"
-                        onChange={(e) => handleChange(e, field.label, field.type)}
-                        required={field.required}
-                      />
-                      <span>{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              
-              {/* Multi-select (Checkboxes) */}
-              {field.type === 'multi' && (
-                <div className="space-y-2">
-                  {field.options?.map((opt, i) => (
-                    <label key={i} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        value={opt}
-                        className="text-blue-600 focus:ring-blue-500"
-                        onChange={(e) => {
-                          const currentValues = formValues[field.label] || [];
-                          const newValues = e.target.checked 
-                            ? [...currentValues, opt]
-                            : currentValues.filter(v => v !== opt);
-                          setFormValues(prev => ({ ...prev, [field.label]: newValues }));
-                        }}
-                      />
-                      <span>{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              
-              {/* Dropdown */}
-              {field.type === 'dropdown' && (
-                <select
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => handleChange(e, field.label, field.type)}
-                  required={field.required}
-                >
-                  <option value="">Select an option</option>
-                  {field.options?.map((opt, i) => (
-                    <option key={i} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              )}
-              
-              {/* Rating */}
-              {field.type === 'rating' && (
-                <div className="flex items-center space-x-1">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      className={`text-2xl ${
-                        (formValues[field.label] || 0) >= rating 
-                          ? 'text-yellow-400' 
-                          : 'text-gray-300'
-                      } hover:text-yellow-400`}
-                      onClick={() => setFormValues(prev => ({ ...prev, [field.label]: rating }))}
-                    >
-                      ★
-                    </button>
-                  ))}
-                  <span className="ml-2 text-sm text-gray-600">
-                    {formValues[field.label] ? `${formValues[field.label]}/5` : 'Click to rate'}
-                  </span>
-                </div>
-              )}
-              
-              {/* Date */}
-              {field.type === 'date' && (
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => handleChange(e, field.label, field.type)}
-                  required={field.required}
-                />
-              )}
-              
-              {/* File Upload */}
-              {(field.type === 'file_upload' || field.type === 'file') && (
-                <input
-                  type="file"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => handleChange(e, field.label, field.type)}
-                  required={field.required}
-                />
-              )}
-            </div>
-          ))}
-          <button
-            type="submit"
-            className="bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700"
-          >
-            Submit
-          </button>
-        </form>
-      </main>
+    <div className="bg-gray-50 p-8">
+      <h1 className="text-2xl font-bold mb-6">{formTitle}</h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {formFields.map((field, index) => (
+          <div key={index}>
+            <label className="block text-gray-700 font-semibold mb-2">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            
+            {/* Short Answer Fields */}
+            {(field.type === 'short_answer' || field.type === 'text' || field.type === 'short') && (
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleChange(e, field.label, field.type)}
+                required={field.required}
+              />
+            )}
+            
+            {/* Long Answer Fields */}
+            {(field.type === 'long_answer' || field.type === 'longtext' || field.type === 'long') && (
+              <textarea
+                rows="4"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleChange(e, field.label, field.type)}
+                required={field.required}
+              />
+            )}
+            
+            {/* Multiple Choice (Radio) */}
+            {field.type === 'choice' && (
+              <div className="space-y-2">
+                {field.options?.map((opt, i) => (
+                  <label key={i} className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name={field.label}
+                      value={opt}
+                      className="text-blue-600 focus:ring-blue-500"
+                      onChange={(e) => handleChange(e, field.label, field.type)}
+                      required={field.required}
+                    />
+                    <span>{opt}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            
+            {/* Multi-select (Checkboxes) */}
+            {field.type === 'multi' && (
+              <div className="space-y-2">
+                {field.options?.map((opt, i) => (
+                  <label key={i} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      value={opt}
+                      className="text-blue-600 focus:ring-blue-500"
+                      onChange={(e) => {
+                        const currentValues = formValues[field.label] || [];
+                        const newValues = e.target.checked 
+                          ? [...currentValues, opt]
+                          : currentValues.filter(v => v !== opt);
+                        setFormValues(prev => ({ ...prev, [field.label]: newValues }));
+                      }}
+                    />
+                    <span>{opt}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            
+            {/* Dropdown */}
+            {field.type === 'dropdown' && (
+              <select
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleChange(e, field.label, field.type)}
+                required={field.required}
+              >
+                <option value="">Select an option</option>
+                {field.options?.map((opt, i) => (
+                  <option key={i} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            )}
+            
+            {/* Rating */}
+            {field.type === 'rating' && (
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    className={`text-2xl ${
+                      (formValues[field.label] || 0) >= rating 
+                        ? 'text-yellow-400' 
+                        : 'text-gray-300'
+                    } hover:text-yellow-400`}
+                    onClick={() => setFormValues(prev => ({ ...prev, [field.label]: rating }))}
+                  >
+                    ★
+                  </button>
+                ))}
+                <span className="ml-2 text-sm text-gray-600">
+                  {formValues[field.label] ? `${formValues[field.label]}/5` : 'Click to rate'}
+                </span>
+              </div>
+            )}
+            
+            {/* Date */}
+            {field.type === 'date' && (
+              <input
+                type="date"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleChange(e, field.label, field.type)}
+                required={field.required}
+              />
+            )}
+            
+            {/* File Upload */}
+            {(field.type === 'file_upload' || field.type === 'file') && (
+              <input
+                type="file"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleChange(e, field.label, field.type)}
+                required={field.required}
+              />
+            )}
+          </div>
+        ))}
+        <button
+          type="submit"
+          className="bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700"
+        >
+          Submit
+        </button>
+      </form>
     </div>
   );
 };
