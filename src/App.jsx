@@ -5,6 +5,7 @@ import SuperAdminPage from './pages/super/SuperAdminPage';
 import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
 import JobsPage from './pages/super/JobsPage.tsx';
 import AuditLogsPage from './pages/super/AuditLogsPage.tsx';
+import SuperAdminEmbedsPage from './pages/super/SuperAdminEmbedsPage.tsx';
 import AdminEmbedsManagerV2 from './pages/AdminEmbedsManagerV2';
 import RecruitProDashboard from './pages/RecruitProDashboard';
 import JobSeekerDashboard from './pages/JobSeekerDashboard';
@@ -294,6 +295,16 @@ function App() {
               <SuperAdminRoute>
                 <SuperAdminLayout>
                   <AppHealthPage />
+                </SuperAdminLayout>
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super/embeds"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminLayout>
+                  <SuperAdminEmbedsPage />
                 </SuperAdminLayout>
               </SuperAdminRoute>
             }

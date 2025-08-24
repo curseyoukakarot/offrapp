@@ -94,16 +94,6 @@ const Sidebar = () => {
       
       try {
         console.log('🎯 Sidebar: Fetching embeds for tenantId:', activeTenantId, 'userRole:', userRole);
-        const res = await tenantFetch('/api/embeds', {}, activeTenantId, scope);
-        
-        if (!res.ok) {
-          console.error('🎯 Sidebar: Failed to fetch embeds:', res.status);
-          return;
-        }
-        
-        const json = await res.json();
-        const all = Array.isArray(json.embeds) ? json.embeds : [];
-        console.log('🎯 Sidebar: All embeds from API:', all);
         
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
@@ -112,6 +102,19 @@ const Sidebar = () => {
           userId: userId,
           userEmail: session?.user?.email
         });
+        
+        // Include user_id in the API call to get super admin embeds for this user
+        const apiUrl = userId ? `/api/embeds?user_id=${encodeURIComponent(userId)}` : '/api/embeds';
+        const res = await tenantFetch(apiUrl, {}, activeTenantId, scope);
+        
+        if (!res.ok) {
+          console.error('🎯 Sidebar: Failed to fetch embeds:', res.status);
+          return;
+        }
+        
+        const json = await res.json();
+        const all = Array.isArray(json.embeds) ? json.embeds : [];
+        console.log('🎯 Sidebar: All embeds from API (including super admin embeds):', all);
         
         // Map current userRole back to actual role keys for embed filtering
         const actualRoleKeys = [];
@@ -125,17 +128,22 @@ const Sidebar = () => {
         const visible = all.filter(e => {
           const roleMatch = e.embed_type === 'role' && actualRoleKeys.includes(e.role) && e.is_active;
           const userMatch = e.embed_type === 'user' && e.user_id === userId && e.is_active;
+          const superAdminUserMatch = e.is_super_admin_embed && e.embed_type === 'user' && e.user_id === userId && e.is_active;
+          
           console.log('🎯 Sidebar: Checking embed:', {
             title: e.title,
             embedType: e.embed_type,
             embedUserId: e.user_id,
             currentUserId: userId,
             isActive: e.is_active,
+            isSuperAdminEmbed: e.is_super_admin_embed,
             roleMatch,
             userMatch,
+            superAdminUserMatch,
             userIdMatch: e.user_id === userId
           });
-          return roleMatch || userMatch;
+          
+          return roleMatch || userMatch || superAdminUserMatch;
         }).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
         
         console.log('🎯 Sidebar: Visible embeds for member:', visible);

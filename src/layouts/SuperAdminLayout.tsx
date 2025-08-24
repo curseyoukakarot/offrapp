@@ -102,6 +102,10 @@ export default function SuperAdminLayout({ children }: Props) {
               <i className="fa-solid fa-puzzle-piece"></i>
               <span>Integrations</span>
             </Link>
+            <Link to="/super/embeds" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
+              <i className="fa-solid fa-layer-group"></i>
+              <span>Cross-Tenant Embeds</span>
+            </Link>
             <Link to="/super/notifications" className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 cursor-pointer">
               <i className="fa-solid fa-bell"></i>
               <span>Notifications</span>
